@@ -8,7 +8,6 @@ public class ShorelineSmootherNode : Node,
     IEvaluatableNode<float[,]>,
     IPreviewableNode
 {
-    private bool _isNodeStateValid;
     private int _generationId;
     private float[,] _cachedOutput;
 
@@ -77,16 +76,18 @@ public class ShorelineSmootherNode : Node,
             .Build();
     }
 
-    public void ValidateNode(GraphLogger graphLogger)
+    public bool TryValidateNode(GraphLogger graphLogger = null)
     {
-        _isNodeStateValid = true;
+        var isValid = true;
 
         PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
         if (grid == null)
         {
-            graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
+            isValid = false;
         }
+
+        return isValid;
     }
 
     public void ResetNode(int generationId)
@@ -109,7 +110,7 @@ public class ShorelineSmootherNode : Node,
 
     private bool TryExecuteNode(int generationId)
     {
-        if (!_isNodeStateValid)
+        if (!TryValidateNode())
         {
             // Node validation did not pass
             return false;
@@ -125,7 +126,6 @@ public class ShorelineSmootherNode : Node,
 
         try
         {
-            // Validation performed in ValidateNode()
             PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
             PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_SEA_LEVEL_ID, _generationId, out var seaLevel);
             PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_FALLOFF_WIDTH_ID, _generationId, out var falloffWidth);

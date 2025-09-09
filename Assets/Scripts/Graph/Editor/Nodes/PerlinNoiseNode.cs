@@ -8,7 +8,6 @@ public class PerlinNoiseNode : Node,
     IEvaluatableNode<float[,]>,
     IPreviewableNode
 {
-    private bool _isNodeStateValid;
     private int _generationId;
     private float[,] _cachedOutput;
 
@@ -119,23 +118,25 @@ public class PerlinNoiseNode : Node,
             .Build();
     }
 
-    public void ValidateNode(GraphLogger graphLogger)
+    public bool TryValidateNode(GraphLogger graphLogger = null)
     {
-        _isNodeStateValid = true;
+        var isValid = true;
 
         PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
         if (size <= 0)
         {
-            graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {size} (valid: 0 < n)", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {size} (valid: 0 < n)", this);
+            isValid = false;
         }
 
         PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_OCTAVES_ID, _generationId, out var octaves);
         if (octaves <= 0)
         {
-            graphLogger.LogError($"Invalid {NODE_INPUT_OCTAVES_TITLE} specified: {octaves} (valid: 0 < n)", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"Invalid {NODE_INPUT_OCTAVES_TITLE} specified: {octaves} (valid: 0 < n)", this);
+            isValid = false;
         }
+
+        return isValid;
     }
 
     public void ResetNode(int generationId)
@@ -158,7 +159,7 @@ public class PerlinNoiseNode : Node,
 
     private bool TryExecuteNode(int generationId)
     {
-        if (!_isNodeStateValid)
+        if (!TryValidateNode())
         {
             // Node validation did not pass
             return false;
@@ -174,7 +175,6 @@ public class PerlinNoiseNode : Node,
 
         try
         {
-            // Validation performed in ValidateNode()
             PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
             PortEvaluator.TryEvaluateInputPort<Vector2>(this, NODE_INPUT_POSITION_ID, _generationId, out var position);
             PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_FREQUENCY_ID, _generationId, out var frequency);

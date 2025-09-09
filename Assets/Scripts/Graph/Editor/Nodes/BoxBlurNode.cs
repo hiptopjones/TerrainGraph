@@ -8,7 +8,6 @@ public class BoxBlurNode : Node,
     IEvaluatableNode<float[,]>,
     IPreviewableNode
 {
-    private bool _isNodeStateValid;
     private int _generationId;
     private float[,] _cachedOutput;
 
@@ -71,31 +70,32 @@ public class BoxBlurNode : Node,
             .Build();
     }
 
-    public void ValidateNode(GraphLogger graphLogger)
+    public bool TryValidateNode(GraphLogger graphLogger = null)
     {
-        _isNodeStateValid = true;
+        var isValid = true;
 
         PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
         if (grid == null)
         {
-            graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
+            isValid = false;
         }
 
         PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_RADIUS_ID, _generationId, out var radius);
         if (radius <= 0 || radius > 10)
         {
-            graphLogger.LogError($"Invalid {NODE_INPUT_RADIUS_TITLE} specified: {radius} (valid: 0 < n)", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"Invalid {NODE_INPUT_RADIUS_TITLE} specified: {radius} (valid: 0 < n)", this);
+            isValid = false;
         }
 
         PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_ITERATIONS_ID, _generationId, out var iterations);
         if (iterations <= 0 || iterations > 10)
         {
-            graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {iterations} (valid: 0 < n < 10)", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {iterations} (valid: 0 < n < 10)", this);
+            isValid = false;
         }
 
+        return isValid;
     }
 
     public void ResetNode(int generationId)
@@ -118,7 +118,7 @@ public class BoxBlurNode : Node,
 
     private bool TryExecuteNode(int generationId)
     {
-        if (!_isNodeStateValid)
+        if (!TryValidateNode())
         {
             // Node validation did not pass
             return false;
@@ -134,7 +134,6 @@ public class BoxBlurNode : Node,
 
         try
         {
-            // Validation performed in ValidateNode()
             PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
             PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_RADIUS_ID, _generationId, out var radius);
             PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_ITERATIONS_ID, _generationId, out var iterations);

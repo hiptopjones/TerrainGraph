@@ -29,13 +29,14 @@ public class TerrainEditorGraph : Graph
 
         UpdatePreviews(_generationId++);
     }
+
     private void ValidateNodes(GraphLogger graphLogger)
     {
         var nodes = GetNodes().OfType<IValidatableNode>().ToList();
      
         foreach (var node in nodes)
         {
-            node.ValidateNode(graphLogger);
+            node.TryValidateNode(graphLogger);
         }
     }
 

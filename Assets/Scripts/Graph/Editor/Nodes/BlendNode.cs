@@ -8,7 +8,6 @@ public class BlendNode : Node,
     IEvaluatableNode<float[,]>,
     IPreviewableNode
 {
-    private bool _isNodeStateValid;
     private int _generationId;
     private float[,] _cachedOutput;
 
@@ -69,23 +68,25 @@ public class BlendNode : Node,
             .Build();
     }
 
-    public void ValidateNode(GraphLogger graphLogger)
+    public bool TryValidateNode(GraphLogger graphLogger = null)
     {
-        _isNodeStateValid = true;
+        var isValid = true;
 
         PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID1_ID, _generationId, out var grid1);
         if (grid1 == null)
         {
-            graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} value missing", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} value missing", this);
+            isValid = false;
         }
 
         PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID2_ID, _generationId, out var grid2);
         if (grid2 == null)
         {
-            graphLogger.LogError($"{NODE_INPUT_GRID2_TITLE} value missing", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID2_TITLE} value missing", this);
+            isValid = false;
         }
+
+        return isValid;
     }
 
     public void ResetNode(int generationId)
@@ -108,7 +109,7 @@ public class BlendNode : Node,
 
     private bool TryExecuteNode(int generationId)
     {
-        if (!_isNodeStateValid)
+        if (!TryValidateNode())
         {
             // Node validation did not pass
             return false;
@@ -124,7 +125,6 @@ public class BlendNode : Node,
 
         try
         {
-            // Validation performed in ValidateNode()
             PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID1_ID, _generationId, out var grid1);
             PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID2_ID, _generationId, out var grid2);
             PortEvaluator.TryEvaluateInputPort<BlendMethod>(this, NODE_INPUT_METHOD_ID, _generationId, out var method);

@@ -2,5 +2,5 @@
 
 internal interface IValidatableNode
 {
-    void ValidateNode(GraphLogger graphLogger);
+    bool TryValidateNode(GraphLogger graphLogger);
 }

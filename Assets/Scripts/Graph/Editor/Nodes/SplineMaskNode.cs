@@ -8,7 +8,6 @@ public class SplineMaskNode : Node,
     IEvaluatableNode<float[,]>,
     IPreviewableNode
 {
-    private bool _isNodeStateValid;
     private int _generationId;
     private float[,] _cachedOutput;
 
@@ -71,30 +70,32 @@ public class SplineMaskNode : Node,
             .Build();
     }
 
-    public void ValidateNode(GraphLogger graphLogger)
+    public bool TryValidateNode(GraphLogger graphLogger = null)
     {
-        _isNodeStateValid = true;
+        var isValid = true;
 
         PortEvaluator.TryEvaluateInputPort<SplineWrapper>(this, NODE_INPUT_SPLINE_ID, _generationId, out var splineWrapper);
         if (splineWrapper == null)
         {
-            graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
+            isValid = false;
         }
 
         PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
         if (size <= 0)
         {
-            graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {size} (valid: 0 < n)", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {size} (valid: 0 < n)", this);
+            isValid = false;
         }
 
         PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_STEP_ID, _generationId, out var step);
         if (step <= 0)
         {
-            graphLogger.LogError($"{NODE_INPUT_STEP_TITLE} value invalid: {step} (valid: 0 < n)", this);
-            _isNodeStateValid = false;
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_STEP_TITLE} value invalid: {step} (valid: 0 < n)", this);
+            isValid = false;
         }
+
+        return isValid;
     }
 
     public void ResetNode(int generationId)
@@ -117,7 +118,7 @@ public class SplineMaskNode : Node,
 
     private bool TryExecuteNode(int generationId)
     {
-        if (!_isNodeStateValid)
+        if (!TryValidateNode())
         {
             // Node validation did not pass
             return false;
@@ -133,7 +134,6 @@ public class SplineMaskNode : Node,
 
         try
         {
-            // Validation performed in ValidateNode()
             PortEvaluator.TryEvaluateInputPort<SplineWrapper>(this, NODE_INPUT_SPLINE_ID, _generationId, out var splineWrapper);
             PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
             PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_STEP_ID, _generationId, out var step);
