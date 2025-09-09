@@ -2,35 +2,44 @@
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
-public class ShorelineSmootherNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
+[Serializable]
+public class ShorelineSmootherNode : Node,
+    IValidatableNode,
+    IEvaluatableNode<float[,]>,
+    IPreviewableNode
 {
+    private bool _isNodeStateValid;
+    private int _generationId;
     private float[,] _cachedOutput;
 
     // Catch noisy edges around sea level
     private const float SEA_EPSILON = 0.0005f;
 
     // Options
-    internal const string NODE_OPTION_PREVIEW_ID = TerrainEditorGraph.NODE_OPTION_PREVIEW_ID;
+    private const string NODE_OPTION_PREVIEW_ID = "preview_option";
+    private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
     // Inputs
-    internal const string NODE_INPUT_GRID_ID = "grid_input";
-    internal const string NODE_INPUT_SEA_LEVEL_ID = "sea_level_input";
-    internal const string NODE_INPUT_FALLOFF_WIDTH_ID = "falloff_width_input";
-    internal const string NODE_INPUT_FALLOFF_CURVE_ID = "falloff_curve_input";
-    internal const string NODE_INPUT_PREVIEW_ID = TerrainEditorGraph.NODE_INPUT_PREVIEW_ID;
+    private const string NODE_INPUT_GRID_ID = "grid_input";
+    private const string NODE_INPUT_GRID_TITLE = "Grid";
+    private const string NODE_INPUT_SEA_LEVEL_ID = "sea_level_input";
+    private const string NODE_INPUT_SEA_LEVEL_TITLE = "Sea Level";
+    private const string NODE_INPUT_FALLOFF_WIDTH_ID = "falloff_width_input";
+    private const string NODE_INPUT_FALLOFF_WIDTH_TITLE = "Falloff Width";
+    private const string NODE_INPUT_FALLOFF_CURVE_ID = "falloff_curve_input";
+    private const string NODE_INPUT_FALLOFF_CURVE_TITLE = "Falloff Curve";
+
+    private const string NODE_INPUT_PREVIEW_ID = "preview_input";
+    private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
     // Outputs
-    internal const string NODE_OUTPUT_GRID_ID = TerrainEditorGraph.NODE_OUTPUT_GRID_ID;
-
-    public override void OnEnable()
-    {
-        ResetNode();
-    }
+    private const string NODE_OUTPUT_GRID_ID = "grid_output";
+    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-            .WithDisplayName("Enable Preview")
+            .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
             .WithDefaultValue(false)
             .Build();
     }
@@ -41,74 +50,88 @@ public class ShorelineSmootherNode : Node, IValidatedNode, IEvaluatedNode<float[
 
         // Input
         context.AddInputPort<float[,]>(NODE_INPUT_GRID_ID)
-            .WithDisplayName("Grid")
+            .WithDisplayName(NODE_INPUT_GRID_TITLE)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_SEA_LEVEL_ID)
-            .WithDisplayName("Sea Level")
+            .WithDisplayName(NODE_INPUT_SEA_LEVEL_TITLE)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_FALLOFF_WIDTH_ID)
-            .WithDisplayName("Falloff Width")
+            .WithDisplayName(NODE_INPUT_FALLOFF_WIDTH_TITLE)
             .WithDefaultValue(50f)
             .Build();
         context.AddInputPort<AnimationCurve>(NODE_INPUT_FALLOFF_CURVE_ID)
-            .WithDisplayName("Falloff Curve")
+            .WithDisplayName(NODE_INPUT_FALLOFF_CURVE_TITLE)
             .WithDefaultValue(AnimationCurve.EaseInOut(0, 0, 1, 1))
             .Build();
 
         if (isPreviewEnabled)
         {
             context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                .WithDisplayName("Preview")
+                .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
                 .Build();
         }
 
         // Output
         context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
-            .WithDisplayName("Grid")
+            .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
 
     public void ValidateNode(GraphLogger graphLogger)
     {
-        // TODO
+        _isNodeStateValid = true;
+
+        PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+        if (grid == null)
+        {
+            graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
+            _isNodeStateValid = false;
+        }
     }
 
-    public void ResetNode()
+    public void ResetNode(int generationId)
     {
+        _generationId = generationId;
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort _, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
     {
-        if (_cachedOutput == null)
+        if (!TryExecuteNode(generationId))
         {
-            // Only execute on demand
-            if (!TryExecuteNode())
-            {
-                value = null;
-                return false;
-            }
+            value = null;
+            return false;
         }
 
         value = _cachedOutput;
         return true;
     }
 
-    private bool TryExecuteNode()
+    private bool TryExecuteNode(int generationId)
     {
+        if (!_isNodeStateValid)
+        {
+            // Node validation did not pass
+            return false;
+        }
+
+        if (_generationId == generationId)
+        {
+            // Node is already up-to-date
+            return true;
+        }
+
+        ResetNode(generationId);
+
         try
         {
-            var input = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(NODE_INPUT_GRID_ID));
-            if (input == null)
-            {
-                return false;
-            }
+            // Validation performed in ValidateNode()
+            PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_SEA_LEVEL_ID, _generationId, out var seaLevel);
+            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_FALLOFF_WIDTH_ID, _generationId, out var falloffWidth);
+            PortEvaluator.TryEvaluateInputPort<AnimationCurve>(this, NODE_INPUT_FALLOFF_CURVE_ID, _generationId, out var falloffCurve);
 
-            var seaLevel = PortEvaluator.EvaluatePort<float>(GetInputPortByName(NODE_INPUT_SEA_LEVEL_ID));
-            var falloffWidth = PortEvaluator.EvaluatePort<float>(GetInputPortByName(NODE_INPUT_FALLOFF_WIDTH_ID));
-            var falloffCurve = PortEvaluator.EvaluatePort<AnimationCurve>(GetInputPortByName(NODE_INPUT_FALLOFF_CURVE_ID));
-
-            int size = input.GetLength(0);
+            int size = grid.GetLength(0);
 
             var output = new float[size, size];
 
@@ -119,7 +142,7 @@ public class ShorelineSmootherNode : Node, IValidatedNode, IEvaluatedNode<float[
             {
                 for (int x = 0; x < size; x++)
                 {
-                    isSea[y, x] = (input[y, x] <= seaLevel + SEA_EPSILON);
+                    isSea[y, x] = (grid[y, x] <= seaLevel + SEA_EPSILON);
                 }
             }
 
@@ -178,7 +201,7 @@ public class ShorelineSmootherNode : Node, IValidatedNode, IEvaluatedNode<float[
                 for (int x = 0; x < size; x++)
                 {
                     float distance = distances[y, x];
-                    float height = input[y, x];
+                    float height = grid[y, x];
 
                     if (distance <= falloffWidth + 0.0001f)
                     {
@@ -202,7 +225,6 @@ public class ShorelineSmootherNode : Node, IValidatedNode, IEvaluatedNode<float[
                 }
             }
 
-            Debug.Log($"Shoreline smoothing complete. Edited samples: {edits}. Falloff ~{falloffWidth}.");
             _cachedOutput = output;
 
             return true;
@@ -211,6 +233,15 @@ public class ShorelineSmootherNode : Node, IValidatedNode, IEvaluatedNode<float[
         {
             Debug.LogException(ex);
             return false;
+        }
+    }
+
+    public void UpdatePreview(int generationId)
+    {
+        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        if (isPreviewEnabled)
+        {
+            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, NODE_OUTPUT_GRID_ID, generationId);
         }
     }
 }

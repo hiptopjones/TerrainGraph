@@ -3,31 +3,40 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
+public class BlendNode : Node,
+    IValidatableNode,
+    IEvaluatableNode<float[,]>,
+    IPreviewableNode
 {
+    private bool _isNodeStateValid;
+    private int _generationId;
     private float[,] _cachedOutput;
 
     // Options
-    internal const string NODE_OPTION_PREVIEW_ID = TerrainEditorGraph.NODE_OPTION_PREVIEW_ID;
+    private const string NODE_OPTION_PREVIEW_ID = "preview_option";
+    private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
     // Input
-    internal const string NODE_INPUT_GRID1_ID = "grid1_input";
-    internal const string NODE_INPUT_GRID2_ID = "grid2_input";
-    internal const string NODE_INPUT_METHOD_ID = "method_input";
-    internal const string NODE_INPUT_PREVIEW_ID = TerrainEditorGraph.NODE_INPUT_PREVIEW_ID;
+    private const string NODE_INPUT_GRID1_ID = "grid1_input";
+    private const string NODE_INPUT_GRID1_TITLE = "Grid 1";
+
+    private const string NODE_INPUT_GRID2_ID = "grid2_input";
+    private const string NODE_INPUT_GRID2_TITLE = "Grid 2";
+
+    private const string NODE_INPUT_METHOD_ID = "method_input";
+    private const string NODE_INPUT_METHOD_TITLE = "Method";
+
+    private const string NODE_INPUT_PREVIEW_ID = "preview_input";
+    private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
     // Output
-    internal const string NODE_OUTPUT_GRID_ID = TerrainEditorGraph.NODE_OUTPUT_GRID_ID;
-
-    public override void OnEnable()
-    {
-        ResetNode();
-    }
+    private const string NODE_OUTPUT_GRID_ID = "grid_output";
+    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-            .WithDisplayName("Enable Preview")
+            .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
             .WithDefaultValue(false)
             .Build();
     }
@@ -38,73 +47,90 @@ internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
         // Input
         context.AddInputPort<float[,]>(NODE_INPUT_GRID1_ID)
-            .WithDisplayName("Grid 1")
+            .WithDisplayName(NODE_INPUT_GRID1_TITLE)
             .Build();
         context.AddInputPort<float[,]>(NODE_INPUT_GRID2_ID)
-            .WithDisplayName("Grid 2")
+            .WithDisplayName(NODE_INPUT_GRID2_TITLE)
             .Build();
         context.AddInputPort<BlendMethod>(NODE_INPUT_METHOD_ID)
-            .WithDisplayName("Method")
+            .WithDisplayName(NODE_INPUT_METHOD_TITLE)
             .Build();
 
         if (isPreviewEnabled)
         {
             context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                .WithDisplayName("Preview")
+                .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
                 .Build();
         }
 
         // Output
         context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
-            .WithDisplayName("Grid")
+            .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
 
     public void ValidateNode(GraphLogger graphLogger)
     {
-        // TODO
+        _isNodeStateValid = true;
+
+        PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID1_ID, _generationId, out var grid1);
+        if (grid1 == null)
+        {
+            graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} value missing", this);
+            _isNodeStateValid = false;
+        }
+
+        PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID2_ID, _generationId, out var grid2);
+        if (grid2 == null)
+        {
+            graphLogger.LogError($"{NODE_INPUT_GRID2_TITLE} value missing", this);
+            _isNodeStateValid = false;
+        }
     }
 
-    public void ResetNode()
+    public void ResetNode(int generationId)
     {
+        _generationId = generationId;
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort outputPort, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
     {
-        if (_cachedOutput == null)
+        if (!TryExecuteNode(generationId))
         {
-            // Only execute on demand
-            if (!TryExecuteNode())
-            {
-                value = null;
-                return false;
-            }
+            value = null;
+            return false;
         }
 
         value = _cachedOutput;
         return true;
     }
 
-    public bool TryExecuteNode()
+    private bool TryExecuteNode(int generationId)
     {
+        if (!_isNodeStateValid)
+        {
+            // Node validation did not pass
+            return false;
+        }
+
+        if (_generationId == generationId)
+        {
+            // Node is already up-to-date
+            return true;
+        }
+
+        ResetNode(generationId);
+
         try
         {
-            var grid1 = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(NODE_INPUT_GRID1_ID));
-            if (grid1 == null)
-            {
-                return false;
-            }
-
-            var grid2 = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(NODE_INPUT_GRID2_ID));
-            if (grid2 == null)
-            {
-                return false;
-            }
+            // Validation performed in ValidateNode()
+            PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID1_ID, _generationId, out var grid1);
+            PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID2_ID, _generationId, out var grid2);
+            PortEvaluator.TryEvaluateInputPort<BlendMethod>(this, NODE_INPUT_METHOD_ID, _generationId, out var method);
 
             Func<float, float, float> blendFunction = null;
 
-            var method = PortEvaluator.EvaluatePort<BlendMethod>(GetInputPortByName(NODE_INPUT_METHOD_ID));
             switch (method)
             {
                 case BlendMethod.Add:
@@ -140,6 +166,15 @@ internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
         {
             Debug.LogException(ex);
             return false;
+        }
+    }
+
+    public void UpdatePreview(int generationId)
+    {
+        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        if (isPreviewEnabled)
+        {
+            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, NODE_OUTPUT_GRID_ID, generationId);
         }
     }
 }

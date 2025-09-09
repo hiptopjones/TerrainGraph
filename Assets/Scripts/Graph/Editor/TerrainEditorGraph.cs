@@ -10,14 +10,12 @@ using UnityEngine;
 [Serializable]
 public class TerrainEditorGraph : Graph
 {
+    private int _generationId;
+
     // This file extension is used by Unity to select the right importer, so it must be unique.
     internal const string ASSET_FILE_EXTENSION = "trgraph";
 
     internal const string DEFAULT_ASSET_NAME = "Terrain Graph";
-
-    internal const string NODE_OPTION_PREVIEW_ID = "preview_option";
-    internal const string NODE_INPUT_PREVIEW_ID = "preview_input";
-    internal const string NODE_OUTPUT_GRID_ID = "grid_output";
 
     [MenuItem("Assets/Create/Terrain Graph")]
     static void CreateAssetFile()
@@ -27,89 +25,27 @@ public class TerrainEditorGraph : Graph
 
     public override void OnGraphChanged(GraphLogger graphLogger)
     {
-        //Debug.Log("Graph changed");
-
         ValidateNodes(graphLogger);
-        UpdatePreviews();
+
+        UpdatePreviews(_generationId++);
     }
     private void ValidateNodes(GraphLogger graphLogger)
     {
-        var nodes = GetValidatedNodes();
+        var nodes = GetNodes().OfType<IValidatableNode>().ToList();
      
         foreach (var node in nodes)
         {
-            var validatedNode = node as IValidatedNode;
-            validatedNode.ValidateNode(graphLogger);
+            node.ValidateNode(graphLogger);
         }
     }
 
-    private void UpdatePreviews()
+    private void UpdatePreviews(int generationId)
     {
-        var nodes = GetEvaluatedNodes();
+        var nodes = GetNodes().OfType<IPreviewableNode>().ToList();
 
-        // Clear all the node caches
         foreach (var node in nodes)
         {
-            var evaluatedNode = node as IEvaluatedNode<float[,]>;
-            evaluatedNode.ResetNode();
+            node.UpdatePreview(generationId);
         }
-
-        // Generate node previews
-        foreach (var node in nodes)
-        {
-            var evaluatedNode = node as IEvaluatedNode<float[,]>;
-
-            if (TryGetInputPortByName(node, NODE_INPUT_PREVIEW_ID, out var previewPort))
-            {
-                if (previewPort.TryGetValue(out PreviewImage previewImage))
-                {
-                    IPort outputPort = null;
-
-                    if (TryGetOutputPortByName(node, NODE_OUTPUT_GRID_ID, out outputPort))
-                    {
-                        if (evaluatedNode.TryGetPortValue(outputPort, out var grid))
-                        {
-                            if (grid == null)
-                            {
-                                continue;
-                            }
-
-                            if (previewImage.Texture == null)
-                            {
-                                previewImage.Texture = TextureHelpers.CreateTexture(grid);
-                            }
-                            else
-                            {
-                                TextureHelpers.UpdateTexture(grid, previewImage.Texture);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private List<INode> GetValidatedNodes()
-    {
-        return GetNodes().Where(x => x is IValidatedNode).ToList();
-    }
-
-    private List<INode> GetEvaluatedNodes()
-    {
-        return GetNodes().Where(x => x is IEvaluatedNode<float[,]>).ToList();
-    }
-
-    private bool TryGetInputPortByName(INode node, string name, out IPort port)
-    {
-        port = node.GetInputPorts().Where(x => x.name == name).FirstOrDefault();
-
-        return port != null;
-    }
-
-    private bool TryGetOutputPortByName(INode node, string name, out IPort port)
-    {
-        port = node.GetOutputPorts().Where(x => x.name == name).FirstOrDefault();
-
-        return port != null;
     }
 }

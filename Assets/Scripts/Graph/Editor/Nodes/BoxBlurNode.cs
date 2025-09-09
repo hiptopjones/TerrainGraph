@@ -1,38 +1,37 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.Windows;
 
-public class BoxBlurNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
+[Serializable]
+public class BoxBlurNode : Node,
+    IValidatableNode,
+    IEvaluatableNode<float[,]>,
+    IPreviewableNode
 {
     private bool _isNodeStateValid;
+    private int _generationId;
     private float[,] _cachedOutput;
 
     // Options
-    internal const string NODE_OPTION_PREVIEW_ID = TerrainEditorGraph.NODE_OPTION_PREVIEW_ID;
-
+    private const string NODE_OPTION_PREVIEW_ID = "preview_option";
     private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
     // Inputs
-    internal const string NODE_INPUT_GRID_ID = "grid_input";
-    internal const string NODE_INPUT_RADIUS_ID = "radius_input";
-    internal const string NODE_INPUT_ITERATIONS_ID = "iterations_input";
-    internal const string NODE_INPUT_PREVIEW_ID = TerrainEditorGraph.NODE_INPUT_PREVIEW_ID;
-
+    private const string NODE_INPUT_GRID_ID = "grid_input";
     private const string NODE_INPUT_GRID_TITLE = "Grid";
+
+    private const string NODE_INPUT_RADIUS_ID = "radius_input";
     private const string NODE_INPUT_RADIUS_TITLE = "Radius";
+
+    private const string NODE_INPUT_ITERATIONS_ID = "iterations_input";
     private const string NODE_INPUT_ITERATIONS_TITLE = "Iterations";
+
+    private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
     // Outputs
-    internal const string NODE_OUTPUT_GRID_ID = TerrainEditorGraph.NODE_OUTPUT_GRID_ID;
-
+    private const string NODE_OUTPUT_GRID_ID = "grid_output";
     private const string NODE_OUTPUT_GRID_TITLE = "Grid";
-
-    public override void OnEnable()
-    {
-        ResetNode();
-    }
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -76,64 +75,71 @@ public class BoxBlurNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
     {
         _isNodeStateValid = true;
 
-        var iterations = PortEvaluator.EvaluatePort<int>(GetInputPortByName(NODE_INPUT_ITERATIONS_ID));
-        if (iterations <= 0 || iterations > 10)
+        PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+        if (grid == null)
         {
-            graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {iterations} (valid: 0 < n < 10)", this);
+            graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
             _isNodeStateValid = false;
         }
-        
-        var radius = PortEvaluator.EvaluatePort<int>(GetInputPortByName(NODE_INPUT_RADIUS_ID));
+
+        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_RADIUS_ID, _generationId, out var radius);
         if (radius <= 0 || radius > 10)
         {
             graphLogger.LogError($"Invalid {NODE_INPUT_RADIUS_TITLE} specified: {radius} (valid: 0 < n)", this);
             _isNodeStateValid = false;
         }
 
-        var input = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(NODE_INPUT_GRID_ID));
-        if (input == null)
+        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_ITERATIONS_ID, _generationId, out var iterations);
+        if (iterations <= 0 || iterations > 10)
         {
-            graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
+            graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {iterations} (valid: 0 < n < 10)", this);
             _isNodeStateValid = false;
         }
+
     }
 
-    public void ResetNode()
+    public void ResetNode(int generationId)
     {
+        _generationId = generationId;
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort _, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
     {
-        if (_cachedOutput == null)
+        if (!TryExecuteNode(generationId))
         {
-            // Only execute on demand
-            if (!TryExecuteNode())
-            {
-                value = null;
-                return false;
-            }
+            value = null;
+            return false;
         }
 
         value = _cachedOutput;
         return true;
     }
 
-    private bool TryExecuteNode()
+    private bool TryExecuteNode(int generationId)
     {
-        // Depends on ValidateNode() for validation
         if (!_isNodeStateValid)
         {
+            // Node validation did not pass
             return false;
         }
 
+        if (_generationId == generationId)
+        {
+            // Node is already up-to-date
+            return true;
+        }
+
+        ResetNode(generationId);
+
         try
         {
-            var input = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(NODE_INPUT_GRID_ID));
-            var radius = PortEvaluator.EvaluatePort<int>(GetInputPortByName(NODE_INPUT_RADIUS_ID));
-            var iterations = PortEvaluator.EvaluatePort<int>(GetInputPortByName(NODE_INPUT_ITERATIONS_ID));
+            // Validation performed in ValidateNode()
+            PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_RADIUS_ID, _generationId, out var radius);
+            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_ITERATIONS_ID, _generationId, out var iterations);
 
-            int size = input.GetLength(0);
+            int size = grid.GetLength(0);
 
             var output = new float[size, size];
 
@@ -149,7 +155,7 @@ public class BoxBlurNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
                     for (int x = -radius; x <= radius; x++)
                     {
-                        sum += SafeGet(input, x, y);
+                        sum += SafeGet(grid, x, y);
                         count++;
                     }
 
@@ -158,8 +164,8 @@ public class BoxBlurNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
                         tmp[x, y] = sum / count;
 
                         // slide window
-                        float left = SafeGet(input, x - radius, y);
-                        float right = SafeGet(input, x + 1 + radius, y);
+                        float left = SafeGet(grid, x - radius, y);
+                        float right = SafeGet(grid, x + 1 + radius, y);
                         sum += right - left;
                     }
                 }
@@ -205,5 +211,14 @@ public class BoxBlurNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
         x = Mathf.Clamp(x, 0, w - 1);
         y = Mathf.Clamp(y, 0, h - 1);
         return d[x, y];
+    }
+
+    public void UpdatePreview(int generationId)
+    {
+        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        if (isPreviewEnabled)
+        {
+            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, NODE_OUTPUT_GRID_ID, generationId);
+        }
     }
 }

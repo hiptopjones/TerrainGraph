@@ -1,6 +1,6 @@
 ﻿using Unity.GraphToolkit.Editor;
 
-internal interface IValidatedNode
+internal interface IValidatableNode
 {
     void ValidateNode(GraphLogger graphLogger);
 }

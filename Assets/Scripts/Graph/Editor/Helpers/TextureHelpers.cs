@@ -2,6 +2,19 @@
 
 internal static class TextureHelpers
 {
+    public static void ClearTexture(Texture2D texture)
+    {
+        for (int y = 0; y < texture.height; y++)
+        {
+            for (int x = 0; x < texture.width; x++)
+            {
+                texture.SetPixel(x, y, new Color(0, 0, 0, 1));
+            }
+        }
+
+        texture.Apply(false, false);
+    }
+
     public static void UpdateTexture(float[,] heights, Texture2D texture)
     {
         for (int y = 0; y < texture.height; y++)

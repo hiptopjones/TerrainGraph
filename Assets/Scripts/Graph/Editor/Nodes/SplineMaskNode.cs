@@ -1,35 +1,42 @@
 ﻿using System;
-using System.Collections.Generic;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.Splines;
 
 [Serializable]
-internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
+public class SplineMaskNode : Node,
+    IValidatableNode,
+    IEvaluatableNode<float[,]>,
+    IPreviewableNode
 {
+    private bool _isNodeStateValid;
+    private int _generationId;
     private float[,] _cachedOutput;
 
     // Options
-    internal const string NODE_OPTION_PREVIEW_ID = TerrainEditorGraph.NODE_OPTION_PREVIEW_ID;
+    private const string NODE_OPTION_PREVIEW_ID = "preview_option";
+    private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
     // Input
-    internal const string NODE_INPUT_SPLINE_ID = "spline_input";
-    internal const string NODE_INPUT_SIZE_ID = "size_input";
-    internal const string NODE_INPUT_STEP_ID = "step_input";
-    internal const string NODE_INPUT_PREVIEW_ID = TerrainEditorGraph.NODE_INPUT_PREVIEW_ID;
+    private const string NODE_INPUT_SPLINE_ID = "spline_input";
+    private const string NODE_INPUT_SPLINE_TITLE = "Spline";
+
+    private const string NODE_INPUT_SIZE_ID = "size_input";
+    private const string NODE_INPUT_SIZE_TITLE = "Size";
+
+    private const string NODE_INPUT_STEP_ID = "step_input";
+    private const string NODE_INPUT_STEP_TITLE = "Step";
+
+    private const string NODE_INPUT_PREVIEW_ID = "preview_input";
+    private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
     // Output
-    internal const string NODE_OUTPUT_GRID_ID = TerrainEditorGraph.NODE_OUTPUT_GRID_ID;
-
-    public override void OnEnable()
-    {
-        ResetNode();
-    }
+    private const string NODE_OUTPUT_GRID_ID = "grid_output";
+    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-            .WithDisplayName("Enable Preview")
+            .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
             .WithDefaultValue(false)
             .Build();
     }
@@ -40,84 +47,102 @@ internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
         // Input
         context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
-            .WithDisplayName("Spline")
+            .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
             .Build();
         context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
-            .WithDisplayName("Size")
+            .WithDisplayName(NODE_INPUT_SIZE_TITLE)
             .WithDefaultValue(256)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_STEP_ID)
-            .WithDisplayName("Step")
+            .WithDisplayName(NODE_INPUT_STEP_TITLE)
             .WithDefaultValue(10)
             .Build();
 
         if (isPreviewEnabled)
         {
             context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                .WithDisplayName("Preview")
+                .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
                 .Build();
         }
 
         // Output
         context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
-            .WithDisplayName("Grid")
+            .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
 
     public void ValidateNode(GraphLogger graphLogger)
     {
-        // TODO
+        _isNodeStateValid = true;
+
+        PortEvaluator.TryEvaluateInputPort<SplineWrapper>(this, NODE_INPUT_SPLINE_ID, _generationId, out var splineWrapper);
+        if (splineWrapper == null)
+        {
+            graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
+            _isNodeStateValid = false;
+        }
+
+        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
+        if (size <= 0)
+        {
+            graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {size} (valid: 0 < n)", this);
+            _isNodeStateValid = false;
+        }
+
+        PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_STEP_ID, _generationId, out var step);
+        if (step <= 0)
+        {
+            graphLogger.LogError($"{NODE_INPUT_STEP_TITLE} value invalid: {step} (valid: 0 < n)", this);
+            _isNodeStateValid = false;
+        }
     }
 
-    public bool TryGetPortValue(IPort outputPort, out float[,] value)
+    public void ResetNode(int generationId)
     {
-        if (_cachedOutput == null)
+        _generationId = generationId;
+        _cachedOutput = null;
+    }
+
+    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
+    {
+        if (!TryExecuteNode(generationId))
         {
-            // Only execute on demand
-            if (!TryExecuteNode())
-            {
-                value = null;
-                return false;
-            }
+            value = null;
+            return false;
         }
 
         value = _cachedOutput;
         return true;
     }
 
-    public void ResetNode()
+    private bool TryExecuteNode(int generationId)
     {
-        _cachedOutput = null;
-    }
+        if (!_isNodeStateValid)
+        {
+            // Node validation did not pass
+            return false;
+        }
 
-    private bool TryExecuteNode()
-    {
+        if (_generationId == generationId)
+        {
+            // Node is already up-to-date
+            return true;
+        }
+
+        ResetNode(generationId);
+
         try
         {
-            var splineWrapper = PortEvaluator.EvaluatePort<SplineWrapper>(GetInputPortByName(NODE_INPUT_SPLINE_ID));
-            if (splineWrapper == null)
-            {
-                return false;
-            }
-
-            var size = PortEvaluator.EvaluatePort<int>(GetInputPortByName(NODE_INPUT_SIZE_ID));
-            if (size <= 0)
-            {
-                return false;
-            }
-
-            var step = PortEvaluator.EvaluatePort<float>(GetInputPortByName(NODE_INPUT_STEP_ID));
-            if (step <= 0)
-            {
-                // Can cause infinite loop
-                return false;
-            }
+            // Validation performed in ValidateNode()
+            PortEvaluator.TryEvaluateInputPort<SplineWrapper>(this, NODE_INPUT_SPLINE_ID, _generationId, out var splineWrapper);
+            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
+            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_STEP_ID, _generationId, out var step);
 
             var spline = splineWrapper.Spline;
 
             var heights = new float[size, size];
 
-            var vertices = GetSplineVertices(spline, step);
+            var vertices = SplineHelpers.GetSplineVertices(spline, step);
 
             for (int y = 0; y < size; y++)
             {
@@ -125,7 +150,7 @@ internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
                 {
                     heights[x, y] = 0;
 
-                    if (IsPointInPolygon(new Vector3(x, 0, y), vertices, performSanityCheck: true))
+                    if (GeometryHelpers.IsPointInPolygon(new Vector3(x, 0, y), vertices, performSanityCheck: true))
                     {
                         heights[x, y] = 1;
                     }
@@ -142,60 +167,12 @@ internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
         }
     }
 
-    public static Vector3[] GetSplineVertices(Spline spline, float distanceStep)
+    public void UpdatePreview(int generationId)
     {
-        List<Vector3> pathVertices = new List<Vector3>();
-
-        float t = 0;
-        while (t < 1)
+        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        if (isPreviewEnabled)
         {
-            pathVertices.Add(spline.EvaluatePosition(t));
-
-            // Find the next time based on a step distance
-            SplineUtility.GetPointAtLinearDistance(spline, t, distanceStep, out t);
+            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, NODE_OUTPUT_GRID_ID, generationId);
         }
-
-        // Add the last position, as we didn't evaluate it above
-        pathVertices.Add(spline.EvaluatePosition(1));
-
-        return pathVertices.ToArray();
-    }
-
-    // https://stackoverflow.com/questions/217578/how-can-i-determine-whether-a-2d-point-is-within-a-polygon
-    public static bool IsPointInPolygon(Vector3 p, Vector3[] polygon, bool performSanityCheck = true)
-    {
-        if (!performSanityCheck)
-        {
-            float minX = polygon[0].x;
-            float maxX = polygon[0].x;
-            float minZ = polygon[0].z;
-            float maxZ = polygon[0].z;
-            for (int i = 1; i < polygon.Length; i++)
-            {
-                Vector3 q = polygon[i];
-                minX = Mathf.Min(q.x, minX);
-                maxX = Mathf.Max(q.x, maxX);
-                minZ = Mathf.Min(q.z, minZ);
-                maxZ = Mathf.Max(q.z, maxZ);
-            }
-
-            if (p.x < minX || p.x > maxX || p.z < minZ || p.z > maxZ)
-            {
-                return false;
-            }
-        }
-
-        // https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
-        bool isInside = false;
-        for (int i = 0, j = polygon.Length - 1; i < polygon.Length; j = i++)
-        {
-            if ((polygon[i].z > p.z) != (polygon[j].z > p.z) &&
-                 p.x < (polygon[j].x - polygon[i].x) * (p.z - polygon[i].z) / (polygon[j].z - polygon[i].z) + polygon[i].x)
-            {
-                isInside = !isInside;
-            }
-        }
-
-        return isInside;
     }
 }

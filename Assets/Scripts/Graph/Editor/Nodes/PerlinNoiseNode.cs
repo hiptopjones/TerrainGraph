@@ -3,149 +3,188 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class PerlinNoiseNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
+public class PerlinNoiseNode : Node,
+    IValidatableNode,
+    IEvaluatableNode<float[,]>,
+    IPreviewableNode
 {
+    private bool _isNodeStateValid;
+    private int _generationId;
     private float[,] _cachedOutput;
 
     // Options
-    internal const string NODE_OPTION_ENABLE_PREVIEW_ID = TerrainEditorGraph.NODE_OPTION_PREVIEW_ID;
+    private const string NODE_OPTION_PREVIEW_ID = "preview_option";
+    private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
     // Inputs
-    internal const string NODE_INPUT_SIZE_ID = "size_input";
-    internal const string NODE_INPUT_POSITION_ID = "position_input";
-    internal const string NODE_INPUT_FREQUENCY_ID = "frequency_input";
-    internal const string NODE_INPUT_AMPLITUDE_ID = "amplitude_input";
-    internal const string NODE_INPUT_OCTAVES_ID = "octaves_input";
-    internal const string NODE_INPUT_PERSISTENCE_ID = "persistence_input";
-    internal const string NODE_INPUT_LACUNARITY_ID = "lacunarity_input";
-    internal const string NODE_INPUT_SEED_ID = "seed_input";
-    internal const string NODE_INPUT_RANGE_ID = "range_input";
-    internal const string NODE_INPUT_SCALE_ID = "scale_input";
-    internal const string NODE_INPUT_PREVIEW_ID = TerrainEditorGraph.NODE_INPUT_PREVIEW_ID;
+    private const string NODE_INPUT_SIZE_ID = "size_input";
+    private const string NODE_INPUT_SIZE_TITLE = "Size";
+
+    private const string NODE_INPUT_POSITION_ID = "position_input";
+    private const string NODE_INPUT_POSITION_TITLE = "Position";
+
+    private const string NODE_INPUT_FREQUENCY_ID = "frequency_input";
+    private const string NODE_INPUT_FREQUENCY_TITLE = "Frequency";
+
+    private const string NODE_INPUT_AMPLITUDE_ID = "amplitude_input";
+    private const string NODE_INPUT_AMPLITUDE_TITLE = "Amplitude";
+
+    private const string NODE_INPUT_OCTAVES_ID = "octaves_input";
+    private const string NODE_INPUT_OCTAVES_TITLE = "Octaves";
+
+    private const string NODE_INPUT_PERSISTENCE_ID = "persistence_input";
+    private const string NODE_INPUT_PERSISTENCE_TITLE = "Persistence";
+
+    private const string NODE_INPUT_LACUNARITY_ID = "lacunarity_input";
+    private const string NODE_INPUT_LACUNARITY_TITLE = "Lacunarity";
+
+    private const string NODE_INPUT_SEED_ID = "seed_input";
+    private const string NODE_INPUT_SEED_TITLE = "Seed";
+
+    private const string NODE_INPUT_RANGE_ID = "range_input";
+    private const string NODE_INPUT_RANGE_TITLE = "Range";
+
+    private const string NODE_INPUT_SCALE_ID = "scale_input";
+    private const string NODE_INPUT_SCALE_TITLE = "Scale";
+
+    private const string NODE_INPUT_PREVIEW_ID = "preview_input";
+    private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
     // Outputs
-    internal const string NODE_OUTPUT_GRID_ID = TerrainEditorGraph.NODE_OUTPUT_GRID_ID;
-
-    public override void OnEnable()
-    {
-        ResetNode();
-    }
+    private const string NODE_OUTPUT_GRID_ID = "grid_output";
+    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<bool>(NODE_OPTION_ENABLE_PREVIEW_ID)
-            .WithDisplayName("Enable Preview")
+        context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
+            .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
             .WithDefaultValue(false)
             .Build();
     }
 
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
-        GetNodeOptionByName(NODE_OPTION_ENABLE_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
         context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
-            .WithDisplayName("Size")
+            .WithDisplayName(NODE_INPUT_SIZE_TITLE)
             .WithDefaultValue(256)
             .Build();
         context.AddInputPort<Vector2>(NODE_INPUT_POSITION_ID)
-            .WithDisplayName("Position")
+            .WithDisplayName(NODE_INPUT_POSITION_TITLE)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_FREQUENCY_ID)
-            .WithDisplayName("Frequency")
+            .WithDisplayName(NODE_INPUT_FREQUENCY_TITLE)
             .WithDefaultValue(0.05f)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
-            .WithDisplayName("Amplitude")
+            .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
             .WithDefaultValue(1)
             .Build();
         context.AddInputPort<int>(NODE_INPUT_OCTAVES_ID)
-            .WithDisplayName("Octaves")
+            .WithDisplayName(NODE_INPUT_OCTAVES_TITLE)
             .WithDefaultValue(3)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_PERSISTENCE_ID)
-            .WithDisplayName("Persistence")
+            .WithDisplayName(NODE_INPUT_PERSISTENCE_TITLE)
             .WithDefaultValue(0.5f)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_LACUNARITY_ID)
-            .WithDisplayName("Lacunarity")
+            .WithDisplayName(NODE_INPUT_LACUNARITY_TITLE)
             .WithDefaultValue(2)
             .Build();
         context.AddInputPort<int>(NODE_INPUT_SEED_ID)
-            .WithDisplayName("Seed")
+            .WithDisplayName(NODE_INPUT_SEED_TITLE)
             .Build();
         context.AddInputPort<Vector2>(NODE_INPUT_RANGE_ID)
-            .WithDisplayName("Range")
+            .WithDisplayName(NODE_INPUT_RANGE_TITLE)
             .WithDefaultValue(new Vector2(0, 1))
             .Build();
         context.AddInputPort<float>(NODE_INPUT_SCALE_ID)
-            .WithDisplayName("Scale")
+            .WithDisplayName(NODE_INPUT_SCALE_TITLE)
             .WithDefaultValue(0.1f)
             .Build();
 
         if (isPreviewEnabled)
         {
             context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                .WithDisplayName("Preview")
+                .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
                 .Build();
         }
 
         // Output
         context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
-            .WithDisplayName("Grid")
+            .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
 
     public void ValidateNode(GraphLogger graphLogger)
     {
-        // TODO
+        _isNodeStateValid = true;
+
+        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
+        if (size <= 0)
+        {
+            graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {size} (valid: 0 < n)", this);
+            _isNodeStateValid = false;
+        }
+
+        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_OCTAVES_ID, _generationId, out var octaves);
+        if (octaves <= 0)
+        {
+            graphLogger.LogError($"Invalid {NODE_INPUT_OCTAVES_TITLE} specified: {octaves} (valid: 0 < n)", this);
+            _isNodeStateValid = false;
+        }
     }
 
-    public void ResetNode()
+    public void ResetNode(int generationId)
     {
+        _generationId = generationId;
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort _, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
     {
-        if (_cachedOutput == null)
+        if (!TryExecuteNode(generationId))
         {
-            // Only execute on demand
-            if (!TryExecuteNode())
-            {
-                value = null;
-                return false;
-            }
+            value = null;
+            return false;
         }
 
         value = _cachedOutput;
         return true;
     }
 
-    private bool TryExecuteNode()
+    private bool TryExecuteNode(int generationId)
     {
+        if (!_isNodeStateValid)
+        {
+            // Node validation did not pass
+            return false;
+        }
+
+        if (_generationId == generationId)
+        {
+            // Node is already up-to-date
+            return true;
+        }
+
+        ResetNode(generationId);
+
         try
         {
-            var size = PortEvaluator.EvaluatePort<int>(GetInputPortByName(NODE_INPUT_SIZE_ID));
-            if (size <= 0)
-            {
-                return false;
-            }
-
-            var position = PortEvaluator.EvaluatePort<Vector2>(GetInputPortByName(NODE_INPUT_POSITION_ID));
-            var frequency = PortEvaluator.EvaluatePort<float>(GetInputPortByName(NODE_INPUT_FREQUENCY_ID));
-            var amplitude = PortEvaluator.EvaluatePort<float>(GetInputPortByName(NODE_INPUT_AMPLITUDE_ID));
-            var octaves = PortEvaluator.EvaluatePort<int>(GetInputPortByName(NODE_INPUT_OCTAVES_ID));
-            if (octaves <= 0)
-            {
-                return false;
-            }
-
-            var persistence = PortEvaluator.EvaluatePort<float>(GetInputPortByName(NODE_INPUT_PERSISTENCE_ID));
-            var lacunarity = PortEvaluator.EvaluatePort<float>(GetInputPortByName(NODE_INPUT_LACUNARITY_ID));
-            var seed = PortEvaluator.EvaluatePort<int>(GetInputPortByName(NODE_INPUT_SEED_ID));
-            var range = PortEvaluator.EvaluatePort<Vector2>(GetInputPortByName(NODE_INPUT_RANGE_ID));
-            var scale = PortEvaluator.EvaluatePort<float>(GetInputPortByName(NODE_INPUT_SCALE_ID));
+            // Validation performed in ValidateNode()
+            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
+            PortEvaluator.TryEvaluateInputPort<Vector2>(this, NODE_INPUT_POSITION_ID, _generationId, out var position);
+            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_FREQUENCY_ID, _generationId, out var frequency);
+            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_AMPLITUDE_ID, _generationId, out var amplitude);
+            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_OCTAVES_ID, _generationId, out var octaves);
+            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_PERSISTENCE_ID, _generationId, out var persistence);
+            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_LACUNARITY_ID, _generationId, out var lacunarity);
+            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SEED_ID, _generationId, out var seed);
+            PortEvaluator.TryEvaluateInputPort<Vector2>(this, NODE_INPUT_RANGE_ID, _generationId, out var range);
+            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_SCALE_ID, _generationId, out var scale);
 
             var noise = NoiseHelpers.GeneratePerlinNoise(size, position, frequency, amplitude, octaves, persistence, lacunarity, seed);
 
@@ -167,6 +206,15 @@ public class PerlinNoiseNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
         {
             Debug.LogException(ex);
             return false;
+        }
+    }
+
+    public void UpdatePreview(int generationId)
+    {
+        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        if (isPreviewEnabled)
+        {
+            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, NODE_OUTPUT_GRID_ID, generationId);
         }
     }
 }

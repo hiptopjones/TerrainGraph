@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Splines;
 
 internal static class SplineHelpers
@@ -30,5 +31,24 @@ internal static class SplineHelpers
         }
 
         return worldSpline;
+    }
+
+    public static Vector3[] GetSplineVertices(Spline spline, float distanceStep)
+    {
+        List<Vector3> pathVertices = new List<Vector3>();
+
+        float t = 0;
+        while (t < 1)
+        {
+            pathVertices.Add(spline.EvaluatePosition(t));
+
+            // Find the next time based on a step distance
+            SplineUtility.GetPointAtLinearDistance(spline, t, distanceStep, out t);
+        }
+
+        // Add the last position, as we didn't evaluate it above
+        pathVertices.Add(spline.EvaluatePosition(1));
+
+        return pathVertices.ToArray();
     }
 }

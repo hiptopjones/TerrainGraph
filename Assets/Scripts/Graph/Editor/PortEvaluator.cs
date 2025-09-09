@@ -2,20 +2,19 @@
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
-internal static class PortEvaluator
+public static class PortEvaluator
 {
     private static bool verbose = false;
 
-    public static T EvaluatePort<T>(IPort port)
+    public static bool TryEvaluateInputPort<T>(INode node, string portId, int generationId, out T value)
     {
-        if (verbose) Debug.Log($"Evaluating port {port.name} on {port.GetNode()}");
+        var port = node.GetInputPortByName(portId);
+        if (verbose) Debug.Log($"Evaluating port {port.name} on {node} for generation {generationId}");
 
         if (!port.isConnected)
         {
             // If no connection exists, try to get the port's embedded value (returns type default if unavailable)
-            port.TryGetValue(out T embeddedValue);
-            if (verbose) Debug.Log($"Embedded: {embeddedValue}");
-            return embeddedValue;
+            return port.TryGetValue(out value);
         }
 
         var connectedPort = port.firstConnectedPort;
@@ -23,20 +22,14 @@ internal static class PortEvaluator
 
         switch (connectedNode)
         {
-            case IConstantNode node:
-                node.TryGetValue(out T constantValue);
-                if (verbose) Debug.Log($"Constant: {constantValue}");
-                return constantValue;
+            case IConstantNode contstantNode:
+                return contstantNode.TryGetValue(out value);
 
-            case IVariableNode node:
-                node.variable.TryGetDefaultValue(out T variableValue);
-                if (verbose) Debug.Log($"Variable: {variableValue}");
-                return variableValue;
+            case IVariableNode variableNode:
+                return variableNode.variable.TryGetDefaultValue(out value);
 
-            case IEvaluatedNode<T> node:
-                node.TryGetPortValue(connectedPort, out T evaluatedValue);
-                if (verbose) Debug.Log($"Evaluated: {evaluatedValue}");
-                return evaluatedValue;
+            case IEvaluatableNode<T> evaluatableNode:
+                return evaluatableNode.TryGetPortValue(connectedPort, generationId, out value);
 
             default:
                 throw new Exception($"Unhandled node type: {connectedNode.GetType().Name}");
