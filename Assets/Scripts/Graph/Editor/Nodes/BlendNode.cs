@@ -5,19 +5,19 @@ using UnityEngine;
 [Serializable]
 internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 {
-    private float[,] _grid;
+    private float[,] _cachedOutput;
 
     // Options
-    internal const string OPTION_ENABLE_PREVIEW_ID = "enable_preview";
+    internal const string NODE_OPTION_PREVIEW_ID = TerrainEditorGraph.NODE_OPTION_PREVIEW_ID;
 
     // Input
-    internal const string INPUT_PORT_GRID1_ID = "grid1";
-    internal const string INPUT_PORT_GRID2_ID = "grid2";
-    internal const string INPUT_PORT_METHOD_ID = "method";
-    internal const string INPUT_PORT_PREVIEW_ID = "preview";
+    internal const string NODE_INPUT_GRID1_ID = "grid1_input";
+    internal const string NODE_INPUT_GRID2_ID = "grid2_input";
+    internal const string NODE_INPUT_METHOD_ID = "method_input";
+    internal const string NODE_INPUT_PREVIEW_ID = TerrainEditorGraph.NODE_INPUT_PREVIEW_ID;
 
     // Output
-    internal const string OUTPUT_PORT_GRID_ID = "grid";
+    internal const string NODE_OUTPUT_GRID_ID = TerrainEditorGraph.NODE_OUTPUT_GRID_ID;
 
     public override void OnEnable()
     {
@@ -26,7 +26,7 @@ internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<bool>(OPTION_ENABLE_PREVIEW_ID)
+        context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
             .WithDisplayName("Enable Preview")
             .WithDefaultValue(false)
             .Build();
@@ -34,28 +34,28 @@ internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
-        GetNodeOptionByName(OPTION_ENABLE_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<float[,]>(INPUT_PORT_GRID1_ID)
+        context.AddInputPort<float[,]>(NODE_INPUT_GRID1_ID)
             .WithDisplayName("Grid 1")
             .Build();
-        context.AddInputPort<float[,]>(INPUT_PORT_GRID2_ID)
+        context.AddInputPort<float[,]>(NODE_INPUT_GRID2_ID)
             .WithDisplayName("Grid 2")
             .Build();
-        context.AddInputPort<BlendMethod>(INPUT_PORT_METHOD_ID)
+        context.AddInputPort<BlendMethod>(NODE_INPUT_METHOD_ID)
             .WithDisplayName("Method")
             .Build();
 
         if (isPreviewEnabled)
         {
-            context.AddInputPort<PreviewImage>(INPUT_PORT_PREVIEW_ID)
+            context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
                 .WithDisplayName("Preview")
                 .Build();
         }
 
         // Output
-        context.AddOutputPort<float[,]>(OUTPUT_PORT_GRID_ID)
+        context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
             .WithDisplayName("Grid")
             .Build();
     }
@@ -67,12 +67,12 @@ internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
     public void ResetNode()
     {
-        _grid = null;
+        _cachedOutput = null;
     }
 
     public bool TryGetPortValue(IPort outputPort, out float[,] value)
     {
-        if (_grid == null)
+        if (_cachedOutput == null)
         {
             // Only execute on demand
             if (!TryExecuteNode())
@@ -82,7 +82,7 @@ internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
             }
         }
 
-        value = _grid;
+        value = _cachedOutput;
         return true;
     }
 
@@ -90,13 +90,13 @@ internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
     {
         try
         {
-            var grid1 = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(INPUT_PORT_GRID1_ID));
+            var grid1 = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(NODE_INPUT_GRID1_ID));
             if (grid1 == null)
             {
                 return false;
             }
 
-            var grid2 = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(INPUT_PORT_GRID2_ID));
+            var grid2 = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(NODE_INPUT_GRID2_ID));
             if (grid2 == null)
             {
                 return false;
@@ -104,7 +104,7 @@ internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
             Func<float, float, float> blendFunction = null;
 
-            var method = PortEvaluator.EvaluatePort<BlendMethod>(GetInputPortByName(INPUT_PORT_METHOD_ID));
+            var method = PortEvaluator.EvaluatePort<BlendMethod>(GetInputPortByName(NODE_INPUT_METHOD_ID));
             switch (method)
             {
                 case BlendMethod.Add:
@@ -133,7 +133,7 @@ internal class BlendNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
                 }
             }
 
-            _grid = output;
+            _cachedOutput = output;
             return true;
         }
         catch (Exception ex)

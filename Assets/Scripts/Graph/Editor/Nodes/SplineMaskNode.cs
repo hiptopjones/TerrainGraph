@@ -7,19 +7,19 @@ using UnityEngine.Splines;
 [Serializable]
 internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 {
-    private float[,] _grid;
+    private float[,] _cachedOutput;
 
     // Options
-    internal const string OPTION_ENABLE_PREVIEW_ID = "enable_preview";
+    internal const string NODE_OPTION_PREVIEW_ID = TerrainEditorGraph.NODE_OPTION_PREVIEW_ID;
 
     // Input
-    internal const string INPUT_PORT_SPLINE_ID = "spline";
-    internal const string INPUT_PORT_SIZE_ID = "size";
-    internal const string INPUT_PORT_STEP_ID = "step";
-    internal const string INPUT_PORT_PREVIEW_ID = "preview";
+    internal const string NODE_INPUT_SPLINE_ID = "spline_input";
+    internal const string NODE_INPUT_SIZE_ID = "size_input";
+    internal const string NODE_INPUT_STEP_ID = "step_input";
+    internal const string NODE_INPUT_PREVIEW_ID = TerrainEditorGraph.NODE_INPUT_PREVIEW_ID;
 
     // Output
-    internal const string OUTPUT_PORT_GRID_ID = "grid";
+    internal const string NODE_OUTPUT_GRID_ID = TerrainEditorGraph.NODE_OUTPUT_GRID_ID;
 
     public override void OnEnable()
     {
@@ -28,7 +28,7 @@ internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<bool>(OPTION_ENABLE_PREVIEW_ID)
+        context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
             .WithDisplayName("Enable Preview")
             .WithDefaultValue(false)
             .Build();
@@ -36,30 +36,30 @@ internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
-        GetNodeOptionByName(OPTION_ENABLE_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<SplineWrapper>(INPUT_PORT_SPLINE_ID)
+        context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
             .WithDisplayName("Spline")
             .Build();
-        context.AddInputPort<int>(INPUT_PORT_SIZE_ID)
+        context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
             .WithDisplayName("Size")
             .WithDefaultValue(256)
             .Build();
-        context.AddInputPort<float>(INPUT_PORT_STEP_ID)
+        context.AddInputPort<float>(NODE_INPUT_STEP_ID)
             .WithDisplayName("Step")
             .WithDefaultValue(10)
             .Build();
 
         if (isPreviewEnabled)
         {
-            context.AddInputPort<PreviewImage>(INPUT_PORT_PREVIEW_ID)
+            context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
                 .WithDisplayName("Preview")
                 .Build();
         }
 
         // Output
-        context.AddOutputPort<float[,]>(OUTPUT_PORT_GRID_ID)
+        context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
             .WithDisplayName("Grid")
             .Build();
     }
@@ -71,7 +71,7 @@ internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
 
     public bool TryGetPortValue(IPort outputPort, out float[,] value)
     {
-        if (_grid == null)
+        if (_cachedOutput == null)
         {
             // Only execute on demand
             if (!TryExecuteNode())
@@ -81,32 +81,32 @@ internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
             }
         }
 
-        value = _grid;
+        value = _cachedOutput;
         return true;
     }
 
     public void ResetNode()
     {
-        _grid = null;
+        _cachedOutput = null;
     }
 
     private bool TryExecuteNode()
     {
         try
         {
-            var splineWrapper = PortEvaluator.EvaluatePort<SplineWrapper>(GetInputPortByName(INPUT_PORT_SPLINE_ID));
+            var splineWrapper = PortEvaluator.EvaluatePort<SplineWrapper>(GetInputPortByName(NODE_INPUT_SPLINE_ID));
             if (splineWrapper == null)
             {
                 return false;
             }
 
-            var size = PortEvaluator.EvaluatePort<int>(GetInputPortByName(INPUT_PORT_SIZE_ID));
+            var size = PortEvaluator.EvaluatePort<int>(GetInputPortByName(NODE_INPUT_SIZE_ID));
             if (size <= 0)
             {
                 return false;
             }
 
-            var step = PortEvaluator.EvaluatePort<float>(GetInputPortByName(INPUT_PORT_STEP_ID));
+            var step = PortEvaluator.EvaluatePort<float>(GetInputPortByName(NODE_INPUT_STEP_ID));
             if (step <= 0)
             {
                 // Can cause infinite loop
@@ -132,7 +132,7 @@ internal class SplineMaskNode : Node, IValidatedNode, IEvaluatedNode<float[,]>
                 }
             }
 
-            _grid = heights;
+            _cachedOutput = heights;
             return true;
         }
         catch (Exception ex)

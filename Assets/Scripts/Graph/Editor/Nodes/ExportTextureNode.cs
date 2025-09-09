@@ -6,17 +6,17 @@ using UnityEngine;
 [Serializable]
 internal class ExportTextureNode : Node, IValidatedNode
 {
-    internal const string INPUT_PORT_GRID_ID = "grid";
-    internal const string INPUT_PORT_PATH_ID = "path";
+    internal const string NODE_INPUT_GRID_ID = "grid_input";
+    internal const string NODE_INPUT_PATH_ID = "path_input";
 
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
         // Input
-        context.AddInputPort<float[,]>(INPUT_PORT_GRID_ID)
+        context.AddInputPort<float[,]>(NODE_INPUT_GRID_ID)
             .WithDisplayName("Grid")
             .Build();
 
-        context.AddInputPort<string>(INPUT_PORT_PATH_ID)
+        context.AddInputPort<string>(NODE_INPUT_PATH_ID)
             .WithDisplayName("File Path")
             .WithDefaultValue("Assets/Textures/ExportedTexture.png")
             .Build();
@@ -32,8 +32,8 @@ internal class ExportTextureNode : Node, IValidatedNode
     {
         try
         {
-            var heights = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(INPUT_PORT_GRID_ID));
-            var exportPath = PortEvaluator.EvaluatePort<string>(GetInputPortByName(INPUT_PORT_PATH_ID));
+            var heights = PortEvaluator.EvaluatePort<float[,]>(GetInputPortByName(NODE_INPUT_GRID_ID));
+            var exportPath = PortEvaluator.EvaluatePort<string>(GetInputPortByName(NODE_INPUT_PATH_ID));
 
             if (heights == null)
             {

@@ -15,6 +15,10 @@ public class TerrainEditorGraph : Graph
 
     internal const string DEFAULT_ASSET_NAME = "Terrain Graph";
 
+    internal const string NODE_OPTION_PREVIEW_ID = "preview_option";
+    internal const string NODE_INPUT_PREVIEW_ID = "preview_input";
+    internal const string NODE_OUTPUT_GRID_ID = "grid_output";
+
     [MenuItem("Assets/Create/Terrain Graph")]
     static void CreateAssetFile()
     {
@@ -55,13 +59,13 @@ public class TerrainEditorGraph : Graph
         {
             var evaluatedNode = node as IEvaluatedNode<float[,]>;
 
-            if (TryGetInputPortByName(node, "preview", out var previewPort))
+            if (TryGetInputPortByName(node, NODE_INPUT_PREVIEW_ID, out var previewPort))
             {
                 if (previewPort.TryGetValue(out PreviewImage previewImage))
                 {
                     IPort outputPort = null;
 
-                    if (TryGetOutputPortByName(node, "grid", out outputPort))
+                    if (TryGetOutputPortByName(node, NODE_OUTPUT_GRID_ID, out outputPort))
                     {
                         if (evaluatedNode.TryGetPortValue(outputPort, out var grid))
                         {
