@@ -5,11 +5,11 @@ using UnityEngine;
 [Serializable]
 public class PerlinNoiseNode : Node,
     IValidatableNode,
-    IEvaluatableNode<float[,]>,
+    IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private int _generationId;
-    private float[,] _cachedOutput;
+    private HeightGrid _cachedOutput;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -51,7 +51,7 @@ public class PerlinNoiseNode : Node,
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
+    private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -113,7 +113,7 @@ public class PerlinNoiseNode : Node,
         }
 
         // Output
-        context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
+        context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
             .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
@@ -145,7 +145,7 @@ public class PerlinNoiseNode : Node,
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
     {
         if (!TryExecuteNode(generationId))
         {
@@ -188,6 +188,8 @@ public class PerlinNoiseNode : Node,
 
             var noise = NoiseHelpers.GeneratePerlinNoise(size, position, frequency, amplitude, octaves, persistence, lacunarity, seed);
 
+            var output = new HeightGrid(size);
+
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
@@ -195,11 +197,11 @@ public class PerlinNoiseNode : Node,
                     var height = noise[x, y];
                     height = range.x + (range.y - range.x) * height;
 
-                    noise[x, y] = height * scale;
+                    output[x, y] = height * scale;
                 }
             }
 
-            _cachedOutput = noise;
+            _cachedOutput = output;
             return true;
         }
         catch (Exception ex)

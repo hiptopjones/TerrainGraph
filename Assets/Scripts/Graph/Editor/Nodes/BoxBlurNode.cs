@@ -5,11 +5,11 @@ using UnityEngine;
 [Serializable]
 public class BoxBlurNode : Node,
     IValidatableNode,
-    IEvaluatableNode<float[,]>,
+    IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private int _generationId;
-    private float[,] _cachedOutput;
+    private HeightGrid _cachedOutput;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -17,7 +17,7 @@ public class BoxBlurNode : Node,
 
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
-    private const string NODE_INPUT_GRID_TITLE = "Grid";
+    private const string NODE_INPUT_GRID_TITLE = "Height Grid";
 
     private const string NODE_INPUT_RADIUS_ID = "radius_input";
     private const string NODE_INPUT_RADIUS_TITLE = "Radius";
@@ -30,7 +30,7 @@ public class BoxBlurNode : Node,
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
+    private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -45,7 +45,7 @@ public class BoxBlurNode : Node,
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<float[,]>(NODE_INPUT_GRID_ID)
+        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
             .Build();
         context.AddInputPort<int>(NODE_INPUT_RADIUS_ID)
@@ -65,7 +65,7 @@ public class BoxBlurNode : Node,
         }
 
         // Output
-        context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
+        context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
             .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
@@ -74,7 +74,7 @@ public class BoxBlurNode : Node,
     {
         var isValid = true;
 
-        PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+        PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
         if (grid == null)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
@@ -104,7 +104,7 @@ public class BoxBlurNode : Node,
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
     {
         if (!TryExecuteNode(generationId))
         {
@@ -134,15 +134,15 @@ public class BoxBlurNode : Node,
 
         try
         {
-            PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+            PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var input);
             PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_RADIUS_ID, _generationId, out var radius);
             PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_ITERATIONS_ID, _generationId, out var iterations);
 
-            int size = grid.GetLength(0);
+            int size = input.Width;
 
-            var output = new float[size, size];
+            var output = new HeightGrid(size);
 
-            var tmp = new float[size, size];
+            var tmp = new HeightGrid(size);
 
             for (int it = 0; it < iterations; it++)
             {
@@ -154,7 +154,7 @@ public class BoxBlurNode : Node,
 
                     for (int x = -radius; x <= radius; x++)
                     {
-                        sum += SafeGet(grid, x, y);
+                        sum += SafeGet(input, x, y);
                         count++;
                     }
 
@@ -163,8 +163,8 @@ public class BoxBlurNode : Node,
                         tmp[x, y] = sum / count;
 
                         // slide window
-                        float left = SafeGet(grid, x - radius, y);
-                        float right = SafeGet(grid, x + 1 + radius, y);
+                        float left = SafeGet(input, x - radius, y);
+                        float right = SafeGet(input, x + 1 + radius, y);
                         sum += right - left;
                     }
                 }
@@ -203,13 +203,13 @@ public class BoxBlurNode : Node,
         }
     }
 
-    protected static float SafeGet(float[,] d, int x, int y)
+    protected static float SafeGet(HeightGrid grid, int x, int y)
     {
-        int w = d.GetLength(0);
-        int h = d.GetLength(1);
+        int w = grid.Width;
+        int h = grid.Height;
         x = Mathf.Clamp(x, 0, w - 1);
         y = Mathf.Clamp(y, 0, h - 1);
-        return d[x, y];
+        return grid[x, y];
     }
 
     public void UpdatePreview(int generationId)

@@ -7,7 +7,7 @@ internal static class PreviewHelpers
         var previewPort = node.GetInputPortByName(previewPortId);
         previewPort.TryGetValue(out PreviewImage previewImage);
 
-        var evaluatableNode = node as IEvaluatableNode<float[,]>;
+        var evaluatableNode = node as IEvaluatableNode<HeightGrid>;
 
         var outputPort = node.GetOutputPortByName(sourcePortId);
         if (!evaluatableNode.TryGetPortValue(outputPort, generationId, out var value))

@@ -5,11 +5,11 @@ using UnityEngine;
 [Serializable]
 public class BlendNode : Node,
     IValidatableNode,
-    IEvaluatableNode<float[,]>,
+    IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private int _generationId;
-    private float[,] _cachedOutput;
+    private HeightGrid _cachedOutput;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -17,10 +17,10 @@ public class BlendNode : Node,
 
     // Input
     private const string NODE_INPUT_GRID1_ID = "grid1_input";
-    private const string NODE_INPUT_GRID1_TITLE = "Grid 1";
+    private const string NODE_INPUT_GRID1_TITLE = "Height Grid 1";
 
     private const string NODE_INPUT_GRID2_ID = "grid2_input";
-    private const string NODE_INPUT_GRID2_TITLE = "Grid 2";
+    private const string NODE_INPUT_GRID2_TITLE = "Height Grid 2";
 
     private const string NODE_INPUT_METHOD_ID = "method_input";
     private const string NODE_INPUT_METHOD_TITLE = "Method";
@@ -30,7 +30,7 @@ public class BlendNode : Node,
 
     // Output
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
+    private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -45,10 +45,10 @@ public class BlendNode : Node,
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<float[,]>(NODE_INPUT_GRID1_ID)
+        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID1_ID)
             .WithDisplayName(NODE_INPUT_GRID1_TITLE)
             .Build();
-        context.AddInputPort<float[,]>(NODE_INPUT_GRID2_ID)
+        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID2_ID)
             .WithDisplayName(NODE_INPUT_GRID2_TITLE)
             .Build();
         context.AddInputPort<BlendMethod>(NODE_INPUT_METHOD_ID)
@@ -63,7 +63,7 @@ public class BlendNode : Node,
         }
 
         // Output
-        context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
+        context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
             .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
@@ -72,14 +72,14 @@ public class BlendNode : Node,
     {
         var isValid = true;
 
-        PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID1_ID, _generationId, out var grid1);
+        PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID1_ID, _generationId, out var grid1);
         if (grid1 == null)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} value missing", this);
             isValid = false;
         }
 
-        PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID2_ID, _generationId, out var grid2);
+        PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID2_ID, _generationId, out var grid2);
         if (grid2 == null)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID2_TITLE} value missing", this);
@@ -95,7 +95,7 @@ public class BlendNode : Node,
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
     {
         if (!TryExecuteNode(generationId))
         {
@@ -125,8 +125,8 @@ public class BlendNode : Node,
 
         try
         {
-            PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID1_ID, _generationId, out var grid1);
-            PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID2_ID, _generationId, out var grid2);
+            PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID1_ID, _generationId, out var input1);
+            PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID2_ID, _generationId, out var input2);
             PortEvaluator.TryEvaluateInputPort<BlendMethod>(this, NODE_INPUT_METHOD_ID, _generationId, out var method);
 
             Func<float, float, float> blendFunction = null;
@@ -147,15 +147,15 @@ public class BlendNode : Node,
             }
 
             // TODO: Validate all lengths are expected
-            var size = grid1.GetLength(0);
+            var size = input1.Width;
 
-            var output = new float[size, size];
+            var output = new HeightGrid(size);
 
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    output[x, y] = blendFunction(grid1[x, y], grid2[x, y]);
+                    output[x, y] = blendFunction(input1[x, y], input2[x, y]);
                 }
             }
 

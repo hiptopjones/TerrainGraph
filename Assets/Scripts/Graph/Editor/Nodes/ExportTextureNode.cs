@@ -10,14 +10,14 @@ public class ExportTextureNode : Node,
     private int _generationId;
 
     private const string NODE_INPUT_GRID_ID = "grid_input";
-    private const string NODE_INPUT_GRID_TITLE = "Grid";
+    private const string NODE_INPUT_GRID_TITLE = "Height Grid";
     private const string NODE_INPUT_PATH_ID = "path_input";
     private const string NODE_INPUT_PATH_TITLE = "Path";
 
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
         // Input
-        context.AddInputPort<float[,]>(NODE_INPUT_GRID_ID)
+        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
             .Build();
 
@@ -31,7 +31,7 @@ public class ExportTextureNode : Node,
     {
         var isValid = true;
 
-        PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+        PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
         if (grid == null)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
@@ -70,10 +70,10 @@ public class ExportTextureNode : Node,
         
         try
         {
-            PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+            PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var input);
             PortEvaluator.TryEvaluateInputPort<string>(this, NODE_INPUT_PATH_ID, _generationId, out var exportPath);
 
-            var texture = TextureHelpers.CreateTexture(grid);
+            var texture = TextureHelpers.CreateTexture(input);
             var bytes = texture.EncodeToPNG();
 
             Directory.CreateDirectory(Path.GetDirectoryName(exportPath));

@@ -5,11 +5,11 @@ using UnityEngine;
 [Serializable]
 public class SplineMaskNode : Node,
     IValidatableNode,
-    IEvaluatableNode<float[,]>,
+    IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private int _generationId;
-    private float[,] _cachedOutput;
+    private HeightGrid _cachedOutput;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -30,7 +30,7 @@ public class SplineMaskNode : Node,
 
     // Output
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
+    private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -65,7 +65,7 @@ public class SplineMaskNode : Node,
         }
 
         // Output
-        context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
+        context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
             .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
@@ -104,7 +104,7 @@ public class SplineMaskNode : Node,
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
     {
         if (!TryExecuteNode(generationId))
         {
@@ -140,7 +140,7 @@ public class SplineMaskNode : Node,
 
             var spline = splineWrapper.Spline;
 
-            var heights = new float[size, size];
+            var grid = new HeightGrid(size);
 
             var vertices = SplineHelpers.GetSplineVertices(spline, step);
 
@@ -148,16 +148,16 @@ public class SplineMaskNode : Node,
             {
                 for (int x = 0; x < size; x++)
                 {
-                    heights[x, y] = 0;
+                    grid[x, y] = 0;
 
                     if (GeometryHelpers.IsPointInPolygon(new Vector3(x, 0, y), vertices, performSanityCheck: true))
                     {
-                        heights[x, y] = 1;
+                        grid[x, y] = 1;
                     }
                 }
             }
 
-            _cachedOutput = heights;
+            _cachedOutput = grid;
             return true;
         }
         catch (Exception ex)

@@ -3,13 +3,13 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class HeightMapNode : Node,
+public class HeightGridNode : Node,
     IValidatableNode,
-    IEvaluatableNode<float[,]>,
+    IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private int _generationId;
-    private float[,] _cachedOutput;
+    private HeightGrid _cachedOutput;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -27,7 +27,7 @@ public class HeightMapNode : Node,
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
+    private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -59,7 +59,7 @@ public class HeightMapNode : Node,
         }
 
         // Output
-        context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
+        context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
             .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
@@ -91,7 +91,7 @@ public class HeightMapNode : Node,
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
     {
         if (!TryExecuteNode(generationId))
         {
@@ -124,7 +124,7 @@ public class HeightMapNode : Node,
             PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
             PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_HEIGHT_ID, _generationId, out var height);
 
-            var output = new float[size, size];
+            var output = new HeightGrid(size);
 
             for (int y = 0; y < size; y++)
             {

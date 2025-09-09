@@ -7,13 +7,13 @@ internal static class NoiseHelpers
     {
         Random.InitState(seed);
 
-        float randomX = Random.value * 200000 - 100000;
-        float randomY = Random.value * 200000 - 100000;
+        var randomX = Random.value * 200000 - 100000;
+        var  randomY = Random.value * 200000 - 100000;
 
         // Move the starting point to a repeatable random location based on a seed
         start += new Vector2(randomX, randomY);
 
-        float[,] noise = new float[size, size];
+        var noise = new float[size, size];
 
         for (int y = 0; y < size; y++)
         {
@@ -21,10 +21,10 @@ internal static class NoiseHelpers
             {
                 Vector2 sample = start + new Vector2(x, y);
 
-                float totalNoise = 0;
-                float currentAmplitude = amplitude;
-                float totalAmplitude = 0;
-                float currentFreqency = frequency;
+                var totalNoise = 0f;
+                var currentAmplitude = amplitude;
+                var totalAmplitude = 0f;
+                var currentFreqency = frequency;
 
                 for (int i = 0; i < octaves; i++)
                 {

@@ -5,11 +5,11 @@ using UnityEngine;
 [Serializable]
 public class ShorelineSmootherNode : Node,
     IValidatableNode,
-    IEvaluatableNode<float[,]>,
+    IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private int _generationId;
-    private float[,] _cachedOutput;
+    private HeightGrid _cachedOutput;
 
     // Catch noisy edges around sea level
     private const float SEA_EPSILON = 0.0005f;
@@ -20,7 +20,7 @@ public class ShorelineSmootherNode : Node,
 
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
-    private const string NODE_INPUT_GRID_TITLE = "Grid";
+    private const string NODE_INPUT_GRID_TITLE = "Height Grid";
     private const string NODE_INPUT_SEA_LEVEL_ID = "sea_level_input";
     private const string NODE_INPUT_SEA_LEVEL_TITLE = "Sea Level";
     private const string NODE_INPUT_FALLOFF_WIDTH_ID = "falloff_width_input";
@@ -33,7 +33,7 @@ public class ShorelineSmootherNode : Node,
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
+    private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -48,7 +48,7 @@ public class ShorelineSmootherNode : Node,
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<float[,]>(NODE_INPUT_GRID_ID)
+        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_SEA_LEVEL_ID)
@@ -71,7 +71,7 @@ public class ShorelineSmootherNode : Node,
         }
 
         // Output
-        context.AddOutputPort<float[,]>(NODE_OUTPUT_GRID_ID)
+        context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
             .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
             .Build();
     }
@@ -80,7 +80,7 @@ public class ShorelineSmootherNode : Node,
     {
         var isValid = true;
 
-        PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+        PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
         if (grid == null)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
@@ -96,7 +96,7 @@ public class ShorelineSmootherNode : Node,
         _cachedOutput = null;
     }
 
-    public bool TryGetPortValue(IPort _, int generationId, out float[,] value)
+    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
     {
         if (!TryExecuteNode(generationId))
         {
@@ -126,14 +126,14 @@ public class ShorelineSmootherNode : Node,
 
         try
         {
-            PortEvaluator.TryEvaluateInputPort<float[,]>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
+            PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var input);
             PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_SEA_LEVEL_ID, _generationId, out var seaLevel);
             PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_FALLOFF_WIDTH_ID, _generationId, out var falloffWidth);
             PortEvaluator.TryEvaluateInputPort<AnimationCurve>(this, NODE_INPUT_FALLOFF_CURVE_ID, _generationId, out var falloffCurve);
 
-            int size = grid.GetLength(0);
+            int size = input.Width;
 
-            var output = new float[size, size];
+            var output = new HeightGrid(size);
 
             // Build binary sea mask: 0 = sea, 1 = land
             // (We’ll compute distances from sea pixels.)
@@ -142,14 +142,14 @@ public class ShorelineSmootherNode : Node,
             {
                 for (int x = 0; x < size; x++)
                 {
-                    isSea[y, x] = (grid[y, x] <= seaLevel + SEA_EPSILON);
+                    isSea[y, x] = (input[y, x] <= seaLevel + SEA_EPSILON);
                 }
             }
 
             // Distance transform (2-pass chamfer: 8-neighbour, costs 1/√2 and 1)
             // Distances in pixels:
             float big = 1e9f;
-            float[,] distances = new float[size, size];
+            HeightGrid distances = new HeightGrid(size);
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
@@ -201,7 +201,7 @@ public class ShorelineSmootherNode : Node,
                 for (int x = 0; x < size; x++)
                 {
                     float distance = distances[y, x];
-                    float height = grid[y, x];
+                    float height = input[y, x];
 
                     if (distance <= falloffWidth + 0.0001f)
                     {
