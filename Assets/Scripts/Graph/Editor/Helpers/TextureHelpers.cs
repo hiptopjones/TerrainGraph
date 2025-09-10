@@ -15,14 +15,14 @@ internal static class TextureHelpers
         texture.Apply(false, false);
     }
 
-    public static void UpdateTexture(HeightGrid grid, Texture2D texture)
+    public static Texture2D CreateHeightMapTexture(HeightGrid grid)
     {
-        if (texture.width != grid.Width ||
-            texture.height != grid.Height)
-        {
-            ClearTexture(texture);
-            return;
-        }
+        var width = grid.Width;
+        var height = grid.Height;
+
+        var texture = new Texture2D(width, height, TextureFormat.R16, mipChain: false, linear: true);
+        texture.wrapMode = TextureWrapMode.Clamp;
+        texture.filterMode = FilterMode.Bilinear;
 
         for (int y = 0; y < texture.height; y++)
         {
@@ -33,18 +33,41 @@ internal static class TextureHelpers
         }
 
         texture.Apply(false, false);
+
+        return texture;
     }
 
-    public static Texture2D CreateTexture(HeightGrid grid)
+    public static Texture2D CreatePreviewTexture(HeightGrid grid)
     {
         var width = grid.Width;
         var height = grid.Height;
 
-        var texture = new Texture2D(width, height, TextureFormat.R16, mipChain: false, linear: true);
+        var texture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
         texture.wrapMode = TextureWrapMode.Clamp;
         texture.filterMode = FilterMode.Bilinear;
 
-        UpdateTexture(grid, texture);
+        for (int y = 0; y < texture.height; y++)
+        {
+            for (int x = 0; x < texture.width; x++)
+            {
+                var value = grid[x, y];
+
+                if (value > 1)
+                {
+                    texture.SetPixel(x, y, Color.green);
+                }
+                else if (value < 0)
+                {
+                    texture.SetPixel(x, y, Color.red);
+                }
+                else
+                {
+                    texture.SetPixel(x, y, new Color(value, value, value));
+                }
+            }
+        }
+
+        texture.Apply(false, false);
 
         return texture;
     }

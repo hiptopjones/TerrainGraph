@@ -3,21 +3,22 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class HeightGridNode : Node,
+public class ClampNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private class InputValues
     {
-        public int Size;
-        public float Height;
+        public HeightGrid Grid;
+        public float Minimum;
+        public float Maximum;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Size, Height);
+            return HashCode.Combine(Grid.GenerationHash, Minimum, Maximum);
         }
     }
 
@@ -28,11 +29,14 @@ public class HeightGridNode : Node,
     private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
     // Inputs
-    private const string NODE_INPUT_SIZE_ID = "size_input";
-    private const string NODE_INPUT_SIZE_TITLE = "Size";
+    private const string NODE_INPUT_GRID_ID = "grid_input";
+    private const string NODE_INPUT_GRID_TITLE = "Grid";
 
-    private const string NODE_INPUT_HEIGHT_ID = "height_input";
-    private const string NODE_INPUT_HEIGHT_TITLE = "Height";
+    private const string NODE_INPUT_MINIMUM_ID = "minimum_input";
+    private const string NODE_INPUT_MINIMUM_TITLE = "Minimum";
+
+    private const string NODE_INPUT_MAXIMUM_ID = "maximum_input";
+    private const string NODE_INPUT_MAXIMUM_TITLE = "Maximum"; 
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
@@ -54,13 +58,16 @@ public class HeightGridNode : Node,
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
-            .WithDisplayName(NODE_INPUT_SIZE_TITLE)
-            .WithDefaultValue(256)
+        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
+            .WithDisplayName(NODE_INPUT_GRID_TITLE)
             .Build();
-        context.AddInputPort<float>(NODE_INPUT_HEIGHT_ID)
-            .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
-            .WithDefaultValue(0.5f)
+        context.AddInputPort<float>(NODE_INPUT_MINIMUM_ID)
+            .WithDisplayName(NODE_INPUT_MINIMUM_TITLE)
+            .WithDefaultValue(0f)
+            .Build();
+        context.AddInputPort<float>(NODE_INPUT_MAXIMUM_ID)
+            .WithDisplayName(NODE_INPUT_MAXIMUM_TITLE)
+            .WithDefaultValue(1f)
             .Build();
 
         if (isPreviewEnabled)
@@ -93,15 +100,16 @@ public class HeightGridNode : Node,
 
         var isValid = true;
 
-        if (input.Size <= 0)
+        if (input.Grid == null || input.Grid.Values == null || input.Grid.Values.Length == 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
             isValid = false;
         }
 
-        if (input.Height < 0)
+        if (input.Minimum >= input.Maximum)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_HEIGHT_TITLE} value invalid: {input.Height} (valid: 0 <= n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_MINIMUM_TITLE} value invalid: {input.Minimum} (valid: n < maximum)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_MAXIMUM_TITLE} value invalid: {input.Maximum} (valid: 0 > minimum)", this);
             isValid = false;
         }
 
@@ -119,8 +127,9 @@ public class HeightGridNode : Node,
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.Height);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_MINIMUM_ID, out temp.Minimum) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_MAXIMUM_ID, out temp.Maximum);
 
         if (success)
         {
@@ -162,8 +171,11 @@ public class HeightGridNode : Node,
 
         try
         {
-            var size = inputValues.Size;
-            var height = inputValues.Height;
+            var inputGrid = inputValues.Grid;
+            var minimum = inputValues.Minimum;
+            var maximum = inputValues.Maximum;
+
+            var size = inputGrid.Width;
 
             var outputGrid = new HeightGrid(size);
 
@@ -171,7 +183,7 @@ public class HeightGridNode : Node,
             {
                 for (int x = 0; x < size; x++)
                 {
-                    outputGrid[x, y] = height;
+                    outputGrid[x, y] = Mathf.Clamp(inputGrid[x, y], minimum, maximum);
                 }
             }
 

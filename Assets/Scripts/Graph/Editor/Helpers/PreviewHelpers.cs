@@ -20,7 +20,7 @@ internal static class PreviewHelpers
         }
         else
         {
-            previewImage.Texture = TextureHelpers.CreateTexture(outputGrid);
+            previewImage.Texture = TextureHelpers.CreatePreviewTexture(outputGrid);
         }
 
         PreviewDispatcher.UpdatePreview(previewImage);

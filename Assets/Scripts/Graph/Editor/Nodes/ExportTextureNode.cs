@@ -116,7 +116,7 @@ public class ExportTextureNode : Node,
             var inputGrid = inputValues.Grid;
             var exportPath = inputValues.ExportPath;
 
-            var texture = TextureHelpers.CreateTexture(inputGrid);
+            var texture = TextureHelpers.CreateHeightMapTexture(inputGrid);
             var bytes = texture.EncodeToPNG();
 
             Directory.CreateDirectory(Path.GetDirectoryName(exportPath));
