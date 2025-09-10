@@ -1,28 +1,38 @@
-﻿using Unity.GraphToolkit.Editor;
+﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 
 internal static class PreviewHelpers
 {
-    public static void UpdatePreview(INode node, string previewPortId, HeightGrid outputGrid)
+    public static bool TryUpdatePreview(INode node, string previewPortId, HeightGrid outputGrid)
     {
-        var previewPort = node.GetInputPortByName(previewPortId);
-        if (!previewPort.TryGetValue(out PreviewImage previewImage))
+        try
         {
-            Debug.Log("preview image not found");
-            return;
-        }
+            var previewPort = node.GetInputPortByName(previewPortId);
+            if (!previewPort.TryGetValue(out PreviewImage previewImage))
+            {
+                Debug.LogError("Preview image not found");
+                return false;
+            }
 
-        if (outputGrid == null || outputGrid.Values.Length == 0)
-        {
-            // Make it very clear there is a problem
-            previewImage.Texture = (Texture2D)EditorGUIUtility.IconContent("console.warnicon.sml").image;
-        }
-        else
-        {
-            previewImage.Texture = TextureHelpers.CreatePreviewTexture(outputGrid);
-        }
+            if (outputGrid == null || outputGrid.Values.Length == 0)
+            {
+                // Make it very clear there is a problem
+                previewImage.Texture = (Texture2D)EditorGUIUtility.IconContent("console.warnicon.sml").image;
+            }
+            else
+            {
+                previewImage.Texture = TextureHelpers.CreatePreviewTexture(outputGrid);
+            }
 
-        PreviewDispatcher.UpdatePreview(previewImage);
+            PreviewDispatcher.UpdatePreview(previewImage);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+            return false;
+        }
     }
 }
