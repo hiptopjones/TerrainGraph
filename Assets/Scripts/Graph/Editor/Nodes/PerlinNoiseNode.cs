@@ -223,6 +223,7 @@ public class PerlinNoiseNode : Node,
         if (!TryGetValidatedInputValues(out var inputValues))
         {
             // Not in valid state
+            _cachedOutputGrid = null;
             return false;
         }
 

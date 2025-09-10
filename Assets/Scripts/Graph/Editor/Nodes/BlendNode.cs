@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
@@ -11,16 +10,27 @@ public class BlendNode : Node,
 {
     private class InputValues
     {
+        public BlendMethod BlendMethod;
         public HeightGrid Grid1;
         public HeightGrid Grid2;
-        public BlendMethod Method;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid1?.GenerationHash, Grid2?.GenerationHash, Method);
+            return HashCode.Combine(Grid1?.GenerationHash, Grid2?.GenerationHash, BlendMethod);
         }
+    }
+
+    private enum BlendMethod
+    {
+        Add = 100,
+        Subtract = 200,
+        Multiply = 300,
+        Divide = 400,
+        Minimum = 500,
+        Maximum = 600,
+        Average = 700,
     }
 
     private HeightGrid _cachedOutputGrid;
@@ -29,15 +39,15 @@ public class BlendNode : Node,
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
     private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
+    private const string NODE_OPTION_METHOD_ID = "method_option";
+    private const string NODE_OPTION_METHOD_TITLE = "Blend Method";
+
     // Input
     private const string NODE_INPUT_GRID1_ID = "grid1_input";
     private const string NODE_INPUT_GRID1_TITLE = "Height Grid 1";
 
     private const string NODE_INPUT_GRID2_ID = "grid2_input";
     private const string NODE_INPUT_GRID2_TITLE = "Height Grid 2";
-
-    private const string NODE_INPUT_METHOD_ID = "method_input";
-    private const string NODE_INPUT_METHOD_TITLE = "Method";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
@@ -48,6 +58,10 @@ public class BlendNode : Node,
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
+        context.AddOption<BlendMethod>(NODE_OPTION_METHOD_ID)
+            .WithDisplayName(NODE_OPTION_METHOD_TITLE)
+            .WithDefaultValue(BlendMethod.Maximum)
+            .Build();
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
             .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
             .WithDefaultValue(false)
@@ -64,9 +78,6 @@ public class BlendNode : Node,
             .Build();
         context.AddInputPort<HeightGrid>(NODE_INPUT_GRID2_ID)
             .WithDisplayName(NODE_INPUT_GRID2_TITLE)
-            .Build();
-        context.AddInputPort<BlendMethod>(NODE_INPUT_METHOD_ID)
-            .WithDisplayName(NODE_INPUT_METHOD_TITLE)
             .Build();
 
         if (isPreviewEnabled)
@@ -125,9 +136,9 @@ public class BlendNode : Node,
 
         var temp = new InputValues();
         var success =
+            GetNodeOptionByName(NODE_OPTION_METHOD_ID).TryGetValue(out temp.BlendMethod) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID1_ID, out temp.Grid1) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID2_ID, out temp.Grid2) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_METHOD_ID, out temp.Method);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID2_ID, out temp.Grid2);
 
         if (success)
         {
@@ -139,6 +150,7 @@ public class BlendNode : Node,
 
         return false;
     }
+
     public bool TryGetOutputValue(IPort _, out HeightGrid grid)
     {
         if (!TryExecuteNode())
@@ -156,6 +168,7 @@ public class BlendNode : Node,
         if (!TryGetValidatedInputValues(out var inputValues))
         {
             // Not in valid state
+            _cachedOutputGrid = null;
             return false;
         }
 
@@ -167,34 +180,11 @@ public class BlendNode : Node,
 
         try
         {
+            var blendMethod = inputValues.BlendMethod;
             var inputGrid1 = inputValues.Grid1;
             var inputGrid2 = inputValues.Grid2;
-            var method = inputValues.Method;
 
-            Func<float, float, float> blendFunction = null;
-
-            switch (method)
-            {
-                case BlendMethod.Add:
-                    blendFunction = (a, b) => a + b;
-                    break;
-
-                case BlendMethod.Subtract:
-                    blendFunction = (a, b) => a - b;
-                    break;
-
-                case BlendMethod.Multiply:
-                    blendFunction = (a, b) => a * b;
-                    break;
-
-                case BlendMethod.Divide:
-                    blendFunction = (a, b) => a / b;
-                    break;
-
-                default:
-                    Debug.Log($"Unhandled blend method: {method}");
-                    break;
-            }
+            Func<float, float, float> blendFunction = GetBlendFunction(blendMethod);
 
             // TODO: Validate all lengths are expected
             var size = inputGrid1.Width;
@@ -216,6 +206,37 @@ public class BlendNode : Node,
         {
             Debug.LogException(ex);
             return false;
+        }
+    }
+
+    private Func<float, float, float> GetBlendFunction(BlendMethod blendMethod)
+    {
+        switch (blendMethod)
+        {
+            case BlendMethod.Add:
+                return (a, b) => a + b;
+
+            case BlendMethod.Subtract:
+                return (a, b) => a - b;
+
+            case BlendMethod.Multiply:
+                return (a, b) => a * b;
+
+            case BlendMethod.Divide:
+                return (a, b) => a / b;
+
+            case BlendMethod.Minimum:
+                return (a, b) => Mathf.Min(a, b);
+
+            case BlendMethod.Maximum:
+                return (a, b) => Mathf.Max(a, b);
+
+            case BlendMethod.Average:
+                return (a, b) => (a + b) / 2;
+
+            default:
+                Debug.LogError($"Unhandled blend method: {blendMethod}");
+                return (a, b) => 1;
         }
     }
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.Windows;
 
 [Serializable]
 public class HeightGridNode : Node,
@@ -151,6 +150,7 @@ public class HeightGridNode : Node,
         if (!TryGetValidatedInputValues(out var inputValues))
         {
             // Not in valid state
+            _cachedOutputGrid = null;
             return false;
         }
 

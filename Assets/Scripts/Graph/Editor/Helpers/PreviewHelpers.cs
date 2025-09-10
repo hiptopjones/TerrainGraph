@@ -1,4 +1,5 @@
 ﻿using Unity.GraphToolkit.Editor;
+using UnityEditor;
 using UnityEngine;
 
 internal static class PreviewHelpers
@@ -14,7 +15,8 @@ internal static class PreviewHelpers
 
         if (outputGrid == null || outputGrid.Values.Length == 0)
         {
-            previewImage.Texture = null;
+            // Make it very clear there is a problem
+            previewImage.Texture = (Texture2D)EditorGUIUtility.IconContent("console.warnicon.sml").image;
         }
         else
         {
