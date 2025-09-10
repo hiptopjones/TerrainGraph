@@ -1,6 +1,7 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using UnityEngine.Splines;
 
 [Serializable]
 public class SplineMaskNode : Node,
@@ -8,8 +9,21 @@ public class SplineMaskNode : Node,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
-    private int _generationId;
-    private HeightGrid _cachedOutput;
+    private class InputValues
+    {
+        public Spline Spline;
+        public int Size;
+        public float Step;
+
+        public int GenerationHash;
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Spline, Size, Step);
+        }
+    }
+
+    private HeightGrid _cachedOutputGrid;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -72,75 +86,102 @@ public class SplineMaskNode : Node,
 
     public bool TryValidateNode(GraphLogger graphLogger = null)
     {
+        return TryGetValidatedInputValues(out _, graphLogger);
+    }
+
+    private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
+    {
+        validatedInput = null;
+
+        if (!TryGetInputValues(out var input))
+        {
+            if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
+            return false;
+        }
+
         var isValid = true;
 
-        PortEvaluator.TryEvaluateInputPort<SplineWrapper>(this, NODE_INPUT_SPLINE_ID, _generationId, out var splineWrapper);
-        if (splineWrapper == null)
+        if (input.Spline == null)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
             isValid = false;
         }
 
-        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
-        if (size <= 0)
+        if (input.Size <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {size} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
             isValid = false;
         }
 
-        PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_STEP_ID, _generationId, out var step);
-        if (step <= 0)
+        if (input.Step <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_STEP_TITLE} value invalid: {step} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_STEP_TITLE} value invalid: {input.Step} (valid: 0 < n)", this);
             isValid = false;
+        }
+
+        if (isValid)
+        {
+            validatedInput = input;
         }
 
         return isValid;
     }
 
-    public void ResetNode(int generationId)
+    private bool TryGetInputValues(out InputValues input)
     {
-        _generationId = generationId;
-        _cachedOutput = null;
+        input = null;
+
+        var temp = new InputValues();
+        var success =
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out SplineWrapper splineWrapper) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_STEP_ID, out temp.Step);
+
+        if (success)
+        {
+            temp.Spline = splineWrapper?.Spline;
+            temp.GenerationHash = temp.GetHashCode();
+
+            input = temp;
+            return true;
+        }
+
+        return false;
     }
 
-    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
+    public bool TryGetOutputValue(IPort _, out HeightGrid grid)
     {
-        if (!TryExecuteNode(generationId))
+        if (!TryExecuteNode())
         {
-            value = null;
+            grid = null;
             return false;
         }
 
-        value = _cachedOutput;
+        grid = _cachedOutputGrid;
         return true;
     }
 
-    private bool TryExecuteNode(int generationId)
+    private bool TryExecuteNode()
     {
-        if (!TryValidateNode())
+        if (!TryGetValidatedInputValues(out var inputValues))
         {
-            // Node validation did not pass
+            // Hasn't validated yet
             return false;
         }
 
-        if (_generationId == generationId)
+        if (_cachedOutputGrid != null && _cachedOutputGrid.GenerationHash == inputValues.GenerationHash)
         {
             // Node is already up-to-date
             return true;
         }
 
-        ResetNode(generationId);
-
         try
         {
-            PortEvaluator.TryEvaluateInputPort<SplineWrapper>(this, NODE_INPUT_SPLINE_ID, _generationId, out var splineWrapper);
-            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
-            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_STEP_ID, _generationId, out var step);
+            var spline = inputValues.Spline;
+            var size = inputValues.Size;
+            var step = inputValues.Step;
 
-            var spline = splineWrapper.Spline;
-
-            var grid = new HeightGrid(size);
+            var outputGrid = new HeightGrid(size);
 
             var vertices = SplineHelpers.GetSplineVertices(spline, step);
 
@@ -148,16 +189,18 @@ public class SplineMaskNode : Node,
             {
                 for (int x = 0; x < size; x++)
                 {
-                    grid[x, y] = 0;
+                    outputGrid[x, y] = 0;
 
                     if (GeometryHelpers.IsPointInPolygon(new Vector3(x, 0, y), vertices, performSanityCheck: true))
                     {
-                        grid[x, y] = 1;
+                        outputGrid[x, y] = 1;
                     }
                 }
             }
 
-            _cachedOutput = grid;
+            outputGrid.GenerationHash = inputValues.GenerationHash;
+
+            _cachedOutputGrid = outputGrid;
             return true;
         }
         catch (Exception ex)
@@ -167,12 +210,12 @@ public class SplineMaskNode : Node,
         }
     }
 
-    public void UpdatePreview(int generationId)
+    public void UpdatePreview()
     {
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
         if (isPreviewEnabled)
         {
-            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, NODE_OUTPUT_GRID_ID, generationId);
+            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid);
         }
     }
 }

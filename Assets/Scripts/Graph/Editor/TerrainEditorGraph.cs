@@ -1,17 +1,12 @@
-using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
-using UnityEngine;
 
 [Graph(ASSET_FILE_EXTENSION)]
 [Serializable]
 public class TerrainEditorGraph : Graph
 {
-    private int _generationId;
-
     // This file extension is used by Unity to select the right importer, so it must be unique.
     internal const string ASSET_FILE_EXTENSION = "trgraph";
 
@@ -27,7 +22,7 @@ public class TerrainEditorGraph : Graph
     {
         ValidateNodes(graphLogger);
 
-        UpdatePreviews(_generationId++);
+        UpdatePreviews();
     }
 
     private void ValidateNodes(GraphLogger graphLogger)
@@ -40,13 +35,13 @@ public class TerrainEditorGraph : Graph
         }
     }
 
-    private void UpdatePreviews(int generationId)
+    private void UpdatePreviews()
     {
         var nodes = GetNodes().OfType<IPreviewableNode>().ToList();
 
         foreach (var node in nodes)
         {
-            node.UpdatePreview(generationId);
+            node.UpdatePreview();
         }
     }
 }

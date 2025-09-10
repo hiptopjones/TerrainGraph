@@ -8,6 +8,7 @@ public class HeightGrid
     public int Height;
 
     [HideInInspector] public float[] Values;
+    [HideInInspector] public int GenerationHash;
 
     public float this[int index]
     {

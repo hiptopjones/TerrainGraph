@@ -2,15 +2,12 @@
 
 internal static class PreviewHelpers
 {
-    public static void UpdatePreview(INode node, string previewPortId, string sourcePortId, int generationId)
+    public static void UpdatePreview(INode node, string previewPortId, HeightGrid outputGrid)
     {
         var previewPort = node.GetInputPortByName(previewPortId);
         previewPort.TryGetValue(out PreviewImage previewImage);
 
-        var evaluatableNode = node as IEvaluatableNode<HeightGrid>;
-
-        var outputPort = node.GetOutputPortByName(sourcePortId);
-        if (!evaluatableNode.TryGetPortValue(outputPort, generationId, out var value))
+        if (outputGrid == null)
         {
             if (previewImage.Texture != null)
             {
@@ -22,11 +19,11 @@ internal static class PreviewHelpers
 
         if (previewImage.Texture == null)
         {
-            previewImage.Texture = TextureHelpers.CreateTexture(value);
+            previewImage.Texture = TextureHelpers.CreateTexture(outputGrid);
         }
         else
         {
-            TextureHelpers.UpdateTexture(value, previewImage.Texture);
+            TextureHelpers.UpdateTexture(outputGrid, previewImage.Texture);
         }
     }
 }

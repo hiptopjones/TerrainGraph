@@ -1,4 +1,4 @@
 ﻿interface IPreviewableNode
 {
-    void UpdatePreview(int generationId);
+    void UpdatePreview();
 }

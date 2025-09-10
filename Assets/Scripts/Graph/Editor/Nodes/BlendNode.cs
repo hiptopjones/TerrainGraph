@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
@@ -8,8 +9,21 @@ public class BlendNode : Node,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
-    private int _generationId;
-    private HeightGrid _cachedOutput;
+    private class InputValues
+    {
+        public HeightGrid Grid1;
+        public HeightGrid Grid2;
+        public BlendMethod Method;
+
+        public int GenerationHash;
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Grid1?.GenerationHash, Grid2?.GenerationHash, Method);
+        }
+    }
+
+    private HeightGrid _cachedOutputGrid;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -70,64 +84,92 @@ public class BlendNode : Node,
 
     public bool TryValidateNode(GraphLogger graphLogger = null)
     {
+        return TryGetValidatedInputValues(out _, graphLogger);
+    }
+
+    private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
+    {
+        validatedInput = null;
+
+        if (!TryGetInputValues(out var input))
+        {
+            if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
+            return false;
+        }
+
         var isValid = true;
 
-        PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID1_ID, _generationId, out var grid1);
-        if (grid1 == null)
+        if (input.Grid1 == null || input.Grid1.Values == null || input.Grid1.Values.Length == 0)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} value missing", this);
             isValid = false;
         }
 
-        PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID2_ID, _generationId, out var grid2);
-        if (grid2 == null)
+        if (input.Grid2 == null || input.Grid2.Values == null || input.Grid2.Values.Length == 0)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID2_TITLE} value missing", this);
             isValid = false;
         }
 
+        if (isValid)
+        {
+            validatedInput = input;
+        }
+
         return isValid;
     }
 
-    public void ResetNode(int generationId)
+    private bool TryGetInputValues(out InputValues input)
     {
-        _generationId = generationId;
-        _cachedOutput = null;
-    }
+        input = null;
 
-    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
-    {
-        if (!TryExecuteNode(generationId))
+        var temp = new InputValues();
+        var success =
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID1_ID, out temp.Grid1) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID2_ID, out temp.Grid2) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_METHOD_ID, out temp.Method);
+
+        if (success)
         {
-            value = null;
+            temp.GenerationHash = temp.GetHashCode();
+
+            input = temp;
+            return true;
+        }
+
+        return false;
+    }
+    public bool TryGetOutputValue(IPort _, out HeightGrid grid)
+    {
+        if (!TryExecuteNode())
+        {
+            grid = null;
             return false;
         }
 
-        value = _cachedOutput;
+        grid = _cachedOutputGrid;
         return true;
     }
 
-    private bool TryExecuteNode(int generationId)
+    private bool TryExecuteNode()
     {
-        if (!TryValidateNode())
+        if (!TryGetValidatedInputValues(out var inputValues))
         {
-            // Node validation did not pass
+            // Not in valid state
             return false;
         }
 
-        if (_generationId == generationId)
+        if (_cachedOutputGrid != null && _cachedOutputGrid.GenerationHash == inputValues.GenerationHash)
         {
             // Node is already up-to-date
             return true;
         }
 
-        ResetNode(generationId);
-
         try
         {
-            PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID1_ID, _generationId, out var input1);
-            PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID2_ID, _generationId, out var input2);
-            PortEvaluator.TryEvaluateInputPort<BlendMethod>(this, NODE_INPUT_METHOD_ID, _generationId, out var method);
+            var inputGrid1 = inputValues.Grid1;
+            var inputGrid2 = inputValues.Grid2;
+            var method = inputValues.Method;
 
             Func<float, float, float> blendFunction = null;
 
@@ -147,19 +189,19 @@ public class BlendNode : Node,
             }
 
             // TODO: Validate all lengths are expected
-            var size = input1.Width;
+            var size = inputGrid1.Width;
 
-            var output = new HeightGrid(size);
+            var outputGrid = new HeightGrid(size);
 
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    output[x, y] = blendFunction(input1[x, y], input2[x, y]);
+                    outputGrid[x, y] = blendFunction(inputGrid1[x, y], inputGrid2[x, y]);
                 }
             }
 
-            _cachedOutput = output;
+            _cachedOutputGrid = outputGrid;
             return true;
         }
         catch (Exception ex)
@@ -169,12 +211,12 @@ public class BlendNode : Node,
         }
     }
 
-    public void UpdatePreview(int generationId)
+    public void UpdatePreview()
     {
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
         if (isPreviewEnabled)
         {
-            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, NODE_OUTPUT_GRID_ID, generationId);
+            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid);
         }
     }
 }

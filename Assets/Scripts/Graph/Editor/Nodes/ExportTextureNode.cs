@@ -7,12 +7,31 @@ using UnityEngine;
 public class ExportTextureNode : Node,
     IValidatableNode
 {
-    private int _generationId;
+    private class InputValues
+    {
+        public HeightGrid Grid;
+        public string ExportPath;
 
+        public int GenerationHash;
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Grid.GenerationHash, ExportPath);
+        }
+    }
+
+    // Options
+    //  n/a
+
+    // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
     private const string NODE_INPUT_GRID_TITLE = "Height Grid";
+
     private const string NODE_INPUT_PATH_ID = "path_input";
     private const string NODE_INPUT_PATH_TITLE = "Path";
+
+    // Outputs
+    //  n/a
 
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
@@ -20,60 +39,84 @@ public class ExportTextureNode : Node,
         context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
             .Build();
-
         context.AddInputPort<string>(NODE_INPUT_PATH_ID)
             .WithDisplayName(NODE_INPUT_PATH_TITLE)
             .WithDefaultValue("Assets/Textures/ExportedTexture.png")
             .Build();
     }
 
+
     public bool TryValidateNode(GraphLogger graphLogger = null)
     {
+        return TryGetValidatedInputValues(out _, graphLogger);
+    }
+
+    private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
+    {
+        validatedInput = null;
+
+        if (!TryGetInputValues(out var input))
+        {
+            if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
+            return false;
+        }
+
         var isValid = true;
 
-        PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
-        if (grid == null)
+        if (input.Grid == null || input.Grid.Values == null || input.Grid.Values.Length == 0)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
             isValid = false;
         }
 
+        if (isValid)
+        {
+            validatedInput = input;
+        }
+
         return isValid;
     }
 
-    public void ResetNode(int generationId)
+    private bool TryGetInputValues(out InputValues input)
     {
-        _generationId = generationId;
+        input = null;
+
+        var temp = new InputValues();
+        var success =
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PATH_ID, out temp.ExportPath);
+
+        if (success)
+        {
+            temp.GenerationHash = temp.GetHashCode();
+
+            input = temp;
+            return true;
+        }
+
+        return false;
     }
 
     // TODO: Put this in an interface (IEndNode or something)
     public bool TryExecuteNode()
     {
-        return TryExecuteNode(_generationId);
+        return TryExecuteNodeInternal();
     }
 
-    private bool TryExecuteNode(int generationId)
+    private bool TryExecuteNodeInternal()
     {
-        if (!TryValidateNode())
+        if (!TryGetValidatedInputValues(out var inputValues))
         {
-            // Node validation did not pass
+            // Not in valid state
             return false;
         }
 
-        if (_generationId == generationId)
-        {
-            // Node is already up-to-date
-            return true;
-        }
-
-        ResetNode(generationId);
-        
         try
         {
-            PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var input);
-            PortEvaluator.TryEvaluateInputPort<string>(this, NODE_INPUT_PATH_ID, _generationId, out var exportPath);
+            var inputGrid = inputValues.Grid;
+            var exportPath = inputValues.ExportPath;
 
-            var texture = TextureHelpers.CreateTexture(input);
+            var texture = TextureHelpers.CreateTexture(inputGrid);
             var bytes = texture.EncodeToPNG();
 
             Directory.CreateDirectory(Path.GetDirectoryName(exportPath));

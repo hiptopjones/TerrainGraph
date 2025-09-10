@@ -8,8 +8,21 @@ public class BoxBlurNode : Node,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
-    private int _generationId;
-    private HeightGrid _cachedOutput;
+    private class InputValues
+    {
+        public HeightGrid Grid;
+        public int Radius;
+        public int Iterations;
+
+        public int GenerationHash;
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Grid.GenerationHash, Radius, Iterations);
+        }
+    }
+
+    private HeightGrid _cachedOutputGrid;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -31,6 +44,9 @@ public class BoxBlurNode : Node,
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
     private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
+
+    // Other
+    private const int MAX_ITERATIONS = 20;
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -72,75 +88,103 @@ public class BoxBlurNode : Node,
 
     public bool TryValidateNode(GraphLogger graphLogger = null)
     {
+        return TryGetValidatedInputValues(out _, graphLogger);
+    }
+
+    private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
+    {
+        validatedInput = null;
+
+        if (!TryGetInputValues(out var input))
+        {
+            if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
+            return false;
+        }
+
         var isValid = true;
 
-        PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var grid);
-        if (grid == null)
+        if (input.Grid == null || input.Grid.Values == null || input.Grid.Values.Length == 0)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
             isValid = false;
         }
 
-        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_RADIUS_ID, _generationId, out var radius);
-        if (radius <= 0 || radius > 10)
+        if (input.Radius <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"Invalid {NODE_INPUT_RADIUS_TITLE} specified: {radius} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 < n)", this);
             isValid = false;
         }
 
-        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_ITERATIONS_ID, _generationId, out var iterations);
-        if (iterations <= 0 || iterations > 10)
+        if (input.Iterations <= 0 || input.Iterations > MAX_ITERATIONS)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {iterations} (valid: 0 < n < 10)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.Iterations} (valid: 0 < n < {MAX_ITERATIONS})", this);
             isValid = false;
+        }
+
+        if (isValid)
+        {
+            validatedInput = input;
         }
 
         return isValid;
     }
 
-    public void ResetNode(int generationId)
+    private bool TryGetInputValues(out InputValues input)
     {
-        _generationId = generationId;
-        _cachedOutput = null;
+        input = null;
+
+        var temp = new InputValues();
+        var success =
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.Radius) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.Iterations);
+
+        if (success)
+        {
+            temp.GenerationHash = temp.GetHashCode();
+
+            input = temp;
+            return true;
+        }
+
+        return false;
     }
 
-    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
+    public bool TryGetOutputValue(IPort _, out HeightGrid grid)
     {
-        if (!TryExecuteNode(generationId))
+        if (!TryExecuteNode())
         {
-            value = null;
+            grid = null;
             return false;
         }
 
-        value = _cachedOutput;
+        grid = _cachedOutputGrid;
         return true;
     }
 
-    private bool TryExecuteNode(int generationId)
+    private bool TryExecuteNode()
     {
-        if (!TryValidateNode())
+        if (!TryGetValidatedInputValues(out var inputValues))
         {
-            // Node validation did not pass
+            // Not in valid state
             return false;
         }
 
-        if (_generationId == generationId)
+        if (_cachedOutputGrid != null && _cachedOutputGrid.GenerationHash == inputValues.GenerationHash)
         {
             // Node is already up-to-date
             return true;
         }
 
-        ResetNode(generationId);
-
         try
         {
-            PortEvaluator.TryEvaluateInputPort<HeightGrid>(this, NODE_INPUT_GRID_ID, _generationId, out var input);
-            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_RADIUS_ID, _generationId, out var radius);
-            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_ITERATIONS_ID, _generationId, out var iterations);
+            var inputGrid = inputValues.Grid;
+            var radius = inputValues.Radius;
+            var iterations = inputValues.Iterations;
 
-            int size = input.Width;
+            int size = inputGrid.Width;
 
-            var output = new HeightGrid(size);
+            var outputGrid = new HeightGrid(size);
 
             var tmp = new HeightGrid(size);
 
@@ -154,7 +198,7 @@ public class BoxBlurNode : Node,
 
                     for (int x = -radius; x <= radius; x++)
                     {
-                        sum += SafeGet(input, x, y);
+                        sum += SafeGet(inputGrid, x, y);
                         count++;
                     }
 
@@ -163,8 +207,8 @@ public class BoxBlurNode : Node,
                         tmp[x, y] = sum / count;
 
                         // slide window
-                        float left = SafeGet(input, x - radius, y);
-                        float right = SafeGet(input, x + 1 + radius, y);
+                        float left = SafeGet(inputGrid, x - radius, y);
+                        float right = SafeGet(inputGrid, x + 1 + radius, y);
                         sum += right - left;
                     }
                 }
@@ -183,7 +227,7 @@ public class BoxBlurNode : Node,
 
                     for (int y = 0; y < size; y++)
                     {
-                        output[x, y] = sum / count;
+                        outputGrid[x, y] = sum / count;
 
                         float top = SafeGet(tmp, x, y - radius);
                         float bottom = SafeGet(tmp, x, y + 1 + radius);
@@ -192,8 +236,7 @@ public class BoxBlurNode : Node,
                 }
             }
 
-            _cachedOutput = output;
-
+            _cachedOutputGrid = outputGrid;
             return true;
         }
         catch (Exception ex)
@@ -212,12 +255,12 @@ public class BoxBlurNode : Node,
         return grid[x, y];
     }
 
-    public void UpdatePreview(int generationId)
+    public void UpdatePreview()
     {
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
         if (isPreviewEnabled)
         {
-            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, NODE_OUTPUT_GRID_ID, generationId);
+            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid);
         }
     }
 }

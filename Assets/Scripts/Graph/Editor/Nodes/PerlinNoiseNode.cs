@@ -8,8 +8,31 @@ public class PerlinNoiseNode : Node,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
-    private int _generationId;
-    private HeightGrid _cachedOutput;
+    private class InputValues
+    {
+        public int Size;
+        public Vector2 Position;
+        public float Frequency;
+        public float Amplitude;
+        public int Octaves;
+        public float Persistence;
+        public float Lacunarity;
+        public int Seed;
+        public Vector2 Range;
+        public float Scale;
+
+        public int GenerationHash;
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(
+                HashCode.Combine(Size, Position, Frequency, Amplitude, Octaves),
+                HashCode.Combine(Persistence, Lacunarity, Seed, Range, Scale)
+            );
+        }
+    }
+
+    private HeightGrid _cachedOutputGrid;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -120,75 +143,111 @@ public class PerlinNoiseNode : Node,
 
     public bool TryValidateNode(GraphLogger graphLogger = null)
     {
+        return TryGetValidatedInputValues(out _, graphLogger);
+    }
+
+    private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
+    {
+        validatedInput = null;
+
+        if (!TryGetInputValues(out var input))
+        {
+            if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
+            return false;
+        }
+
         var isValid = true;
 
-        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
-        if (size <= 0)
+        if (input.Size <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {size} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
             isValid = false;
         }
 
-        PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_OCTAVES_ID, _generationId, out var octaves);
-        if (octaves <= 0)
+        if (input.Octaves <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"Invalid {NODE_INPUT_OCTAVES_TITLE} specified: {octaves} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_OCTAVES_TITLE} value invalid: {input.Octaves} (valid: 0 < n)", this);
             isValid = false;
+        }
+
+        if (isValid)
+        {
+            validatedInput = input;
         }
 
         return isValid;
     }
 
-    public void ResetNode(int generationId)
+    private bool TryGetInputValues(out InputValues input)
     {
-        _generationId = generationId;
-        _cachedOutput = null;
+        input = null;
+
+        var temp = new InputValues();
+        var success =
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_POSITION_ID, out temp.Position) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_FREQUENCY_ID, out temp.Frequency) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_OCTAVES_ID, out temp.Octaves) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PERSISTENCE_ID, out temp.Persistence) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_LACUNARITY_ID, out temp.Lacunarity) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SEED_ID, out temp.Seed) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RANGE_ID, out temp.Range) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SCALE_ID, out temp.Scale);
+
+        if (success)
+        {
+            temp.GenerationHash = temp.GetHashCode();
+
+            input = temp;
+            return true;
+        }
+
+        return false;
     }
 
-    public bool TryGetPortValue(IPort _, int generationId, out HeightGrid value)
+    public bool TryGetOutputValue(IPort _, out HeightGrid grid)
     {
-        if (!TryExecuteNode(generationId))
+        if (!TryExecuteNode())
         {
-            value = null;
+            grid = null;
             return false;
         }
 
-        value = _cachedOutput;
+        grid = _cachedOutputGrid;
         return true;
     }
 
-    private bool TryExecuteNode(int generationId)
+    private bool TryExecuteNode()
     {
-        if (!TryValidateNode())
+        if (!TryGetValidatedInputValues(out var inputValues))
         {
-            // Node validation did not pass
+            // Not in valid state
             return false;
         }
 
-        if (_generationId == generationId)
+        if (_cachedOutputGrid != null && _cachedOutputGrid.GenerationHash == inputValues.GenerationHash)
         {
             // Node is already up-to-date
             return true;
         }
 
-        ResetNode(generationId);
-
         try
         {
-            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SIZE_ID, _generationId, out var size);
-            PortEvaluator.TryEvaluateInputPort<Vector2>(this, NODE_INPUT_POSITION_ID, _generationId, out var position);
-            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_FREQUENCY_ID, _generationId, out var frequency);
-            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_AMPLITUDE_ID, _generationId, out var amplitude);
-            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_OCTAVES_ID, _generationId, out var octaves);
-            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_PERSISTENCE_ID, _generationId, out var persistence);
-            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_LACUNARITY_ID, _generationId, out var lacunarity);
-            PortEvaluator.TryEvaluateInputPort<int>(this, NODE_INPUT_SEED_ID, _generationId, out var seed);
-            PortEvaluator.TryEvaluateInputPort<Vector2>(this, NODE_INPUT_RANGE_ID, _generationId, out var range);
-            PortEvaluator.TryEvaluateInputPort<float>(this, NODE_INPUT_SCALE_ID, _generationId, out var scale);
+            var size = inputValues.Size;
+            var position = inputValues.Position;
+            var frequency = inputValues.Frequency;
+            var amplitude = inputValues.Amplitude;
+            var octaves = inputValues.Octaves;
+            var persistence = inputValues.Persistence;
+            var lacunarity = inputValues.Lacunarity;
+            var seed = inputValues.Seed;
+            var range = inputValues.Range;
+            var scale = inputValues.Scale;
 
             var noise = NoiseHelpers.GeneratePerlinNoise(size, position, frequency, amplitude, octaves, persistence, lacunarity, seed);
 
-            var output = new HeightGrid(size);
+            var outputGrid = new HeightGrid(size);
 
             for (int y = 0; y < size; y++)
             {
@@ -197,11 +256,13 @@ public class PerlinNoiseNode : Node,
                     var height = noise[x, y];
                     height = range.x + (range.y - range.x) * height;
 
-                    output[x, y] = height * scale;
+                    outputGrid[x, y] = height * scale;
                 }
             }
 
-            _cachedOutput = output;
+            outputGrid.GenerationHash = inputValues.GenerationHash;
+
+            _cachedOutputGrid = outputGrid;
             return true;
         }
         catch (Exception ex)
@@ -211,12 +272,12 @@ public class PerlinNoiseNode : Node,
         }
     }
 
-    public void UpdatePreview(int generationId)
+    public void UpdatePreview()
     {
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
         if (isPreviewEnabled)
         {
-            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, NODE_OUTPUT_GRID_ID, generationId);
+            PreviewHelpers.UpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid);
         }
     }
 }
