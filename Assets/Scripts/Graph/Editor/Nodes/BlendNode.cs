@@ -179,8 +179,16 @@ public class BlendNode : Node,
                     blendFunction = (a, b) => a + b;
                     break;
 
+                case BlendMethod.Subtract:
+                    blendFunction = (a, b) => a - b;
+                    break;
+
                 case BlendMethod.Multiply:
                     blendFunction = (a, b) => a * b;
+                    break;
+
+                case BlendMethod.Divide:
+                    blendFunction = (a, b) => a / b;
                     break;
 
                 default:
@@ -213,6 +221,9 @@ public class BlendNode : Node,
 
     public void UpdatePreview()
     {
+        // Ensure we're up-to-date. Needed for standalone nodes that have nobody else to poke them
+        TryExecuteNode();
+
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
         if (isPreviewEnabled)
         {

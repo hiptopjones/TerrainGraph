@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -27,14 +28,18 @@ public class PreviewImageDrawer : PropertyDrawer
             }
         };
 
-        object target = property.serializedObject.targetObject;
+        var target = fieldInfo.GetValue(property.serializedObject.targetObject) as PreviewImage;
 
-        var wrapper = fieldInfo.GetValue(target) as PreviewImage;
-        if (wrapper != null)
-        {
-            image.style.backgroundImage = wrapper.Texture;
-        }
+        UpdateTexture(target, image);
+
+        // Register for changes
+        PreviewDispatcher.Register(target, image, UpdateTexture);
 
         return image;
+    }
+
+    private void UpdateTexture(PreviewImage target, Image image)
+    {
+        image.image = target.Texture;
     }
 }

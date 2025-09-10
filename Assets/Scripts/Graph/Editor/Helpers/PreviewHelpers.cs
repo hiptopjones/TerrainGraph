@@ -1,29 +1,26 @@
 ﻿using Unity.GraphToolkit.Editor;
+using UnityEngine;
 
 internal static class PreviewHelpers
 {
     public static void UpdatePreview(INode node, string previewPortId, HeightGrid outputGrid)
     {
         var previewPort = node.GetInputPortByName(previewPortId);
-        previewPort.TryGetValue(out PreviewImage previewImage);
-
-        if (outputGrid == null)
+        if (!previewPort.TryGetValue(out PreviewImage previewImage))
         {
-            if (previewImage.Texture != null)
-            {
-                TextureHelpers.ClearTexture(previewImage.Texture);
-            }
-
+            Debug.Log("preview image not found");
             return;
         }
 
-        if (previewImage.Texture == null)
+        if (outputGrid == null || outputGrid.Values.Length == 0)
         {
-            previewImage.Texture = TextureHelpers.CreateTexture(outputGrid);
+            previewImage.Texture = null;
         }
         else
         {
-            TextureHelpers.UpdateTexture(outputGrid, previewImage.Texture);
+            previewImage.Texture = TextureHelpers.CreateTexture(outputGrid);
         }
+
+        PreviewDispatcher.UpdatePreview(previewImage);
     }
 }

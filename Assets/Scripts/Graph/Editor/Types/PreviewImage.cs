@@ -2,7 +2,7 @@
 using UnityEngine;
 
 [Serializable]
-internal class PreviewImage
+public class PreviewImage
 {
     public Texture2D Texture;
 }
