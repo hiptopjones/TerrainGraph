@@ -3,7 +3,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class RangeNode : Node,
+public class NormalizeNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
@@ -11,14 +11,12 @@ public class RangeNode : Node,
     private class InputValues
     {
         public HeightGrid Grid;
-        public Vector2 FromRange;
-        public Vector2 ToRange;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.GenerationHash, FromRange, ToRange);
+            return HashCode.Combine(Grid.GenerationHash);
         }
     }
 
@@ -31,12 +29,6 @@ public class RangeNode : Node,
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
     private const string NODE_INPUT_GRID_TITLE = "Grid";
-
-    private const string NODE_INPUT_FROM_ID = "from_input";
-    private const string NODE_INPUT_FROM_TITLE = "From Range";
-
-    private const string NODE_INPUT_TO_ID = "to_input";
-    private const string NODE_INPUT_TO_TITLE = "To Range";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
@@ -60,14 +52,6 @@ public class RangeNode : Node,
         // Input
         context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
-            .Build();
-        context.AddInputPort<Vector2>(NODE_INPUT_FROM_ID)
-            .WithDisplayName(NODE_INPUT_FROM_TITLE)
-            .WithDefaultValue(new Vector2(0, 1))
-            .Build();
-        context.AddInputPort<Vector2>(NODE_INPUT_TO_ID)
-            .WithDisplayName(NODE_INPUT_TO_TITLE)
-            .WithDefaultValue(new Vector2(0, 1))
             .Build();
 
         if (isPreviewEnabled)
@@ -106,18 +90,6 @@ public class RangeNode : Node,
             isValid = false;
         }
 
-        if (input.FromRange.x == input.FromRange.y)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_FROM_TITLE} value invalid (x != y)", this);
-            isValid = false;
-        }
-
-        if (input.ToRange.x == input.ToRange.y)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_TO_TITLE} value invalid (x != y)", this);
-            isValid = false;
-        }
-
         if (isValid)
         {
             validatedInput = input;
@@ -132,9 +104,7 @@ public class RangeNode : Node,
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_FROM_ID, out temp.FromRange) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TO_ID, out temp.ToRange);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid);
 
         if (success)
         {
@@ -177,10 +147,22 @@ public class RangeNode : Node,
         try
         {
             var inputGrid = inputValues.Grid;
-            var fromRange = inputValues.FromRange;
-            var toRange = inputValues.ToRange;
 
             var size = inputGrid.Width;
+
+            var maxValue = float.MinValue;
+            var minValue = float.MaxValue;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    var value = inputGrid[x, y];
+
+                    maxValue = Mathf.Max(maxValue, value);
+                    minValue = Mathf.Min(minValue, value);
+                }
+            }
 
             var outputGrid = new HeightGrid(size);
 
@@ -188,10 +170,9 @@ public class RangeNode : Node,
             {
                 for (int x = 0; x < size; x++)
                 {
-                    var fromValue = inputGrid[x, y];
-                    var t = Mathf.InverseLerp(fromRange.x, fromRange.y, fromValue);
-                    var toValue = Mathf.Lerp(toRange.x, toRange.y, t);
-                    outputGrid[x, y] = toValue;
+                    var value = inputGrid[x, y];
+
+                    outputGrid[x, y] = Mathf.InverseLerp(minValue, maxValue, value);
                 }
             }
 
