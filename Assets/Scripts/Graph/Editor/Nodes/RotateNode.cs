@@ -1,7 +1,6 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 [Serializable]
 public class RotateNode : Node,
@@ -165,8 +164,7 @@ public class RotateNode : Node,
 
             var center = Vector2.one * size / 2;
 
-            // Reverse the rotation, because we want the source position
-            float radians = -rotationDegrees * Mathf.Deg2Rad;
+            float radians = rotationDegrees * Mathf.Deg2Rad;
             float sin = Mathf.Sin(radians);
             float cos = Mathf.Cos(radians);
 
