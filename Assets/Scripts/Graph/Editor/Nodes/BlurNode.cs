@@ -30,7 +30,7 @@ public class BlurNode : Node,
 
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
-    private const string NODE_INPUT_GRID_TITLE = "Height Grid";
+    private const string NODE_INPUT_GRID_TITLE = "Grid";
 
     private const string NODE_INPUT_RADIUS_ID = "radius_input";
     private const string NODE_INPUT_RADIUS_TITLE = "Radius";
@@ -43,7 +43,7 @@ public class BlurNode : Node,
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
+    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
     // Other
     private const int MAX_ITERATIONS = 20;
@@ -199,7 +199,7 @@ public class BlurNode : Node,
 
                     for (int x = -radius; x <= radius; x++)
                     {
-                        sum += SafeGet(inputGrid, x, y);
+                        sum += GridHelpers.SafeGet(inputGrid, x, y);
                         count++;
                     }
 
@@ -208,8 +208,8 @@ public class BlurNode : Node,
                         tmp[x, y] = sum / count;
 
                         // slide window
-                        float left = SafeGet(inputGrid, x - radius, y);
-                        float right = SafeGet(inputGrid, x + 1 + radius, y);
+                        float left = GridHelpers.SafeGet(inputGrid, x - radius, y);
+                        float right = GridHelpers.SafeGet(inputGrid, x + 1 + radius, y);
                         sum += right - left;
                     }
                 }
@@ -222,7 +222,7 @@ public class BlurNode : Node,
 
                     for (int y = -radius; y <= radius; y++)
                     {
-                        sum += SafeGet(tmp, x, y);
+                        sum += GridHelpers.SafeGet(tmp, x, y);
                         count++;
                     }
 
@@ -230,8 +230,8 @@ public class BlurNode : Node,
                     {
                         outputGrid[x, y] = sum / count;
 
-                        float top = SafeGet(tmp, x, y - radius);
-                        float bottom = SafeGet(tmp, x, y + 1 + radius);
+                        float top = GridHelpers.SafeGet(tmp, x, y - radius);
+                        float bottom = GridHelpers.SafeGet(tmp, x, y + 1 + radius);
                         sum += bottom - top;
                     }
                 }
@@ -245,15 +245,6 @@ public class BlurNode : Node,
             Debug.LogException(ex);
             return false;
         }
-    }
-
-    protected static float SafeGet(HeightGrid grid, int x, int y)
-    {
-        int w = grid.Width;
-        int h = grid.Height;
-        x = Mathf.Clamp(x, 0, w - 1);
-        y = Mathf.Clamp(y, 0, h - 1);
-        return grid[x, y];
     }
 
     public void UpdatePreview()

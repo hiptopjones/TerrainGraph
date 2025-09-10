@@ -3,7 +3,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class NormalizeNode : Node,
+public class TranslateNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
@@ -11,6 +11,7 @@ public class NormalizeNode : Node,
     private class InputValues
     {
         public HeightGrid Grid;
+        public Vector2 Translation;
 
         public int GenerationHash;
 
@@ -29,6 +30,9 @@ public class NormalizeNode : Node,
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
     private const string NODE_INPUT_GRID_TITLE = "Grid";
+
+    private const string NODE_INPUT_TRANSLATION_ID = "translation_input";
+    private const string NODE_INPUT_TRANSLATION_TITLE = "Translation";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
@@ -52,6 +56,9 @@ public class NormalizeNode : Node,
         // Input
         context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
+            .Build();
+        context.AddInputPort<Vector2>(NODE_INPUT_TRANSLATION_ID)
+            .WithDisplayName(NODE_INPUT_TRANSLATION_TITLE)
             .Build();
 
         if (isPreviewEnabled)
@@ -104,7 +111,8 @@ public class NormalizeNode : Node,
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TRANSLATION_ID, out temp.Translation);
 
         if (success)
         {
@@ -147,22 +155,9 @@ public class NormalizeNode : Node,
         try
         {
             var inputGrid = inputValues.Grid;
+            var translation = inputValues.Translation;
 
             var size = inputGrid.Width;
-
-            var maxValue = float.MinValue;
-            var minValue = float.MaxValue;
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    var value = inputGrid[x, y];
-
-                    maxValue = Mathf.Max(maxValue, value);
-                    minValue = Mathf.Min(minValue, value);
-                }
-            }
 
             var outputGrid = new HeightGrid(size);
 
@@ -170,9 +165,20 @@ public class NormalizeNode : Node,
             {
                 for (int x = 0; x < size; x++)
                 {
-                    var value = inputGrid[x, y];
+                    var source = new Vector2(x, y) - translation * size;
 
-                    outputGrid[x, y] = Mathf.InverseLerp(minValue, maxValue, value);
+                    var sourceX = Mathf.RoundToInt(source.x);
+                    var sourceY = Mathf.RoundToInt(source.y);
+
+                    if (sourceX < 0 || sourceX >= size ||
+                        sourceY < 0 || sourceY >= size)
+                    {
+                        outputGrid[x, y] = 0;
+                    }
+                    else
+                    {
+                        outputGrid[x, y] = inputGrid[sourceX, sourceY];
+                    }
                 }
             }
 

@@ -39,4 +39,21 @@ internal class GeometryHelpers
 
         return isInside;
     }
+
+    // f(x1, y1) q11    x      f(x2, y1) q21 
+    //                  |
+    //                  v
+    //       y  -----> (p)
+    // f(x1, y2) q12           f(x2, y2) q22
+    public static float BilinearInterpolate(float x, float y, float q11, float q21, float q22, float q12, float x1, float y1, float x2, float y2)
+    {
+        // Calculate the interpolation factors
+        float r1 = ((x2 - x) / (x2 - x1)) * q11 + ((x - x1) / (x2 - x1)) * q21;
+        float r2 = ((x2 - x) / (x2 - x1)) * q12 + ((x - x1) / (x2 - x1)) * q22;
+
+        // Perform the final interpolation
+        // (this can introduce some precision errors, which matter if close to a height boundary)
+        return ((y2 - y) / (y2 - y1)) * r1 + ((y - y1) / (y2 - y1)) * r2;
+    }
+
 }

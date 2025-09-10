@@ -44,17 +44,17 @@ public class BlendNode : Node,
 
     // Input
     private const string NODE_INPUT_GRID1_ID = "grid1_input";
-    private const string NODE_INPUT_GRID1_TITLE = "Height Grid 1";
+    private const string NODE_INPUT_GRID1_TITLE = "Grid 1";
 
     private const string NODE_INPUT_GRID2_ID = "grid2_input";
-    private const string NODE_INPUT_GRID2_TITLE = "Height Grid 2";
+    private const string NODE_INPUT_GRID2_TITLE = "Grid 2";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
     // Output
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
+    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {

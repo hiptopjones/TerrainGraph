@@ -34,11 +34,14 @@ public class ShorelineSmootherNode : Node,
 
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
-    private const string NODE_INPUT_GRID_TITLE = "Height Grid";
+    private const string NODE_INPUT_GRID_TITLE = "Grid";
+
     private const string NODE_INPUT_SEA_LEVEL_ID = "sea_level_input";
     private const string NODE_INPUT_SEA_LEVEL_TITLE = "Sea Level";
+
     private const string NODE_INPUT_FALLOFF_WIDTH_ID = "falloff_width_input";
     private const string NODE_INPUT_FALLOFF_WIDTH_TITLE = "Falloff Width";
+
     private const string NODE_INPUT_FALLOFF_CURVE_ID = "falloff_curve_input";
     private const string NODE_INPUT_FALLOFF_CURVE_TITLE = "Falloff Curve";
 
@@ -47,7 +50,7 @@ public class ShorelineSmootherNode : Node,
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
+    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {

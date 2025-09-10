@@ -3,7 +3,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class NormalizeNode : Node,
+public class ScaleNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
@@ -11,12 +11,13 @@ public class NormalizeNode : Node,
     private class InputValues
     {
         public HeightGrid Grid;
+        public Vector2 ScalePercent;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.GenerationHash);
+            return HashCode.Combine(Grid.GenerationHash, ScalePercent);
         }
     }
 
@@ -29,6 +30,9 @@ public class NormalizeNode : Node,
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
     private const string NODE_INPUT_GRID_TITLE = "Grid";
+
+    private const string NODE_INPUT_SCALE_ID = "scale_input";
+    private const string NODE_INPUT_SCALE_TITLE = "Scale";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
@@ -52,6 +56,10 @@ public class NormalizeNode : Node,
         // Input
         context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
+            .Build();
+        context.AddInputPort<Vector2>(NODE_INPUT_SCALE_ID)
+            .WithDisplayName(NODE_INPUT_SCALE_TITLE)
+            .WithDefaultValue(Vector2.one)
             .Build();
 
         if (isPreviewEnabled)
@@ -104,7 +112,8 @@ public class NormalizeNode : Node,
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SCALE_ID, out temp.ScalePercent);
 
         if (success)
         {
@@ -147,32 +156,40 @@ public class NormalizeNode : Node,
         try
         {
             var inputGrid = inputValues.Grid;
+            var scalePercent = inputValues.ScalePercent;
 
             var size = inputGrid.Width;
 
-            var maxValue = float.MinValue;
-            var minValue = float.MaxValue;
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    var value = inputGrid[x, y];
-
-                    maxValue = Mathf.Max(maxValue, value);
-                    minValue = Mathf.Min(minValue, value);
-                }
-            }
-
             var outputGrid = new HeightGrid(size);
 
+            var center = Vector2.one * size / 2;
+
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    var value = inputGrid[x, y];
+                    var source = (new Vector2(x, y) - center) / scalePercent;
+                    source += center;
 
-                    outputGrid[x, y] = Mathf.InverseLerp(minValue, maxValue, value);
+                    if (source.x < 0 || source.x > size - 1 ||
+                        source.y < 0 || source.y > size - 1)
+                    {
+                        outputGrid[x, y] = 0;
+                    }
+                    else
+                    {
+                        var x1 = Mathf.FloorToInt(source.x);
+                        var y1 = Mathf.FloorToInt(source.y);
+                        var x2 = Mathf.FloorToInt(source.x + 1);
+                        var y2 = Mathf.FloorToInt(source.y + 1);
+
+                        var q11 = GridHelpers.SafeGet(inputGrid, x1, y1);
+                        var q21 = GridHelpers.SafeGet(inputGrid, x2, y1);
+                        var q22 = GridHelpers.SafeGet(inputGrid, x2, y2);
+                        var q12 = GridHelpers.SafeGet(inputGrid, x1, y2);
+
+                        outputGrid[x, y] = GeometryHelpers.BilinearInterpolate(source.x, source.y, q11, q21, q22, q12, x1, y1, x2, y2);
+                    }
                 }
             }
 

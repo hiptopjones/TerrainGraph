@@ -1,9 +1,10 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [Serializable]
-public class NormalizeNode : Node,
+public class RotateNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
@@ -11,12 +12,13 @@ public class NormalizeNode : Node,
     private class InputValues
     {
         public HeightGrid Grid;
+        public float RotationDegrees;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.GenerationHash);
+            return HashCode.Combine(Grid.GenerationHash, RotationDegrees);
         }
     }
 
@@ -29,6 +31,9 @@ public class NormalizeNode : Node,
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
     private const string NODE_INPUT_GRID_TITLE = "Grid";
+
+    private const string NODE_INPUT_ROTATION_ID = "degrees_input";
+    private const string NODE_INPUT_ROTATION_TITLE = "Degrees";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
@@ -52,6 +57,10 @@ public class NormalizeNode : Node,
         // Input
         context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
+            .Build();
+        context.AddInputPort<float>(NODE_INPUT_ROTATION_ID)
+            .WithDisplayName(NODE_INPUT_ROTATION_TITLE)
+            .WithDefaultValue(0)
             .Build();
 
         if (isPreviewEnabled)
@@ -104,7 +113,8 @@ public class NormalizeNode : Node,
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ROTATION_ID, out temp.RotationDegrees);
 
         if (success)
         {
@@ -147,32 +157,50 @@ public class NormalizeNode : Node,
         try
         {
             var inputGrid = inputValues.Grid;
+            var rotationDegrees = inputValues.RotationDegrees;
 
             var size = inputGrid.Width;
 
-            var maxValue = float.MinValue;
-            var minValue = float.MaxValue;
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    var value = inputGrid[x, y];
-
-                    maxValue = Mathf.Max(maxValue, value);
-                    minValue = Mathf.Min(minValue, value);
-                }
-            }
-
             var outputGrid = new HeightGrid(size);
 
+            var center = Vector2.one * size / 2;
+
+            // Reverse the rotation, because we want the source position
+            float radians = -rotationDegrees * Mathf.Deg2Rad;
+            float sin = Mathf.Sin(radians);
+            float cos = Mathf.Cos(radians);
+
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    var value = inputGrid[x, y];
+                    var position = new Vector2(x, y) - center;
 
-                    outputGrid[x, y] = Mathf.InverseLerp(minValue, maxValue, value);
+                    var sourceX = position.x * cos - position.y * sin;
+                    var sourceY = position.x * sin + position.y * cos;
+
+                    sourceX += center.x;
+                    sourceY += center.y;
+
+                    if (sourceX < 0 || sourceX > size - 1 ||
+                        sourceY < 0 || sourceY > size - 1)
+                    {
+                        outputGrid[x, y] = 0;
+                    }
+                    else
+                    {
+                        var x1 = Mathf.FloorToInt(sourceX);
+                        var y1 = Mathf.FloorToInt(sourceY);
+                        var x2 = Mathf.FloorToInt(sourceX + 1);
+                        var y2 = Mathf.FloorToInt(sourceY + 1);
+
+                        var q11 = GridHelpers.SafeGet(inputGrid, x1, y1);
+                        var q21 = GridHelpers.SafeGet(inputGrid, x2, y1);
+                        var q22 = GridHelpers.SafeGet(inputGrid, x2, y2);
+                        var q12 = GridHelpers.SafeGet(inputGrid, x1, y2);
+
+                        outputGrid[x, y] = GeometryHelpers.BilinearInterpolate(sourceX, sourceY, q11, q21, q22, q12, x1, y1, x2, y2);
+                    }
                 }
             }
 

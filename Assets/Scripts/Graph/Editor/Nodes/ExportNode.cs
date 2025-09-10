@@ -25,7 +25,7 @@ public class ExportNode : Node,
 
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
-    private const string NODE_INPUT_GRID_TITLE = "Height Grid";
+    private const string NODE_INPUT_GRID_TITLE = "Grid";
 
     private const string NODE_INPUT_PATH_ID = "path_input";
     private const string NODE_INPUT_PATH_TITLE = "Path";
