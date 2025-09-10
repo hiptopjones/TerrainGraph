@@ -3,7 +3,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class PerlinNoiseNode : Node,
+public class NoiseNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode

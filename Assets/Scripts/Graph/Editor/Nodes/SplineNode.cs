@@ -1,24 +1,25 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using UnityEngine.Splines;
 
 [Serializable]
-public class BoxBlurNode : Node,
+public class SplineNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private class InputValues
     {
-        public HeightGrid Grid;
-        public int Radius;
-        public int Iterations;
+        public Spline Spline;
+        public int Size;
+        public float Step;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.GenerationHash, Radius, Iterations);
+            return HashCode.Combine(Spline, Size, Step);
         }
     }
 
@@ -28,25 +29,22 @@ public class BoxBlurNode : Node,
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
     private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
-    // Inputs
-    private const string NODE_INPUT_GRID_ID = "grid_input";
-    private const string NODE_INPUT_GRID_TITLE = "Height Grid";
+    // Input
+    private const string NODE_INPUT_SPLINE_ID = "spline_input";
+    private const string NODE_INPUT_SPLINE_TITLE = "Spline";
 
-    private const string NODE_INPUT_RADIUS_ID = "radius_input";
-    private const string NODE_INPUT_RADIUS_TITLE = "Radius";
+    private const string NODE_INPUT_SIZE_ID = "size_input";
+    private const string NODE_INPUT_SIZE_TITLE = "Size";
 
-    private const string NODE_INPUT_ITERATIONS_ID = "iterations_input";
-    private const string NODE_INPUT_ITERATIONS_TITLE = "Iterations";
+    private const string NODE_INPUT_STEP_ID = "step_input";
+    private const string NODE_INPUT_STEP_TITLE = "Step";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
-    // Outputs
+    // Output
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
     private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
-
-    // Other
-    private const int MAX_ITERATIONS = 20;
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -61,16 +59,16 @@ public class BoxBlurNode : Node,
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
-            .WithDisplayName(NODE_INPUT_GRID_TITLE)
+        context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
+            .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
             .Build();
-        context.AddInputPort<int>(NODE_INPUT_RADIUS_ID)
-            .WithDisplayName(NODE_INPUT_RADIUS_TITLE)
-            .WithDefaultValue(1)
+        context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
+            .WithDisplayName(NODE_INPUT_SIZE_TITLE)
+            .WithDefaultValue(256)
             .Build();
-        context.AddInputPort<int>(NODE_INPUT_ITERATIONS_ID)
-            .WithDisplayName(NODE_INPUT_ITERATIONS_TITLE)
-            .WithDefaultValue(1)
+        context.AddInputPort<float>(NODE_INPUT_STEP_ID)
+            .WithDisplayName(NODE_INPUT_STEP_TITLE)
+            .WithDefaultValue(10)
             .Build();
 
         if (isPreviewEnabled)
@@ -103,21 +101,21 @@ public class BoxBlurNode : Node,
 
         var isValid = true;
 
-        if (input.Grid == null || input.Grid.Values == null || input.Grid.Values.Length == 0)
+        if (input.Spline == null)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
             isValid = false;
         }
 
-        if (input.Radius <= 0)
+        if (input.Size <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
             isValid = false;
         }
 
-        if (input.Iterations <= 0 || input.Iterations > MAX_ITERATIONS)
+        if (input.Step <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.Iterations} (valid: 0 < n < {MAX_ITERATIONS})", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_STEP_TITLE} value invalid: {input.Step} (valid: 0 < n)", this);
             isValid = false;
         }
 
@@ -135,12 +133,13 @@ public class BoxBlurNode : Node,
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.Radius) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.Iterations);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out SplineWrapper splineWrapper) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_STEP_ID, out temp.Step);
 
         if (success)
         {
+            temp.Spline = splineWrapper?.Spline;
             temp.GenerationHash = temp.GetHashCode();
 
             input = temp;
@@ -179,63 +178,28 @@ public class BoxBlurNode : Node,
 
         try
         {
-            var inputGrid = inputValues.Grid;
-            var radius = inputValues.Radius;
-            var iterations = inputValues.Iterations;
-
-            int size = inputGrid.Width;
+            var spline = inputValues.Spline;
+            var size = inputValues.Size;
+            var step = inputValues.Step;
 
             var outputGrid = new HeightGrid(size);
 
-            var tmp = new HeightGrid(size);
+            var vertices = SplineHelpers.GetSplineVertices(spline, step);
 
-            for (int it = 0; it < iterations; it++)
+            for (int y = 0; y < size; y++)
             {
-                // Horizontal
-                for (int y = 0; y < size; y++)
-                {
-                    float sum = 0f;
-                    int count = 0;
-
-                    for (int x = -radius; x <= radius; x++)
-                    {
-                        sum += SafeGet(inputGrid, x, y);
-                        count++;
-                    }
-
-                    for (int x = 0; x < size; x++)
-                    {
-                        tmp[x, y] = sum / count;
-
-                        // slide window
-                        float left = SafeGet(inputGrid, x - radius, y);
-                        float right = SafeGet(inputGrid, x + 1 + radius, y);
-                        sum += right - left;
-                    }
-                }
-
-                // Vertical
                 for (int x = 0; x < size; x++)
                 {
-                    float sum = 0f;
-                    int count = 0;
+                    outputGrid[x, y] = 0;
 
-                    for (int y = -radius; y <= radius; y++)
+                    if (GeometryHelpers.IsPointInPolygon(new Vector3(x, 0, y), vertices, performSanityCheck: true))
                     {
-                        sum += SafeGet(tmp, x, y);
-                        count++;
-                    }
-
-                    for (int y = 0; y < size; y++)
-                    {
-                        outputGrid[x, y] = sum / count;
-
-                        float top = SafeGet(tmp, x, y - radius);
-                        float bottom = SafeGet(tmp, x, y + 1 + radius);
-                        sum += bottom - top;
+                        outputGrid[x, y] = 1;
                     }
                 }
             }
+
+            outputGrid.GenerationHash = inputValues.GenerationHash;
 
             _cachedOutputGrid = outputGrid;
             return true;
@@ -245,15 +209,6 @@ public class BoxBlurNode : Node,
             Debug.LogException(ex);
             return false;
         }
-    }
-
-    protected static float SafeGet(HeightGrid grid, int x, int y)
-    {
-        int w = grid.Width;
-        int h = grid.Height;
-        x = Mathf.Clamp(x, 0, w - 1);
-        y = Mathf.Clamp(y, 0, h - 1);
-        return grid[x, y];
     }
 
     public void UpdatePreview()

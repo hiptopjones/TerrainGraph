@@ -4,7 +4,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class ExportTextureNode : Node,
+public class ExportNode : Node,
     IValidatableNode
 {
     private class InputValues

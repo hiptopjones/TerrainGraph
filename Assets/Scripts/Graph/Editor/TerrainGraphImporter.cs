@@ -23,7 +23,7 @@ internal class TerrainGraphImporter : ScriptedImporter
 
     private bool TryExecuteGraph(TerrainEditorGraph graph)
     {
-        var endNodes = graph.GetNodes().OfType<ExportTextureNode>();
+        var endNodes = graph.GetNodes().OfType<ExportNode>();
 
         foreach (var endNode in endNodes)
         {

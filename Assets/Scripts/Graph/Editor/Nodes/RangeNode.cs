@@ -1,26 +1,31 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.Splines;
 
 [Serializable]
-public class SplineMaskNode : Node,
+public class RangeNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private class InputValues
     {
-        public Spline Spline;
-        public int Size;
-        public float Step;
+        public HeightGrid Grid;
+        public Vector2 FromRange;
+        public Vector2 ToRange;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Spline, Size, Step);
+            return HashCode.Combine(Grid.GenerationHash, FromRange, ToRange);
         }
+    }
+
+    private enum RampType
+    {
+        Curve = 100,
+        Gradient = 200
     }
 
     private HeightGrid _cachedOutputGrid;
@@ -29,20 +34,20 @@ public class SplineMaskNode : Node,
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
     private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
-    // Input
-    private const string NODE_INPUT_SPLINE_ID = "spline_input";
-    private const string NODE_INPUT_SPLINE_TITLE = "Spline";
+    // Inputs
+    private const string NODE_INPUT_GRID_ID = "grid_input";
+    private const string NODE_INPUT_GRID_TITLE = "Grid";
 
-    private const string NODE_INPUT_SIZE_ID = "size_input";
-    private const string NODE_INPUT_SIZE_TITLE = "Size";
+    private const string NODE_INPUT_FROM_ID = "from_input";
+    private const string NODE_INPUT_FROM_TITLE = "From Range";
 
-    private const string NODE_INPUT_STEP_ID = "step_input";
-    private const string NODE_INPUT_STEP_TITLE = "Step";
+    private const string NODE_INPUT_TO_ID = "to_input";
+    private const string NODE_INPUT_TO_TITLE = "To Range";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
-    // Output
+    // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
     private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
 
@@ -59,16 +64,16 @@ public class SplineMaskNode : Node,
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
-            .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
+        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
+            .WithDisplayName(NODE_INPUT_GRID_TITLE)
             .Build();
-        context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
-            .WithDisplayName(NODE_INPUT_SIZE_TITLE)
-            .WithDefaultValue(256)
+        context.AddInputPort<Vector2>(NODE_INPUT_FROM_ID)
+            .WithDisplayName(NODE_INPUT_FROM_TITLE)
+            .WithDefaultValue(new Vector2(0, 1))
             .Build();
-        context.AddInputPort<float>(NODE_INPUT_STEP_ID)
-            .WithDisplayName(NODE_INPUT_STEP_TITLE)
-            .WithDefaultValue(10)
+        context.AddInputPort<Vector2>(NODE_INPUT_TO_ID)
+            .WithDisplayName(NODE_INPUT_TO_TITLE)
+            .WithDefaultValue(new Vector2(0, 1))
             .Build();
 
         if (isPreviewEnabled)
@@ -101,21 +106,21 @@ public class SplineMaskNode : Node,
 
         var isValid = true;
 
-        if (input.Spline == null)
+        if (input.Grid == null || input.Grid.Values == null || input.Grid.Values.Length == 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
             isValid = false;
         }
 
-        if (input.Size <= 0)
+        if (input.FromRange.x == input.FromRange.y)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_FROM_TITLE} value invalid (x != y)", this);
             isValid = false;
         }
 
-        if (input.Step <= 0)
+        if (input.ToRange.x == input.ToRange.y)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_STEP_TITLE} value invalid: {input.Step} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_TO_TITLE} value invalid (x != y)", this);
             isValid = false;
         }
 
@@ -133,13 +138,12 @@ public class SplineMaskNode : Node,
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out SplineWrapper splineWrapper) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_STEP_ID, out temp.Step);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_FROM_ID, out temp.FromRange) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TO_ID, out temp.ToRange);
 
         if (success)
         {
-            temp.Spline = splineWrapper?.Spline;
             temp.GenerationHash = temp.GetHashCode();
 
             input = temp;
@@ -149,15 +153,15 @@ public class SplineMaskNode : Node,
         return false;
     }
 
-    public bool TryGetOutputValue(IPort _, out HeightGrid grid)
+    public bool TryGetOutputValue(IPort _, out HeightGrid value)
     {
         if (!TryExecuteNode())
         {
-            grid = null;
+            value = null;
             return false;
         }
 
-        grid = _cachedOutputGrid;
+        value = _cachedOutputGrid;
         return true;
     }
 
@@ -178,28 +182,24 @@ public class SplineMaskNode : Node,
 
         try
         {
-            var spline = inputValues.Spline;
-            var size = inputValues.Size;
-            var step = inputValues.Step;
+            var inputGrid = inputValues.Grid;
+            var fromRange = inputValues.FromRange;
+            var toRange = inputValues.ToRange;
+
+            var size = inputGrid.Width;
 
             var outputGrid = new HeightGrid(size);
-
-            var vertices = SplineHelpers.GetSplineVertices(spline, step);
 
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    outputGrid[x, y] = 0;
-
-                    if (GeometryHelpers.IsPointInPolygon(new Vector3(x, 0, y), vertices, performSanityCheck: true))
-                    {
-                        outputGrid[x, y] = 1;
-                    }
+                    var fromValue = inputGrid[x, y];
+                    var t = Mathf.InverseLerp(fromRange.x, fromRange.y, fromValue);
+                    var toValue = Mathf.Lerp(toRange.x, toRange.y, t);
+                    outputGrid[x, y] = toValue;
                 }
             }
-
-            outputGrid.GenerationHash = inputValues.GenerationHash;
 
             _cachedOutputGrid = outputGrid;
             return true;
