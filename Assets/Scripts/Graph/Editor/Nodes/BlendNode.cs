@@ -128,6 +128,12 @@ public class BlendNode : Node,
             isValid = false;
         }
 
+        if (isValid && input.Grid1.Values.Length != input.Grid2.Values.Length)
+        {
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} and {NODE_INPUT_GRID2_TITLE} size mismatch", this);
+            isValid = false;
+        }
+
         if (isValid)
         {
             validatedInput = input;
