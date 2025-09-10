@@ -35,7 +35,7 @@ internal static class NoiseHelpers
                     currentFreqency *= lacunarity;
                 }
 
-                noise[x, y] = totalNoise / totalAmplitude;
+                noise[x, y] = Mathf.Clamp01(totalNoise / totalAmplitude);
             }
         }
 
