@@ -5,25 +5,25 @@ using UnityEngine.UIElements;
 
 public class PreviewDispatcher
 {
-    private static Dictionary<PreviewImage, List<Image>> targetImages = new();
-    private static Dictionary<Image, Action> imageActions = new();
-    private static Dictionary<Image, PreviewImage> imageTargets = new();
+    private static Dictionary<PreviewImage, List<Image>> _targetImages = new();
+    private static Dictionary<Image, Action> _imageActions = new();
+    private static Dictionary<Image, PreviewImage> _imageTargets = new();
 
     // TODO: This whole thing feels pretty heavy-handed
     public static void Register(PreviewImage target, Image image, Action<PreviewImage, Image> onUpdateTexture)
     {
-        if (!targetImages.TryGetValue(target, out var images))
+        if (!_targetImages.TryGetValue(target, out var images))
         {
             images = new List<Image>();
-            targetImages[target] = images;
+            _targetImages[target] = images;
         }
 
         images.Add(image);
 
         Action action = () => onUpdateTexture(target, image);
-        imageActions[image] = action;
+        _imageActions[image] = action;
 
-        imageTargets[image] = target;
+        _imageTargets[image] = target;
 
         // This cleans up the references when the UI goes away
         image.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -33,23 +33,23 @@ public class PreviewDispatcher
     {
         var image = e.currentTarget as Image;
 
-        if (!imageTargets.TryGetValue(image, out var target))
+        if (!_imageTargets.TryGetValue(image, out var target))
         {
             return;
         }
 
-        imageActions.Remove(image);
-        imageTargets.Remove(image);
-        targetImages[target].Remove(image);
+        _imageActions.Remove(image);
+        _imageTargets.Remove(image);
+        _targetImages[target].Remove(image);
     }
 
     public static void UpdatePreview(PreviewImage target)
     {
-        if (targetImages.TryGetValue(target, out var images))
+        if (_targetImages.TryGetValue(target, out var images))
         {
             foreach (var image in images)
             {
-                if (imageActions.TryGetValue(image, out var action))
+                if (_imageActions.TryGetValue(image, out var action))
                 {
                     action.Invoke();
                 }

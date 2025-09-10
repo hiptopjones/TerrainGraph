@@ -10,8 +10,8 @@ public class RampNode : Node,
 {
     private class InputValues
     {
-        public HeightGrid Grid;
         public RampType RampType;
+        public HeightGrid Grid;
         public AnimationCurve Curve;
         public Gradient Gradient;
 
@@ -19,7 +19,7 @@ public class RampNode : Node,
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.GenerationHash, Curve);
+            return HashCode.Combine(RampType, Grid.GenerationHash, Curve, Gradient);
         }
     }
 
@@ -139,6 +139,12 @@ public class RampNode : Node,
 
         var isValid = true;
 
+        if (!Enum.IsDefined(typeof(RampType), input.RampType))
+        {
+            if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_TYPE_TITLE} option invalid", this);
+            isValid = false;
+        }
+
         if (input.Grid == null || input.Grid.Values == null || input.Grid.Values.Length == 0)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
@@ -206,7 +212,7 @@ public class RampNode : Node,
         {
             var inputGrid = inputValues.Grid;
 
-            var remapFunction = GetRemapFunction(inputValues);
+            var rampFunction = GetRampFunction(inputValues);
 
             var size = inputGrid.Width;
 
@@ -216,7 +222,7 @@ public class RampNode : Node,
             {
                 for (int x = 0; x < size; x++)
                 {
-                    outputGrid[x, y] = remapFunction(inputGrid[x, y]);
+                    outputGrid[x, y] = rampFunction(inputGrid[x, y]);
                 }
             }
 
@@ -230,7 +236,7 @@ public class RampNode : Node,
         }
     }
 
-    private Func<float, float> GetRemapFunction(InputValues inputValues)
+    private Func<float, float> GetRampFunction(InputValues inputValues)
     {
         var curve = inputValues.Curve;
         var gradient = inputValues.Gradient;

@@ -3,64 +3,59 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class BlendNode : Node,
+public class ShapeNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private class InputValues
     {
-        public BlendMethod BlendMethod;
-        public HeightGrid Grid1;
-        public HeightGrid Grid2;
+        public ShapeType ShapeType;
+        public float Radius;
+        public int Size;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(BlendMethod, Grid1?.GenerationHash, Grid2?.GenerationHash);
+            return HashCode.Combine(ShapeType, Radius, Size);
         }
     }
 
-    private enum BlendMethod
+    private enum ShapeType
     {
-        Add = 100,
-        Subtract = 200,
-        Multiply = 300,
-        Divide = 400,
-        Minimum = 500,
-        Maximum = 600,
-        Average = 700,
+        Cone = 100,
+        Cylinder = 200,
     }
 
     private HeightGrid _cachedOutputGrid;
 
     // Options
-    private const string NODE_OPTION_METHOD_ID = "method_option";
-    private const string NODE_OPTION_METHOD_TITLE = "Blend Method";
-    
+    private const string NODE_OPTION_TYPE_ID = "type_option";
+    private const string NODE_OPTION_TYPE_TITLE = "Shape Type";
+
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
     private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
-    // Input
-    private const string NODE_INPUT_GRID1_ID = "grid1_input";
-    private const string NODE_INPUT_GRID1_TITLE = "Height Grid 1";
+    // Inputs
+    private const string NODE_INPUT_SIZE_ID = "size_input";
+    private const string NODE_INPUT_SIZE_TITLE = "Size";
 
-    private const string NODE_INPUT_GRID2_ID = "grid2_input";
-    private const string NODE_INPUT_GRID2_TITLE = "Height Grid 2";
+    private const string NODE_INPUT_RADIUS_ID = "radius_input";
+    private const string NODE_INPUT_RADIUS_TITLE = "Radius";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
-    // Output
+    // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
     private const string NODE_OUTPUT_GRID_TITLE = "Height Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<BlendMethod>(NODE_OPTION_METHOD_ID)
-            .WithDisplayName(NODE_OPTION_METHOD_TITLE)
-            .WithDefaultValue(BlendMethod.Maximum)
+        context.AddOption<ShapeType>(NODE_OPTION_TYPE_ID)
+            .WithDisplayName(NODE_OPTION_TYPE_TITLE)
+            .WithDefaultValue(ShapeType.Cone)
             .Build();
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
             .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
@@ -73,11 +68,13 @@ public class BlendNode : Node,
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID1_ID)
-            .WithDisplayName(NODE_INPUT_GRID1_TITLE)
+        context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
+            .WithDisplayName(NODE_INPUT_SIZE_TITLE)
+            .WithDefaultValue(256)
             .Build();
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID2_ID)
-            .WithDisplayName(NODE_INPUT_GRID2_TITLE)
+        context.AddInputPort<float>(NODE_INPUT_RADIUS_ID)
+            .WithDisplayName(NODE_INPUT_RADIUS_TITLE)
+            .WithDefaultValue(0.5f)
             .Build();
 
         if (isPreviewEnabled)
@@ -110,21 +107,21 @@ public class BlendNode : Node,
 
         var isValid = true;
 
-        if (!Enum.IsDefined(typeof(BlendMethod), input.BlendMethod))
+        if (!Enum.IsDefined(typeof(ShapeType), input.ShapeType))
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_METHOD_TITLE} option invalid", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_TYPE_TITLE} option invalid", this);
             isValid = false;
         }
 
-        if (input.Grid1 == null || input.Grid1.Values == null || input.Grid1.Values.Length == 0)
+        if (input.Size <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} value missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
             isValid = false;
         }
 
-        if (input.Grid2 == null || input.Grid2.Values == null || input.Grid2.Values.Length == 0)
+        if (input.Radius < 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID2_TITLE} value missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 <= n)", this);
             isValid = false;
         }
 
@@ -142,9 +139,9 @@ public class BlendNode : Node,
 
         var temp = new InputValues();
         var success =
-            GetNodeOptionByName(NODE_OPTION_METHOD_ID).TryGetValue(out temp.BlendMethod) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID1_ID, out temp.Grid1) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID2_ID, out temp.Grid2);
+            GetNodeOptionByName(NODE_OPTION_TYPE_ID).TryGetValue(out temp.ShapeType) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.Radius);
 
         if (success)
         {
@@ -157,15 +154,15 @@ public class BlendNode : Node,
         return false;
     }
 
-    public bool TryGetOutputValue(IPort _, out HeightGrid grid)
+    public bool TryGetOutputValue(IPort _, out HeightGrid value)
     {
         if (!TryExecuteNode())
         {
-            grid = null;
+            value = null;
             return false;
         }
 
-        grid = _cachedOutputGrid;
+        value = _cachedOutputGrid;
         return true;
     }
 
@@ -186,14 +183,12 @@ public class BlendNode : Node,
 
         try
         {
-            var blendMethod = inputValues.BlendMethod;
-            var inputGrid1 = inputValues.Grid1;
-            var inputGrid2 = inputValues.Grid2;
+            var shapeFunction = GetShapeFunction(inputValues);
 
-            Func<float, float, float> blendFunction = GetBlendFunction(blendMethod);
+            var size = inputValues.Size;
+            var radius = inputValues.Radius * size;
 
-            // TODO: Validate all lengths are expected
-            var size = inputGrid1.Width;
+            var center = Vector2.one * size / 2f;
 
             var outputGrid = new HeightGrid(size);
 
@@ -201,7 +196,8 @@ public class BlendNode : Node,
             {
                 for (int x = 0; x < size; x++)
                 {
-                    outputGrid[x, y] = blendFunction(inputGrid1[x, y], inputGrid2[x, y]);
+                    var position = new Vector2(x, y) - center;
+                    outputGrid[x, y] = shapeFunction(position, radius);
                 }
             }
 
@@ -215,34 +211,17 @@ public class BlendNode : Node,
         }
     }
 
-    private Func<float, float, float> GetBlendFunction(BlendMethod blendMethod)
+    private Func<Vector2, float, float> GetShapeFunction(InputValues inputValues)
     {
-        switch (blendMethod)
+        switch (inputValues.ShapeType)
         {
-            case BlendMethod.Add:
-                return BlendFunctions.Add;
-
-            case BlendMethod.Subtract:
-                return BlendFunctions.Subtract;
-
-            case BlendMethod.Multiply:
-                return BlendFunctions.Multiply;
-
-            case BlendMethod.Divide:
-                return BlendFunctions.Divide;
-
-            case BlendMethod.Minimum:
-                return BlendFunctions.Minimum;
-
-            case BlendMethod.Maximum:
-                return BlendFunctions.Maximum;
-
-            case BlendMethod.Average:
-                return BlendFunctions.Average;
-
+            case ShapeType.Cone:
+                return ShapeFunctions.Cone;
+            case ShapeType.Cylinder:
+                return ShapeFunctions.Cylinder;
             default:
-                Debug.LogError($"Unhandled blend method: {blendMethod}");
-                return BlendFunctions.Invalid;
+                Debug.LogError($"Unhandled shape type: {inputValues.ShapeType}");
+                return ShapeFunctions.Invalid;
         }
     }
 
