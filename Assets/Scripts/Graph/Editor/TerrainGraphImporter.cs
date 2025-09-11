@@ -23,11 +23,11 @@ internal class TerrainGraphImporter : ScriptedImporter
 
     private bool TryExecuteGraph(TerrainEditorGraph graph)
     {
-        var endNodes = graph.GetNodes().OfType<ExportNode>();
+        var executableNodes = graph.GetNodes().OfType<IExecutableNode>();
 
-        foreach (var endNode in endNodes)
+        foreach (var executableNode in executableNodes)
         {
-            endNode.TryExecuteNode();
+            executableNode.TryExecuteNode();
         }
 
         return true;

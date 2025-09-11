@@ -1,11 +1,13 @@
 ﻿using System;
 using System.IO;
 using Unity.GraphToolkit.Editor;
+using UnityEditor;
 using UnityEngine;
 
 [Serializable]
 public class ExportNode : Node,
-    IValidatableNode
+    IValidatableNode,
+    IExecutableNode
 {
     private class InputValues
     {
@@ -97,13 +99,7 @@ public class ExportNode : Node,
         return false;
     }
 
-    // TODO: Put this in an interface (IEndNode or something)
     public bool TryExecuteNode()
-    {
-        return TryExecuteNodeInternal();
-    }
-
-    private bool TryExecuteNodeInternal()
     {
         if (!TryGetValidatedInputValues(out var inputValues))
         {
@@ -121,6 +117,10 @@ public class ExportNode : Node,
 
             Directory.CreateDirectory(Path.GetDirectoryName(exportPath));
             File.WriteAllBytes(exportPath, bytes);
+
+            // Ensure the editor picks up any changes
+            // NOTE: Unable to invoke a refresh directly during graph asset import
+            EditorApplication.delayCall = () => AssetDatabase.Refresh();
 
             return true;
         }
