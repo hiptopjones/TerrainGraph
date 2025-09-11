@@ -168,8 +168,8 @@ public class ScaleNode : Node,
             {
                 for (int x = 0; x < size; x++)
                 {
-                    var source = (new Vector2(x, y) - center) / scalePercent;
-                    source += center;
+                    var target = new Vector2(x, y);
+                    var source = (target - center) / scalePercent + center;
 
                     if (source.x < 0 || source.x > size - 1 ||
                         source.y < 0 || source.y > size - 1)

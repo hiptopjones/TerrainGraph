@@ -3,21 +3,20 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class TranslateNode : Node,
+public class ImportNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
 {
     private class InputValues
     {
-        public HeightGrid Grid;
-        public Vector2 Translation;
+        public Texture2D Texture;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.GenerationHash);
+            return HashCode.Combine(Texture);
         }
     }
 
@@ -28,11 +27,8 @@ public class TranslateNode : Node,
     private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
     // Inputs
-    private const string NODE_INPUT_GRID_ID = "grid_input";
-    private const string NODE_INPUT_GRID_TITLE = "Grid";
-
-    private const string NODE_INPUT_TRANSLATION_ID = "translation_input";
-    private const string NODE_INPUT_TRANSLATION_TITLE = "Translation";
+    private const string NODE_INPUT_TEXTURE_ID = "texture_input";
+    private const string NODE_INPUT_TEXTURE_TITLE = "Texture";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
@@ -54,11 +50,8 @@ public class TranslateNode : Node,
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
-            .WithDisplayName(NODE_INPUT_GRID_TITLE)
-            .Build();
-        context.AddInputPort<Vector2>(NODE_INPUT_TRANSLATION_ID)
-            .WithDisplayName(NODE_INPUT_TRANSLATION_TITLE)
+        context.AddInputPort<Texture>(NODE_INPUT_TEXTURE_ID)
+            .WithDisplayName(NODE_INPUT_TEXTURE_TITLE)
             .Build();
 
         if (isPreviewEnabled)
@@ -91,9 +84,9 @@ public class TranslateNode : Node,
 
         var isValid = true;
 
-        if (input.Grid == null || input.Grid.Values == null || input.Grid.Values.Length == 0)
+        if (input.Texture == null)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_TEXTURE_TITLE} value missing", this);
             isValid = false;
         }
 
@@ -111,8 +104,7 @@ public class TranslateNode : Node,
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TRANSLATION_ID, out temp.Translation);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TEXTURE_ID, out temp.Texture);
 
         if (success)
         {
@@ -154,31 +146,32 @@ public class TranslateNode : Node,
 
         try
         {
-            var inputGrid = inputValues.Grid;
-            var translation = inputValues.Translation;
+            var texture = inputValues.Texture;
 
-            var size = inputGrid.Width;
+            var inputSize = new Vector2Int(texture.width, texture.height);
+            var outputSize = Mathf.Max(texture.width, texture.height);
 
-            var outputGrid = new HeightGrid(size);
+            var outputGrid = new HeightGrid(outputSize);
 
-            for (int y = 0; y < size; y++)
+            var outputCenter = Vector2Int.one * outputSize / 2;
+            var inputCenter = Vector2Int.one * inputSize / 2;
+
+            for (int y = 0; y < outputSize; y++)
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < outputSize; x++)
                 {
                     var target = new Vector2Int(x, y);
-                    var source = target - translation * size;
+                    var source = target - outputCenter + inputCenter;
 
-                    var sourceX = Mathf.RoundToInt(source.x);
-                    var sourceY = Mathf.RoundToInt(source.y);
-
-                    if (sourceX < 0 || sourceX >= size ||
-                        sourceY < 0 || sourceY >= size)
+                    if (source.x < 0 || source.x > inputSize.x - 1 ||
+                        source.y < 0 || source.y > inputSize.y - 1)
                     {
                         outputGrid[x, y] = 0;
                     }
                     else
                     {
-                        outputGrid[x, y] = inputGrid[sourceX, sourceY];
+                        var color = texture.GetPixel(source.x, source.y);
+                        outputGrid[x, y] = color.grayscale;
                     }
                 }
             }
