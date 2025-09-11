@@ -3,7 +3,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class ImportNode : Node,
+public class TextureNode : Node,
     IValidatableNode,
     IEvaluatableNode<HeightGrid>,
     IPreviewableNode
@@ -143,6 +143,9 @@ public class ImportNode : Node,
             // Node is already up-to-date
             return true;
         }
+
+        // Clear the cached values in case there's an early exit below
+        _cachedOutputGrid = null;
 
         try
         {

@@ -190,6 +190,9 @@ public class BlendNode : Node,
             return true;
         }
 
+        // Clear the cached values in case there's an early exit below
+        _cachedOutputGrid = null;
+
         try
         {
             var blendMethod = inputValues.BlendMethod;

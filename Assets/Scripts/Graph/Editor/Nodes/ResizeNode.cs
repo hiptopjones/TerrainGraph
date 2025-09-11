@@ -159,6 +159,9 @@ public class ResizeNode : Node,
             return true;
         }
 
+        // Clear the cached values in case there's an early exit below
+        _cachedOutputGrid = null;
+
         try
         {
             var inputGrid = inputValues.Grid;
@@ -181,11 +184,11 @@ public class ResizeNode : Node,
                     if (source.x < 0 || source.x > inputSize - 1 ||
                         source.y < 0 || source.y > inputSize - 1)
                     {
-                        outputGrid[target.x, target.y] = 0;
+                        outputGrid[x, y] = 0;
                     }
                     else
                     {
-                        outputGrid[target.x, target.y] = inputGrid[source.x, source.y];
+                        outputGrid[x, y] = inputGrid[source.x, source.y];
                     }
                 }
             }

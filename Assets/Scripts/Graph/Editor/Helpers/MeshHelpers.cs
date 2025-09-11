@@ -8,7 +8,6 @@ public static class MeshHelpers
     {
         public Vector3[] Vertices;
         public int[] Triangles;
-        public Vector3[] Normals;
         public Vector2[] Uvs;
 
         public MeshData(HeightGrid grid)
@@ -89,19 +88,6 @@ public static class MeshHelpers
         }
 
         builder.Append("\n");
-
-        if (meshData.Normals != null && meshData.Normals.Length != 0)
-        {
-            // Write normals
-            foreach (Vector3 v in meshData.Normals)
-            {
-                // X is flipped to make the model use a right-handed coordinate system, which
-                // is necessary to make Unity display the model properly on import
-                builder.AppendFormat("vn {0} {1} {2}\n", -v.x, v.y, v.z);
-            }
-
-            builder.Append("\n");
-        }
 
         if (meshData.Uvs != null && meshData.Uvs.Length != 0)
         {

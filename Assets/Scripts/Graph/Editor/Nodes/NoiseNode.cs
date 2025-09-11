@@ -233,6 +233,9 @@ public class NoiseNode : Node,
             return true;
         }
 
+        // Clear the cached values in case there's an early exit below
+        _cachedOutputGrid = null;
+
         try
         {
             var size = inputValues.Size;
