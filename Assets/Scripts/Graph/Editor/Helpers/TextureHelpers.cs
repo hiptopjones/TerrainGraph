@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 internal static class TextureHelpers
 {
@@ -52,19 +53,70 @@ internal static class TextureHelpers
             {
                 var value = grid[x, y];
 
+                Color color;
                 if (value > 1)
                 {
-                    texture.SetPixel(x, y, Color.green);
+                    color = Color.green;
                 }
                 else if (value < 0)
                 {
-                    texture.SetPixel(x, y, Color.red);
+                    color = Color.red;
                 }
                 else
                 {
-                    texture.SetPixel(x, y, new Color(value, value, value));
+                    color = new Color(value, value, value);
                 }
+
+                texture.SetPixel(x, y, color);
             }
+        }
+
+        texture.Apply(false, false);
+
+        return texture;
+    }
+
+    // TODO: Instead, use the spline-to-mask conversion, and then reuse the above method
+    public static Texture2D CreatePreviewTexture(SplineWrapper spline)
+    {
+        var width = spline.Size;
+        var height = spline.Size;
+
+        var texture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
+        texture.wrapMode = TextureWrapMode.Clamp;
+        texture.filterMode = FilterMode.Bilinear;
+
+        // Clear the texture
+        for (int y = 0; y < texture.height; y++)
+        {
+            for (int x = 0; x < texture.width; x++)
+            {
+                texture.SetPixel(x, y, Color.black);
+            }
+        }
+
+        // Draw the spline points
+        foreach (var point in spline.Spline)
+        {
+            var x = Mathf.RoundToInt(point.Position.x);
+            var y = Mathf.RoundToInt(point.Position.z);
+            var value = point.Position.y;
+
+            Color color;
+            if (value > 1)
+            {
+                color = Color.green;
+            }
+            else if (value < 0)
+            {
+                color = Color.red;
+            }
+            else
+            {
+                color = Color.white;
+            }
+
+            texture.SetPixel(x, y, color);
         }
 
         texture.Apply(false, false);

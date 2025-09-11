@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
 
@@ -50,5 +54,10 @@ internal static class SplineHelpers
         pathVertices.Add(spline.EvaluatePosition(1));
 
         return pathVertices.ToArray();
+    }
+     
+    public static Spline CreateSpline(List<Vector2> points, bool closed = false)
+    {
+        return new Spline(points.Select(p => new float3(p.x, 0, p.y)), TangentMode.AutoSmooth, closed);
     }
 }

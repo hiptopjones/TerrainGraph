@@ -41,7 +41,7 @@ public class TerrainEditorGraph : Graph
 
         foreach (var node in nodes)
         {
-            node.UpdatePreview();
+            node.TryUpdatePreview();
         }
     }
 }

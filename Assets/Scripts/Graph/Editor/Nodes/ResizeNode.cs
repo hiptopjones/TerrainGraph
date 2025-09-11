@@ -22,6 +22,7 @@ public class ResizeNode : Node,
     }
 
     private HeightGrid _cachedOutputGrid;
+    private int _previewGenerationHash;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -193,6 +194,8 @@ public class ResizeNode : Node,
                 }
             }
 
+            outputGrid.GenerationHash = inputValues.GenerationHash;
+
             _cachedOutputGrid = outputGrid;
             return true;
         }
@@ -203,15 +206,41 @@ public class ResizeNode : Node,
         }
     }
 
-    public void UpdatePreview()
+    public bool TryUpdatePreview()
     {
         // Ensure we're up-to-date. Needed for standalone nodes that have nobody else to poke them
-        TryExecuteNode();
+        if (!TryExecuteNode())
+        {
+            // Node execution failed
+            return false;
+        }
 
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-        if (isPreviewEnabled)
+        if (!isPreviewEnabled)
         {
-            PreviewHelpers.TryUpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid);
+            // Force generation when next enabled
+            _previewGenerationHash = 0;
+
+            // Preview is disabled, treat as up-to-date
+            return true;
         }
+
+        if (_previewGenerationHash == _cachedOutputGrid.GenerationHash)
+        {
+            // Preview is already up-to-date
+            return true;
+        }
+
+        if (PreviewHelpers.TryUpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid))
+        {
+            // Cache generation value to avoid unnecessary updates
+            _previewGenerationHash = _cachedOutputGrid.GenerationHash;
+
+            // Preview was successfully updated
+            return true;
+        }
+
+        // Preview could not be updated
+        return false;
     }
 }

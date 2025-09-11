@@ -1,46 +1,50 @@
 ﻿using System;
+using System.Linq;
 using Unity.GraphToolkit.Editor;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Splines;
+using UnityEngine.Windows;
 
 [Serializable]
-public class ScaleNode : Node,
+public class ContourNode : Node,
     IValidatableNode,
-    IEvaluatableNode<HeightGrid>,
+    IEvaluatableNode<SplineWrapper>,
     IPreviewableNode
 {
     private class InputValues
     {
         public HeightGrid Grid;
-        public Vector2 ScalePercent;
+        public float ContourHeight;
 
         public int GenerationHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.GenerationHash, ScalePercent);
+            return HashCode.Combine(Grid.GenerationHash, ContourHeight);
         }
     }
 
-    private HeightGrid _cachedOutputGrid;
+    private SplineWrapper _cachedOutputSpline;
     private int _previewGenerationHash;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
     private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
-    // Inputs
+    // Input
     private const string NODE_INPUT_GRID_ID = "grid_input";
     private const string NODE_INPUT_GRID_TITLE = "Grid";
 
-    private const string NODE_INPUT_SCALE_ID = "scale_input";
-    private const string NODE_INPUT_SCALE_TITLE = "Scale";
+    private const string NODE_INPUT_HEIGHT_ID = "height_input";
+    private const string NODE_INPUT_HEIGHT_TITLE = "Height";
 
     private const string NODE_INPUT_PREVIEW_ID = "preview_input";
     private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
-    // Outputs
-    private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
+    // Output
+    private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
+    private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -58,9 +62,9 @@ public class ScaleNode : Node,
         context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
             .Build();
-        context.AddInputPort<Vector2>(NODE_INPUT_SCALE_ID)
-            .WithDisplayName(NODE_INPUT_SCALE_TITLE)
-            .WithDefaultValue(Vector2.one)
+        context.AddInputPort<float>(NODE_INPUT_HEIGHT_ID)
+            .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
+            .WithDefaultValue(0.3f)
             .Build();
 
         if (isPreviewEnabled)
@@ -71,8 +75,8 @@ public class ScaleNode : Node,
         }
 
         // Output
-        context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
-            .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
+        context.AddOutputPort<SplineWrapper>(NODE_OUTPUT_SPLINE_ID)
+            .WithDisplayName(NODE_OUTPUT_SPLINE_TITLE)
             .Build();
     }
 
@@ -114,7 +118,7 @@ public class ScaleNode : Node,
         var temp = new InputValues();
         var success =
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SCALE_ID, out temp.ScalePercent);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.ContourHeight);
 
         if (success)
         {
@@ -127,15 +131,15 @@ public class ScaleNode : Node,
         return false;
     }
 
-    public bool TryGetOutputValue(IPort _, out HeightGrid value)
+    public bool TryGetOutputValue(IPort _, out SplineWrapper spline)
     {
         if (!TryExecuteNode())
         {
-            value = null;
+            spline = null;
             return false;
         }
 
-        value = _cachedOutputGrid;
+        spline = _cachedOutputSpline;
         return true;
     }
 
@@ -144,62 +148,43 @@ public class ScaleNode : Node,
         if (!TryGetValidatedInputValues(out var inputValues))
         {
             // Not in valid state
-            _cachedOutputGrid = null;
+            _cachedOutputSpline = null;
             return false;
         }
 
-        if (_cachedOutputGrid != null && _cachedOutputGrid.GenerationHash == inputValues.GenerationHash)
+        if (_cachedOutputSpline != null && _cachedOutputSpline.GenerationHash == inputValues.GenerationHash)
         {
             // Node is already up-to-date
             return true;
         }
 
         // Clear the cached values in case there's an early exit below
-        _cachedOutputGrid = null;
+        _cachedOutputSpline = null;
 
         try
         {
             var inputGrid = inputValues.Grid;
-            var scalePercent = inputValues.ScalePercent;
+            var contourHeight = inputValues.ContourHeight;
 
-            var size = inputGrid.Width;
+            var detector = new ContourDetector(inputGrid);
 
-            var outputGrid = new HeightGrid(size);
-
-            var center = Vector2.one * size / 2;
-
-            for (int y = 0; y < size; y++)
+            var contours = detector.DetectContours(contourHeight);
+            if (contours == null || !contours.Any())
             {
-                for (int x = 0; x < size; x++)
-                {
-                    var target = new Vector2(x, y);
-                    var source = (target - center) / scalePercent + center;
-
-                    if (source.x < 0 || source.x > size - 1 ||
-                        source.y < 0 || source.y > size - 1)
-                    {
-                        outputGrid[x, y] = 0;
-                    }
-                    else
-                    {
-                        var x1 = Mathf.FloorToInt(source.x);
-                        var y1 = Mathf.FloorToInt(source.y);
-                        var x2 = Mathf.FloorToInt(source.x + 1);
-                        var y2 = Mathf.FloorToInt(source.y + 1);
-
-                        var q11 = GridHelpers.SafeGet(inputGrid, x1, y1);
-                        var q21 = GridHelpers.SafeGet(inputGrid, x2, y1);
-                        var q22 = GridHelpers.SafeGet(inputGrid, x2, y2);
-                        var q12 = GridHelpers.SafeGet(inputGrid, x1, y2);
-
-                        outputGrid[x, y] = GeometryHelpers.BilinearInterpolate(source.x, source.y, q11, q21, q22, q12, x1, y1, x2, y2);
-                    }
-                }
+                Debug.LogError("Contours not detected");
+                return false;
             }
 
-            outputGrid.GenerationHash = inputValues.GenerationHash;
+            var contour = contours.OrderByDescending(x => x.Count).First();
 
-            _cachedOutputGrid = outputGrid;
+            var outputSpline = new SplineWrapper
+            {
+                Size = inputGrid.Width,
+                Spline = SplineHelpers.CreateSpline(contour, closed: true),
+                GenerationHash = inputValues.GenerationHash
+            };
+
+            _cachedOutputSpline = outputSpline;
             return true;
         }
         catch (Exception ex)
@@ -228,16 +213,16 @@ public class ScaleNode : Node,
             return true;
         }
 
-        if (_previewGenerationHash == _cachedOutputGrid.GenerationHash)
+        if (_previewGenerationHash == _cachedOutputSpline.GenerationHash)
         {
             // Preview is already up-to-date
             return true;
         }
 
-        if (PreviewHelpers.TryUpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid))
+        if (PreviewHelpers.TryUpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputSpline))
         {
             // Cache generation value to avoid unnecessary updates
-            _previewGenerationHash = _cachedOutputGrid.GenerationHash;
+            _previewGenerationHash = _cachedOutputSpline.GenerationHash;
 
             // Preview was successfully updated
             return true;

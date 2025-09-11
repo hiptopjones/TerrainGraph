@@ -11,7 +11,7 @@ public class SplineNode : Node,
 {
     private class InputValues
     {
-        public Spline Spline;
+        public SplineWrapper Spline;
         public int Size;
         public float Step;
 
@@ -19,11 +19,12 @@ public class SplineNode : Node,
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Spline, Size, Step);
+            return HashCode.Combine(Spline.GenerationHash, Size, Step);
         }
     }
 
     private HeightGrid _cachedOutputGrid;
+    private int _previewGenerationHash;
 
     // Options
     private const string NODE_OPTION_PREVIEW_ID = "preview_option";
@@ -101,7 +102,7 @@ public class SplineNode : Node,
 
         var isValid = true;
 
-        if (input.Spline == null)
+        if (input.Spline == null || input.Spline.Spline == null || input.Spline.Spline.Count == 0)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
             isValid = false;
@@ -133,13 +134,12 @@ public class SplineNode : Node,
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out SplineWrapper splineWrapper) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.Spline) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_STEP_ID, out temp.Step);
 
         if (success)
         {
-            temp.Spline = splineWrapper?.Spline;
             temp.GenerationHash = temp.GetHashCode();
 
             input = temp;
@@ -181,7 +181,7 @@ public class SplineNode : Node,
 
         try
         {
-            var spline = inputValues.Spline;
+            var spline = inputValues.Spline.Spline;
             var size = inputValues.Size;
             var step = inputValues.Step;
 
@@ -214,15 +214,41 @@ public class SplineNode : Node,
         }
     }
 
-    public void UpdatePreview()
+    public bool TryUpdatePreview()
     {
         // Ensure we're up-to-date. Needed for standalone nodes that have nobody else to poke them
-        TryExecuteNode();
+        if (!TryExecuteNode())
+        {
+            // Node execution failed
+            return false;
+        }
 
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-        if (isPreviewEnabled)
+        if (!isPreviewEnabled)
         {
-            PreviewHelpers.TryUpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid);
+            // Force generation when next enabled
+            _previewGenerationHash = 0;
+
+            // Preview is disabled, treat as up-to-date
+            return true;
         }
+
+        if (_previewGenerationHash == _cachedOutputGrid.GenerationHash)
+        {
+            // Preview is already up-to-date
+            return true;
+        }
+
+        if (PreviewHelpers.TryUpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid))
+        {
+            // Cache generation value to avoid unnecessary updates
+            _previewGenerationHash = _cachedOutputGrid.GenerationHash;
+
+            // Preview was successfully updated
+            return true;
+        }
+
+        // Preview could not be updated
+        return false;
     }
 }

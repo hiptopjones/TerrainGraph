@@ -1,4 +1,4 @@
 ﻿interface IPreviewableNode
 {
-    void UpdatePreview();
+    bool TryUpdatePreview();
 }
