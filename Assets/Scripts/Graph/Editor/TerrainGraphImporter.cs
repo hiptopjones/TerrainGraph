@@ -1,4 +1,5 @@
-﻿using Unity.GraphToolkit.Editor;
+﻿using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 
@@ -19,7 +20,13 @@ internal class TerrainGraphImporter : ScriptedImporter
 
     private bool TryExecuteGraph(TerrainEditorGraph graph)
     {
-        // TODO
+        var nonPreviewableNodes = graph.GetNodes().OfType<IExecutableNode>().Where(x => x is not IPreviewableNode);
+        
+        foreach (var node in nonPreviewableNodes)
+        {
+            node.TryExecuteNode();
+        }
+
         return true;
     }
 }

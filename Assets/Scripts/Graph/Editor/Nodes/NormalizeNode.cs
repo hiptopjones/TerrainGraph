@@ -143,19 +143,7 @@ public class NormalizeNode : ExecutableNode<HeightGrid>
 
             var size = inputGrid.Width;
 
-            var maxValue = float.MinValue;
-            var minValue = float.MaxValue;
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    var value = inputGrid[x, y];
-
-                    maxValue = Mathf.Max(maxValue, value);
-                    minValue = Mathf.Min(minValue, value);
-                }
-            }
+            (var min, var max) = GridHelpers.GetRange(inputGrid);
 
             var outputGrid = new HeightGrid(size);
 
@@ -165,7 +153,7 @@ public class NormalizeNode : ExecutableNode<HeightGrid>
                 {
                     var value = inputGrid[x, y];
 
-                    outputGrid[x, y] = Mathf.InverseLerp(minValue, maxValue, value);
+                    outputGrid[x, y] = Mathf.InverseLerp(min, max, value);
                 }
             }
 

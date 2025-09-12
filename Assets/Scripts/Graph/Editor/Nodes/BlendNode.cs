@@ -105,13 +105,13 @@ public class BlendNode : ExecutableNode<HeightGrid>
             isValid = false;
         }
 
-        if (input.Grid1 == null || input.Grid1.Values == null || input.Grid1.Values.Length == 0)
+        if (input.Grid1 == null || !input.Grid1.IsValid)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} value missing", this);
             isValid = false;
         }
 
-        if (input.Grid2 == null || input.Grid2.Values == null || input.Grid2.Values.Length == 0)
+        if (input.Grid2 == null || !input.Grid2.IsValid)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID2_TITLE} value missing", this);
             isValid = false;

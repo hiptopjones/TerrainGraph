@@ -154,8 +154,8 @@ public class RampNode : ExecutableNode<HeightGrid>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
             GetNodeOptionByName(NODE_OPTION_TYPE_ID).TryGetValue<RampType>(out temp.RampType) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
             (temp.RampType != RampType.Curve || PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_CURVE_ID, out temp.Curve)) &&
             (temp.RampType != RampType.Gradient || PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRADIENT_ID, out temp.Gradient));
 
