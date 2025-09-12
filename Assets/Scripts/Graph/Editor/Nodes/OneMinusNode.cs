@@ -3,29 +3,25 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class TranslateNode : ExecutableNode<HeightGrid>
+public class OneMinusNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
         public HeightGrid Grid;
-        public Vector2 TranslationPercent;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, TranslationPercent);
+            return HashCode.Combine(Grid.VersionHash);
         }
     }
 
     // Options
-
+    
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
     private const string NODE_INPUT_GRID_TITLE = "Grid";
-
-    private const string NODE_INPUT_TRANSLATION_ID = "translation_input";
-    private const string NODE_INPUT_TRANSLATION_TITLE = "Translation";
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -46,9 +42,6 @@ public class TranslateNode : ExecutableNode<HeightGrid>
         // Input
         context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
             .WithDisplayName(NODE_INPUT_GRID_TITLE)
-            .Build();
-        context.AddInputPort<Vector2>(NODE_INPUT_TRANSLATION_ID)
-            .WithDisplayName(NODE_INPUT_TRANSLATION_TITLE)
             .Build();
 
         if (isPreviewEnabled)
@@ -83,7 +76,7 @@ public class TranslateNode : ExecutableNode<HeightGrid>
 
         if (input.Grid == null || !input.Grid.IsValid)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
             isValid = false;
         }
 
@@ -101,8 +94,7 @@ public class TranslateNode : ExecutableNode<HeightGrid>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TRANSLATION_ID, out temp.TranslationPercent);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid);
 
         if (success)
         {
@@ -148,7 +140,6 @@ public class TranslateNode : ExecutableNode<HeightGrid>
         try
         {
             var inputGrid = inputValues.Grid;
-            var translation = inputValues.TranslationPercent;
 
             var size = inputGrid.Width;
 
@@ -158,22 +149,7 @@ public class TranslateNode : ExecutableNode<HeightGrid>
             {
                 for (int x = 0; x < size; x++)
                 {
-                    var target = new Vector2Int(x, y);
-                    var source = target - translation * size;
-
-                    var sourceX = Mathf.RoundToInt(source.x);
-                    var sourceY = Mathf.RoundToInt(source.y);
-
-                    if (sourceX < 0 || sourceX >= size ||
-                        sourceY < 0 || sourceY >= size)
-                    {
-                        outputGrid[x, y] = 0;
-                    }
-                    else
-                    {
-                        // TODO: Should use bilinear interpolation here
-                        outputGrid[x, y] = inputGrid[sourceX, sourceY];
-                    }
+                    outputGrid[x, y] = 1 - inputGrid[x, y];
                 }
             }
 

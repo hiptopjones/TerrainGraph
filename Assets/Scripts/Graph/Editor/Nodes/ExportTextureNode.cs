@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 
 [Serializable]
-public class ExportNode : Node,
+public class ExportTextureNode : Node,
     IValidatableNode,
     IExecutableNode
 {
