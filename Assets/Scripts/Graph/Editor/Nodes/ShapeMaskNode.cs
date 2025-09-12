@@ -24,6 +24,7 @@ public class ShapeMaskNode : ExecutableNode<HeightGrid>
         Cone = 100,
         Cylinder = 200,
         Gaussian = 300,
+        SmoothStep = 400,
     }
 
     // Options
@@ -216,6 +217,8 @@ public class ShapeMaskNode : ExecutableNode<HeightGrid>
                 return ShapeFunctions.Cylinder;
             case ShapeType.Gaussian:
                 return ShapeFunctions.Gaussian;
+            case ShapeType.SmoothStep:
+                return ShapeFunctions.SmoothStep;
             default:
                 Debug.LogError($"Unhandled shape type: {inputValues.ShapeType}");
                 return ShapeFunctions.Invalid;

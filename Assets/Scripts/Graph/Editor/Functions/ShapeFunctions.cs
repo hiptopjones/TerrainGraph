@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public static class ShapeFunctions
 {
@@ -38,4 +39,23 @@ public static class ShapeFunctions
         return Mathf.Clamp01(g);
     }
 
+    public static float SmoothStep(Vector2 position, float radius)
+    {
+        return RadialFunction((t) => Mathf.SmoothStep(0f, 1f, t), position, radius);
+    }
+
+    // Rotate any easing-like function around the center to get a (rounded) bump
+    private static float RadialFunction(Func<float, float> function, Vector2 position, float radius)
+    {
+        // Distance from the center
+        float distance = position.magnitude;
+
+        // Normalize distance into [0,1] where 0 = center, 1 = edge of radius
+        float t = Mathf.Clamp01(distance / radius);
+
+        // Invert so that 0 = edge, 1 = center
+        t = 1f - t;
+
+        return function(t);
+    }
 }
