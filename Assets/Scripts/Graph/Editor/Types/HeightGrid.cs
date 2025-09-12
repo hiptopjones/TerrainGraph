@@ -2,13 +2,15 @@
 using UnityEngine;
 
 [Serializable]
-public class HeightGrid
+public class HeightGrid : IVersionedData
 {
     public int Width;
     public int Height;
 
-    [HideInInspector] public float[] Values;
-    [HideInInspector] public int GenerationHash;
+    public float[] Values { get; set; }
+    public int VersionHash { get; set; }
+
+    public bool IsValid => Values != null && Values.Length > 0;
 
     public float this[int index]
     {

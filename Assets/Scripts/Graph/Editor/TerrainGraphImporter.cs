@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Unity.GraphToolkit.Editor;
+﻿using Unity.GraphToolkit.Editor;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 
@@ -16,20 +15,11 @@ internal class TerrainGraphImporter : ScriptedImporter
         }
 
         TryExecuteGraph(graph);
-
-        //context.AddObjectToAsset(OutputTextureAssetIdName, OutputTexture);
-        //context.SetMainObject(OutputTexture);
     }
 
     private bool TryExecuteGraph(TerrainEditorGraph graph)
     {
-        var executableNodes = graph.GetNodes().OfType<IExecutableNode>();
-
-        foreach (var executableNode in executableNodes)
-        {
-            executableNode.TryExecuteNode();
-        }
-
+        // TODO
         return true;
     }
 }

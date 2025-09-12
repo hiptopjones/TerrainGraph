@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 internal static class TextureHelpers
@@ -16,42 +17,129 @@ internal static class TextureHelpers
         texture.Apply(false, false);
     }
 
-    public static Texture2D CreateHeightMapTexture(HeightGrid grid)
+    public static bool TryCreateHeightMapTexture(HeightGrid grid, out Texture2D texture)
     {
-        var width = grid.Width;
-        var height = grid.Height;
-
-        var texture = new Texture2D(width, height, TextureFormat.R16, mipChain: false, linear: true);
-        texture.wrapMode = TextureWrapMode.Clamp;
-        texture.filterMode = FilterMode.Bilinear;
-
-        for (int y = 0; y < texture.height; y++)
+        try
         {
-            for (int x = 0; x < texture.width; x++)
+            var width = grid.Width;
+            var height = grid.Height;
+
+            texture = new Texture2D(width, height, TextureFormat.R16, mipChain: false, linear: true);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+
+            for (int y = 0; y < texture.height; y++)
             {
-                texture.SetPixel(x, y, new Color(grid[x, y], 0, 0, 1));
+                for (int x = 0; x < texture.width; x++)
+                {
+                    texture.SetPixel(x, y, new Color(grid[x, y], 0, 0, 1));
+                }
             }
+
+            texture.Apply(false, false);
+            return true;
         }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
 
-        texture.Apply(false, false);
-
-        return texture;
+            texture = null;
+            return false;
+        }
     }
 
-    public static Texture2D CreatePreviewTexture(HeightGrid grid)
+    public static bool TryCreatePreviewTexture(IVersionedData value, out Texture2D texture)
     {
-        var width = grid.Width;
-        var height = grid.Height;
+        texture = null;
 
-        var texture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
-        texture.wrapMode = TextureWrapMode.Clamp;
-        texture.filterMode = FilterMode.Bilinear;
-
-        for (int y = 0; y < texture.height; y++)
+        switch (value)
         {
-            for (int x = 0; x < texture.width; x++)
+            case HeightGrid grid:
+                return TryCreatePreviewTexture(grid, out texture);
+
+            case SplineWrapper spline:
+                return TryCreatePreviewTexture(spline, out texture);
+
+            default:
+                Debug.LogError($"Unhandled data type: {value.GetType().Name}");
+                return false;
+        }
+    }
+
+    public static bool TryCreatePreviewTexture(HeightGrid grid, out Texture2D texture)
+    {
+        try
+        {
+            var width = grid.Width;
+            var height = grid.Height;
+
+            texture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+
+            for (int y = 0; y < texture.height; y++)
             {
-                var value = grid[x, y];
+                for (int x = 0; x < texture.width; x++)
+                {
+                    var value = grid[x, y];
+
+                    Color color;
+                    if (value > 1)
+                    {
+                        color = Color.green;
+                    }
+                    else if (value < 0)
+                    {
+                        color = Color.red;
+                    }
+                    else
+                    {
+                        color = new Color(value, value, value);
+                    }
+
+                    texture.SetPixel(x, y, color);
+                }
+            }
+
+            texture.Apply(false, false);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex);
+
+            texture = null;
+            return false;
+        }
+    }
+
+    // TODO: Instead, use the spline-to-mask conversion, and then reuse the above method
+    public static bool TryCreatePreviewTexture(SplineWrapper spline, out Texture2D texture)
+    {
+        try
+        {
+            var width = spline.Size;
+            var height = spline.Size;
+
+            texture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+
+            // Clear the texture
+            for (int y = 0; y < texture.height; y++)
+            {
+                for (int x = 0; x < texture.width; x++)
+                {
+                    texture.SetPixel(x, y, Color.black);
+                }
+            }
+
+            // Draw the spline points
+            foreach (var point in spline.Spline)
+            {
+                var x = Mathf.RoundToInt(point.Position.x);
+                var y = Mathf.RoundToInt(point.Position.z);
+                var value = point.Position.y;
 
                 Color color;
                 if (value > 1)
@@ -64,63 +152,21 @@ internal static class TextureHelpers
                 }
                 else
                 {
-                    color = new Color(value, value, value);
+                    color = Color.white;
                 }
 
                 texture.SetPixel(x, y, color);
             }
+
+            texture.Apply(false, false);
+            return true;
         }
-
-        texture.Apply(false, false);
-
-        return texture;
-    }
-
-    // TODO: Instead, use the spline-to-mask conversion, and then reuse the above method
-    public static Texture2D CreatePreviewTexture(SplineWrapper spline)
-    {
-        var width = spline.Size;
-        var height = spline.Size;
-
-        var texture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
-        texture.wrapMode = TextureWrapMode.Clamp;
-        texture.filterMode = FilterMode.Bilinear;
-
-        // Clear the texture
-        for (int y = 0; y < texture.height; y++)
+        catch (Exception ex)
         {
-            for (int x = 0; x < texture.width; x++)
-            {
-                texture.SetPixel(x, y, Color.black);
-            }
+            Debug.LogException(ex);
+
+            texture = null;
+            return false;
         }
-
-        // Draw the spline points
-        foreach (var point in spline.Spline)
-        {
-            var x = Mathf.RoundToInt(point.Position.x);
-            var y = Mathf.RoundToInt(point.Position.z);
-            var value = point.Position.y;
-
-            Color color;
-            if (value > 1)
-            {
-                color = Color.green;
-            }
-            else if (value < 0)
-            {
-                color = Color.red;
-            }
-            else
-            {
-                color = Color.white;
-            }
-
-            texture.SetPixel(x, y, color);
-        }
-
-        texture.Apply(false, false);
-
-        return texture;
     }
 }

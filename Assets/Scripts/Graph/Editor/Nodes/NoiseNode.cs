@@ -3,10 +3,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class NoiseNode : Node,
-    IValidatableNode,
-    IEvaluatableNode<HeightGrid>,
-    IPreviewableNode
+public class NoiseNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
@@ -21,7 +18,7 @@ public class NoiseNode : Node,
         public Vector2 Range;
         public float Scale;
 
-        public int GenerationHash;
+        public int VersionHash;
 
         public override int GetHashCode()
         {
@@ -32,12 +29,7 @@ public class NoiseNode : Node,
         }
     }
 
-    private HeightGrid _cachedOutputGrid;
-    private int _previewGenerationHash;
-
     // Options
-    private const string NODE_OPTION_PREVIEW_ID = "preview_option";
-    private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
     // Inputs
     private const string NODE_INPUT_SIZE_ID = "size_input";
@@ -69,9 +61,6 @@ public class NoiseNode : Node,
 
     private const string NODE_INPUT_SCALE_ID = "scale_input";
     private const string NODE_INPUT_SCALE_TITLE = "Scale";
-
-    private const string NODE_INPUT_PREVIEW_ID = "preview_input";
-    private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -142,7 +131,7 @@ public class NoiseNode : Node,
             .Build();
     }
 
-    public bool TryValidateNode(GraphLogger graphLogger = null)
+    public override bool TryValidateNode(GraphLogger graphLogger = null)
     {
         return TryGetValidatedInputValues(out _, graphLogger);
     }
@@ -198,7 +187,7 @@ public class NoiseNode : Node,
 
         if (success)
         {
-            temp.GenerationHash = temp.GetHashCode();
+            temp.VersionHash = temp.GetHashCode();
 
             input = temp;
             return true;
@@ -207,7 +196,7 @@ public class NoiseNode : Node,
         return false;
     }
 
-    public bool TryGetOutputValue(IPort _, out HeightGrid grid)
+    public override bool TryGetOutputValue(IPort _, out HeightGrid grid)
     {
         if (!TryExecuteNode())
         {
@@ -215,27 +204,27 @@ public class NoiseNode : Node,
             return false;
         }
 
-        grid = _cachedOutputGrid;
+        grid = CacheData.Output;
         return true;
     }
 
-    private bool TryExecuteNode()
+    public override bool TryExecuteNode()
     {
         if (!TryGetValidatedInputValues(out var inputValues))
         {
             // Not in valid state
-            _cachedOutputGrid = null;
+            CacheData.Output = null;
             return false;
         }
 
-        if (_cachedOutputGrid != null && _cachedOutputGrid.GenerationHash == inputValues.GenerationHash)
+        if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
         {
             // Node is already up-to-date
             return true;
         }
 
         // Clear the cached values in case there's an early exit below
-        _cachedOutputGrid = null;
+        CacheData.Output = null;
 
         try
         {
@@ -265,9 +254,9 @@ public class NoiseNode : Node,
                 }
             }
 
-            outputGrid.GenerationHash = inputValues.GenerationHash;
+            outputGrid.VersionHash = inputValues.VersionHash;
 
-            _cachedOutputGrid = outputGrid;
+            CacheData.Output = outputGrid;
             return true;
         }
         catch (Exception ex)
@@ -275,43 +264,5 @@ public class NoiseNode : Node,
             Debug.LogException(ex);
             return false;
         }
-    }
-
-    public bool TryUpdatePreview()
-    {
-        // Ensure we're up-to-date. Needed for standalone nodes that have nobody else to poke them
-        if (!TryExecuteNode())
-        {
-            // Node execution failed
-            return false;
-        }
-
-        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-        if (!isPreviewEnabled)
-        {
-            // Force generation when next enabled
-            _previewGenerationHash = 0;
-
-            // Preview is disabled, treat as up-to-date
-            return true;
-        }
-
-        if (_previewGenerationHash == _cachedOutputGrid.GenerationHash)
-        {
-            // Preview is already up-to-date
-            return true;
-        }
-
-        if (PreviewHelpers.TryUpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid))
-        {
-            // Cache generation value to avoid unnecessary updates
-            _previewGenerationHash = _cachedOutputGrid.GenerationHash;
-
-            // Preview was successfully updated
-            return true;
-        }
-
-        // Preview could not be updated
-        return false;
     }
 }

@@ -15,16 +15,15 @@ public class ExportMeshNode : Node,
         public float HeightScale;
         public string ExportPath;
 
-        public int GenerationHash;
+        public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.GenerationHash, HeightScale, ExportPath);
+            return HashCode.Combine(Grid.VersionHash, HeightScale, ExportPath);
         }
     }
 
     // Options
-    //  n/a
 
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
@@ -37,7 +36,6 @@ public class ExportMeshNode : Node,
     private const string NODE_INPUT_PATH_TITLE = "Path";
 
     // Outputs
-    //  n/a
 
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
@@ -73,7 +71,7 @@ public class ExportMeshNode : Node,
 
         var isValid = true;
 
-        if (input.Grid == null || input.Grid.Values == null || input.Grid.Values.Length == 0)
+        if (input.Grid == null || !input.Grid.IsValid)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
             isValid = false;
@@ -99,7 +97,7 @@ public class ExportMeshNode : Node,
 
         if (success)
         {
-            temp.GenerationHash = temp.GetHashCode();
+            temp.VersionHash = temp.GetHashCode();
 
             input = temp;
             return true;

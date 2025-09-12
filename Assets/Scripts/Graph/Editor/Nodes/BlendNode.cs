@@ -3,10 +3,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class BlendNode : Node,
-    IValidatableNode,
-    IEvaluatableNode<HeightGrid>,
-    IPreviewableNode
+public class BlendNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
@@ -14,11 +11,11 @@ public class BlendNode : Node,
         public HeightGrid Grid1;
         public HeightGrid Grid2;
 
-        public int GenerationHash;
+        public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(BlendMethod, Grid1?.GenerationHash, Grid2?.GenerationHash);
+            return HashCode.Combine(BlendMethod, Grid1?.VersionHash, Grid2?.VersionHash);
         }
     }
 
@@ -33,15 +30,9 @@ public class BlendNode : Node,
         Average = 700,
     }
 
-    private HeightGrid _cachedOutputGrid;
-    private int _previewGenerationHash;
-
     // Options
     private const string NODE_OPTION_METHOD_ID = "method_option";
     private const string NODE_OPTION_METHOD_TITLE = "Blend Method";
-    
-    private const string NODE_OPTION_PREVIEW_ID = "preview_option";
-    private const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
     // Input
     private const string NODE_INPUT_GRID1_ID = "grid1_input";
@@ -49,9 +40,6 @@ public class BlendNode : Node,
 
     private const string NODE_INPUT_GRID2_ID = "grid2_input";
     private const string NODE_INPUT_GRID2_TITLE = "Grid 2";
-
-    private const string NODE_INPUT_PREVIEW_ID = "preview_input";
-    private const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
     // Output
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -94,7 +82,7 @@ public class BlendNode : Node,
             .Build();
     }
 
-    public bool TryValidateNode(GraphLogger graphLogger = null)
+    public override bool TryValidateNode(GraphLogger graphLogger = null)
     {
         return TryGetValidatedInputValues(out _, graphLogger);
     }
@@ -155,7 +143,7 @@ public class BlendNode : Node,
 
         if (success)
         {
-            temp.GenerationHash = temp.GetHashCode();
+            temp.VersionHash = temp.GetHashCode();
 
             input = temp;
             return true;
@@ -164,7 +152,7 @@ public class BlendNode : Node,
         return false;
     }
 
-    public bool TryGetOutputValue(IPort _, out HeightGrid grid)
+    public override bool TryGetOutputValue(IPort _, out HeightGrid grid)
     {
         if (!TryExecuteNode())
         {
@@ -172,27 +160,27 @@ public class BlendNode : Node,
             return false;
         }
 
-        grid = _cachedOutputGrid;
+        grid = CacheData.Output;
         return true;
     }
 
-    private bool TryExecuteNode()
+    public override bool TryExecuteNode()
     {
         if (!TryGetValidatedInputValues(out var inputValues))
         {
             // Not in valid state
-            _cachedOutputGrid = null;
+            CacheData.Output = null;
             return false;
         }
 
-        if (_cachedOutputGrid != null && _cachedOutputGrid.GenerationHash == inputValues.GenerationHash)
+        if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
         {
             // Node is already up-to-date
             return true;
         }
 
         // Clear the cached values in case there's an early exit below
-        _cachedOutputGrid = null;
+        CacheData.Output = null;
 
         try
         {
@@ -215,9 +203,9 @@ public class BlendNode : Node,
                 }
             }
 
-            outputGrid.GenerationHash = inputValues.GenerationHash;
+            outputGrid.VersionHash = inputValues.VersionHash;
 
-            _cachedOutputGrid = outputGrid;
+            CacheData.Output = outputGrid;
             return true;
         }
         catch (Exception ex)
@@ -256,43 +244,5 @@ public class BlendNode : Node,
                 Debug.LogError($"Unhandled blend method: {blendMethod}");
                 return BlendFunctions.Invalid;
         }
-    }
-
-    public bool TryUpdatePreview()
-    {
-        // Ensure we're up-to-date. Needed for standalone nodes that have nobody else to poke them
-        if (!TryExecuteNode())
-        {
-            // Node execution failed
-            return false;
-        }
-
-        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-        if (!isPreviewEnabled)
-        {
-            // Force generation when next enabled
-            _previewGenerationHash = 0;
-
-            // Preview is disabled, treat as up-to-date
-            return true;
-        }
-
-        if (_previewGenerationHash == _cachedOutputGrid.GenerationHash)
-        {
-            // Preview is already up-to-date
-            return true;
-        }
-
-        if (PreviewHelpers.TryUpdatePreview(this, NODE_INPUT_PREVIEW_ID, _cachedOutputGrid))
-        {
-            // Cache generation value to avoid unnecessary updates
-            _previewGenerationHash = _cachedOutputGrid.GenerationHash;
-
-            // Preview was successfully updated
-            return true;
-        }
-
-        // Preview could not be updated
-        return false;
     }
 }
