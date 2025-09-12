@@ -8,13 +8,13 @@ public class TranslateNode : ExecutableNode<HeightGrid>
     private class InputValues
     {
         public HeightGrid Grid;
-        public Vector2 Translation;
+        public Vector2 TranslationPercent;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash);
+            return HashCode.Combine(Grid.VersionHash, TranslationPercent);
         }
     }
 
@@ -102,7 +102,7 @@ public class TranslateNode : ExecutableNode<HeightGrid>
         var temp = new InputValues();
         var success =
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TRANSLATION_ID, out temp.Translation);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TRANSLATION_ID, out temp.TranslationPercent);
 
         if (success)
         {
@@ -148,7 +148,7 @@ public class TranslateNode : ExecutableNode<HeightGrid>
         try
         {
             var inputGrid = inputValues.Grid;
-            var translation = inputValues.Translation;
+            var translation = inputValues.TranslationPercent;
 
             var size = inputGrid.Width;
 
