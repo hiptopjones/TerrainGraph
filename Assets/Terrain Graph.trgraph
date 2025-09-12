@@ -1567,7 +1567,7 @@ MonoBehaviour:
     - rid: 5976909165470417147
       type: {class: 'Constant`1[[System.Single, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: 0.4
+        m_Value: 0.21
     - rid: 5976909165470417148
       type: {class: ShapeNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
@@ -1992,7 +1992,7 @@ MonoBehaviour:
           - rid: 5976909165470417275
           - rid: 5976909165470417276
           - rid: 5976909165470417277
-          - rid: 5976909165470417749
+          - rid: 5976909165470417757
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -2053,7 +2053,7 @@ MonoBehaviour:
     - rid: 5976909165470417276
       type: {class: 'Constant`1[[UnityEngine.Vector2, UnityEngine.CoreModule]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: {x: -0.08, y: 0.2}
+        m_Value: {x: -0.1, y: 0.2}
     - rid: 5976909165470417277
       type: {class: 'Constant`1[[UnityEngine.Vector2, UnityEngine.CoreModule]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
@@ -2117,7 +2117,7 @@ MonoBehaviour:
           m_ValueList:
           - rid: 5976909165470417288
           - rid: 5976909165470417289
-          - rid: 5976909165470417748
+          - rid: 5976909165470417758
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -2203,7 +2203,7 @@ MonoBehaviour:
           m_ValueList:
           - rid: 5976909165470417293
           - rid: 5976909165470417294
-          - rid: 5976909165470417754
+          - rid: 5976909165470417759
           - rid: 5976909165470417326
         m_InputPortInfos:
           expandedPortsById:
@@ -2365,7 +2365,7 @@ MonoBehaviour:
           m_ValueList:
           - rid: 5976909165470417320
           - rid: 5976909165470417321
-          - rid: 5976909165470417751
+          - rid: 5976909165470417761
           - rid: 5976909165470417327
         m_InputPortInfos:
           expandedPortsById:
@@ -2430,11 +2430,11 @@ MonoBehaviour:
     - rid: 5976909165470417326
       type: {class: 'Constant`1[[UnityEngine.Vector2, UnityEngine.CoreModule]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: {x: 0.3, y: 0.3}
+        m_Value: {x: 0.37, y: 0.3}
     - rid: 5976909165470417327
       type: {class: 'Constant`1[[UnityEngine.Vector2, UnityEngine.CoreModule]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: {x: -0.3, y: -0.3}
+        m_Value: {x: -0.34, y: -0.3}
     - rid: 5976909165470417328
       type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
@@ -2471,7 +2471,7 @@ MonoBehaviour:
           - rid: 5976909165470417336
           - rid: 5976909165470417337
           - rid: 5976909165470417338
-          - rid: 5976909165470417747
+          - rid: 5976909165470417756
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -2500,7 +2500,7 @@ MonoBehaviour:
     - rid: 5976909165470417338
       type: {class: 'Constant`1[[UnityEngine.Vector2, UnityEngine.CoreModule]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: {x: 1, y: 0.63}
+        m_Value: {x: 0.72, y: 0.46}
     - rid: 5976909165470417339
       type: {class: ScaleNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
@@ -2868,7 +2868,7 @@ MonoBehaviour:
           - rid: 5976909165470417393
           - rid: 5976909165470417394
           - rid: 5976909165470417395
-          - rid: 5976909165470417398
+          - rid: 5976909165470417762
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -2978,11 +2978,6 @@ MonoBehaviour:
           m_PortDirection: 1
           m_PortOrientation: 0
           m_Title: Grid 1
-    - rid: 5976909165470417398
-      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
-      data:
-        m_Value:
-          Texture: {fileID: 0}
     - rid: 5976909165470417401
       type: {class: UserNodeModelImp, ns: Unity.GraphToolkit.Editor.Implementation, asm: Unity.GraphToolkit.Editor}
       data:
@@ -3438,7 +3433,7 @@ MonoBehaviour:
           serializedVersion: 2
           Hash: 6cd19b33d96fd0e01a534f60c6f13346
         m_Version: 2
-        m_Position: {x: 3231.442, y: -687.2492}
+        m_Position: {x: 3232.1084, y: -687.2492}
         m_Title: 
         m_Tooltip: 
         m_NodePreviewModel:
@@ -3456,7 +3451,7 @@ MonoBehaviour:
           - rid: 5976909165470417436
           - rid: 5976909165470417437
           - rid: 5976909165470417438
-          - rid: 5976909165470417744
+          - rid: 5976909165470417755
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -3517,11 +3512,11 @@ MonoBehaviour:
     - rid: 5976909165470417437
       type: {class: 'Constant`1[[UnityEngine.Vector2, UnityEngine.CoreModule]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: {x: -0.08, y: 1}
+        m_Value: {x: 0, y: 1}
     - rid: 5976909165470417438
       type: {class: 'Constant`1[[UnityEngine.Vector2, UnityEngine.CoreModule]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: {x: -0.79, y: 5.23}
+        m_Value: {x: 0.5, y: 0.6}
     - rid: 5976909165470417439
       type: {class: RangeNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
@@ -3602,7 +3597,7 @@ MonoBehaviour:
     - rid: 5976909165470417455
       type: {class: 'Constant`1[[System.Single, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: 32.6
+        m_Value: 46.9
     - rid: 5976909165470417456
       type: {class: 'Constant`1[[System.Single, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
@@ -3610,7 +3605,7 @@ MonoBehaviour:
     - rid: 5976909165470417457
       type: {class: 'Constant`1[[System.Single, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: 107.9
+        m_Value: 109.8
     - rid: 5976909165470417466
       type: {class: 'Constant`1[[SplineWrapper, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
@@ -3789,7 +3784,7 @@ MonoBehaviour:
     - rid: 5976909165470417490
       type: {class: 'Constant`1[[System.Int32, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
-        m_Value: 49
+        m_Value: 43
     - rid: 5976909165470417491
       type: {class: ResizeNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
@@ -4596,26 +4591,6 @@ MonoBehaviour:
       data:
         m_Value:
           Texture: {fileID: 0}
-    - rid: 5976909165470417744
-      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
-      data:
-        m_Value:
-          Texture: {fileID: 0}
-    - rid: 5976909165470417747
-      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
-      data:
-        m_Value:
-          Texture: {fileID: 0}
-    - rid: 5976909165470417748
-      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
-      data:
-        m_Value:
-          Texture: {fileID: 0}
-    - rid: 5976909165470417749
-      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
-      data:
-        m_Value:
-          Texture: {fileID: 0}
     - rid: 5976909165470417750
       type: {class: WireModel, ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
@@ -4648,12 +4623,37 @@ MonoBehaviour:
           m_PortDirection: 1
           m_PortOrientation: 0
           m_Title: Grid
-    - rid: 5976909165470417751
+    - rid: 5976909165470417755
       type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
         m_Value:
           Texture: {fileID: 0}
-    - rid: 5976909165470417754
+    - rid: 5976909165470417756
+      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value:
+          Texture: {fileID: 0}
+    - rid: 5976909165470417757
+      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value:
+          Texture: {fileID: 0}
+    - rid: 5976909165470417758
+      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value:
+          Texture: {fileID: 0}
+    - rid: 5976909165470417759
+      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value:
+          Texture: {fileID: 0}
+    - rid: 5976909165470417761
+      type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value:
+          Texture: {fileID: 0}
+    - rid: 5976909165470417762
       type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
         m_Value:

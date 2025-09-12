@@ -100,6 +100,7 @@ public abstract class ExecutableNode<T> : Node,
     {
         try
         {
+            // TODO: Can we get the object once, instead of on every update?
             var previewPort = GetInputPortByName(NODE_INPUT_PREVIEW_ID);
             if (!previewPort.TryGetValue(out PreviewImage previewImage))
             {
@@ -108,8 +109,7 @@ public abstract class ExecutableNode<T> : Node,
                 return false;
             }
 
-            previewImage.Texture = texture;
-            PreviewDispatcher.UpdatePreview(previewImage);
+            previewImage.UpdateTexture(texture);
 
             return true;
         }

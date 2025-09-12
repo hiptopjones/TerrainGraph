@@ -30,16 +30,9 @@ public class PreviewImageDrawer : PropertyDrawer
 
         var target = fieldInfo.GetValue(property.serializedObject.targetObject) as PreviewImage;
 
-        UpdateTexture(target, image);
-
-        // Register for changes
-        PreviewDispatcher.Register(target, image, UpdateTexture);
+        target.Images.Add(image);
+        target.UpdateTexture(target.Texture);
 
         return image;
-    }
-
-    private void UpdateTexture(PreviewImage target, Image image)
-    {
-        image.image = target.Texture;
     }
 }
