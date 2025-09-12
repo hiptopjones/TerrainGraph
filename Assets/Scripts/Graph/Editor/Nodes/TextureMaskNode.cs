@@ -3,38 +3,25 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class ShapeNode : ExecutableNode<HeightGrid>
+public class TextureMaskNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
-        public ShapeType ShapeType;
-        public float Radius;
-        public int Size;
+        public Texture2D Texture;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(ShapeType, Radius, Size);
+            return HashCode.Combine(Texture);
         }
     }
 
-    private enum ShapeType
-    {
-        Cone = 100,
-        Cylinder = 200,
-    }
-
     // Options
-    private const string NODE_OPTION_TYPE_ID = "type_option";
-    private const string NODE_OPTION_TYPE_TITLE = "Shape Type";
 
     // Inputs
-    private const string NODE_INPUT_SIZE_ID = "size_input";
-    private const string NODE_INPUT_SIZE_TITLE = "Size";
-
-    private const string NODE_INPUT_RADIUS_ID = "radius_input";
-    private const string NODE_INPUT_RADIUS_TITLE = "Radius";
+    private const string NODE_INPUT_TEXTURE_ID = "texture_input";
+    private const string NODE_INPUT_TEXTURE_TITLE = "Texture";
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -42,10 +29,6 @@ public class ShapeNode : ExecutableNode<HeightGrid>
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<ShapeType>(NODE_OPTION_TYPE_ID)
-            .WithDisplayName(NODE_OPTION_TYPE_TITLE)
-            .WithDefaultValue(ShapeType.Cone)
-            .Build();
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
             .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
             .WithDefaultValue(false)
@@ -57,13 +40,8 @@ public class ShapeNode : ExecutableNode<HeightGrid>
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
-            .WithDisplayName(NODE_INPUT_SIZE_TITLE)
-            .WithDefaultValue(256)
-            .Build();
-        context.AddInputPort<float>(NODE_INPUT_RADIUS_ID)
-            .WithDisplayName(NODE_INPUT_RADIUS_TITLE)
-            .WithDefaultValue(0.5f)
+        context.AddInputPort<Texture>(NODE_INPUT_TEXTURE_ID)
+            .WithDisplayName(NODE_INPUT_TEXTURE_TITLE)
             .Build();
 
         if (isPreviewEnabled)
@@ -96,21 +74,9 @@ public class ShapeNode : ExecutableNode<HeightGrid>
 
         var isValid = true;
 
-        if (!Enum.IsDefined(typeof(ShapeType), input.ShapeType))
+        if (input.Texture == null)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_TYPE_TITLE} option invalid", this);
-            isValid = false;
-        }
-
-        if (input.Size <= 0)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
-            isValid = false;
-        }
-
-        if (input.Radius < 0)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 <= n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_TEXTURE_TITLE} value missing", this);
             isValid = false;
         }
 
@@ -128,9 +94,7 @@ public class ShapeNode : ExecutableNode<HeightGrid>
 
         var temp = new InputValues();
         var success =
-            GetNodeOptionByName(NODE_OPTION_TYPE_ID).TryGetValue(out temp.ShapeType) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.Radius);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TEXTURE_ID, out temp.Texture);
 
         if (success)
         {
@@ -175,21 +139,33 @@ public class ShapeNode : ExecutableNode<HeightGrid>
 
         try
         {
-            var shapeFunction = GetShapeFunction(inputValues);
+            var texture = inputValues.Texture;
 
-            var size = inputValues.Size;
-            var radius = inputValues.Radius * size;
+            var inputSize = new Vector2Int(texture.width, texture.height);
+            var outputSize = Mathf.Max(texture.width, texture.height);
 
-            var center = Vector2.one * size / 2f;
+            var outputGrid = new HeightGrid(outputSize);
 
-            var outputGrid = new HeightGrid(size);
+            var outputCenter = Vector2Int.one * outputSize / 2;
+            var inputCenter = Vector2Int.one * inputSize / 2;
 
-            for (int y = 0; y < size; y++)
+            for (int y = 0; y < outputSize; y++)
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < outputSize; x++)
                 {
-                    var position = new Vector2(x, y) - center;
-                    outputGrid[x, y] = shapeFunction(position, radius);
+                    var target = new Vector2Int(x, y);
+                    var source = target - outputCenter + inputCenter;
+
+                    if (source.x < 0 || source.x > inputSize.x - 1 ||
+                        source.y < 0 || source.y > inputSize.y - 1)
+                    {
+                        outputGrid[x, y] = 0;
+                    }
+                    else
+                    {
+                        var color = texture.GetPixel(source.x, source.y);
+                        outputGrid[x, y] = color.grayscale;
+                    }
                 }
             }
 
@@ -202,20 +178,6 @@ public class ShapeNode : ExecutableNode<HeightGrid>
         {
             Debug.LogException(ex);
             return false;
-        }
-    }
-
-    private Func<Vector2, float, float> GetShapeFunction(InputValues inputValues)
-    {
-        switch (inputValues.ShapeType)
-        {
-            case ShapeType.Cone:
-                return ShapeFunctions.Cone;
-            case ShapeType.Cylinder:
-                return ShapeFunctions.Cylinder;
-            default:
-                Debug.LogError($"Unhandled shape type: {inputValues.ShapeType}");
-                return ShapeFunctions.Invalid;
         }
     }
 }

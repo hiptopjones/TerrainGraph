@@ -1892,11 +1892,11 @@ MonoBehaviour:
       data:
         m_Value:
           m_EnumType:
-            m_Identification: ShapeNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
+            m_Identification: ShapeMaskNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
               Culture=neutral, PublicKeyToken=null
           m_Value: 100
         m_EnumType:
-          m_Identification: ShapeNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
+          m_Identification: ShapeMaskNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
             Culture=neutral, PublicKeyToken=null
     - rid: 5976909165470417145
       type: {class: 'Constant`1[[System.Boolean, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -1911,7 +1911,7 @@ MonoBehaviour:
       data:
         m_Value: 0.21
     - rid: 5976909165470417148
-      type: {class: ShapeNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: ShapeMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909165470417164
       type: {class: WireModel, ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -2048,7 +2048,7 @@ MonoBehaviour:
       data:
         m_Value: 0.1
     - rid: 5976909165470417252
-      type: {class: NoiseNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: NoiseMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909165470417253
       type: {class: WireModel, ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -2139,7 +2139,7 @@ MonoBehaviour:
       data:
         m_Value: 10
     - rid: 5976909165470417260
-      type: {class: SplineNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: SplineMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909165470417262
       type: {class: WireModel, ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -2586,7 +2586,7 @@ MonoBehaviour:
           Hash: a10a52c9d3a6dbfc6a1cff00c27e70b3
         m_Version: 2
         m_Position: {x: 665.43945, y: -2138.5176}
-        m_Title: ShapeNode
+        m_Title: ShapeMaskNode
         m_Tooltip: 
         m_NodePreviewModel:
           rid: -2
@@ -2624,11 +2624,11 @@ MonoBehaviour:
       data:
         m_Value:
           m_EnumType:
-            m_Identification: ShapeNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
+            m_Identification: ShapeMaskNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
               Culture=neutral, PublicKeyToken=null
           m_Value: 100
         m_EnumType:
-          m_Identification: ShapeNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
+          m_Identification: ShapeMaskNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
             Culture=neutral, PublicKeyToken=null
     - rid: 5976909165470417305
       type: {class: 'Constant`1[[System.Boolean, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -2643,7 +2643,7 @@ MonoBehaviour:
       data:
         m_Value: 0.1
     - rid: 5976909165470417309
-      type: {class: ShapeNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: ShapeMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909165470417310
       type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -2992,7 +2992,7 @@ MonoBehaviour:
       data:
         m_Value: 1
     - rid: 5976909165470417366
-      type: {class: ConstantNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: ConstantMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909165470417368
       type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -4014,7 +4014,7 @@ MonoBehaviour:
           Hash: 42ebf0eaf264310e2d6569daabc23508
         m_Version: 2
         m_Position: {x: 3103.877, y: -200.54674}
-        m_Title: ShapeNode
+        m_Title: ShapeMaskNode
         m_Tooltip: 
         m_NodePreviewModel:
           rid: -2
@@ -4050,11 +4050,11 @@ MonoBehaviour:
       data:
         m_Value:
           m_EnumType:
-            m_Identification: ShapeNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
+            m_Identification: ShapeMaskNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
               Culture=neutral, PublicKeyToken=null
           m_Value: 100
         m_EnumType:
-          m_Identification: ShapeNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
+          m_Identification: ShapeMaskNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
             Culture=neutral, PublicKeyToken=null
     - rid: 5976909165470417481
       type: {class: 'Constant`1[[System.Boolean, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -4069,7 +4069,7 @@ MonoBehaviour:
       data:
         m_Value: 0.04
     - rid: 5976909165470417485
-      type: {class: ShapeNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: ShapeMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909165470417486
       type: {class: UserNodeModelImp, ns: Unity.GraphToolkit.Editor.Implementation, asm: Unity.GraphToolkit.Editor}
@@ -4501,7 +4501,7 @@ MonoBehaviour:
       data:
         m_Value: 30
     - rid: 5976909165470417573
-      type: {class: ConstantNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: ConstantMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909165470417604
       type: {class: UserNodeModelImp, ns: Unity.GraphToolkit.Editor.Implementation, asm: Unity.GraphToolkit.Editor}
@@ -4610,7 +4610,7 @@ MonoBehaviour:
       data:
         m_Value: 10
     - rid: 5976909165470417610
-      type: {class: SplineNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: SplineMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909165470417615
       type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -5017,11 +5017,11 @@ MonoBehaviour:
       data:
         m_Value:
           m_EnumType:
-            m_Identification: ShapeNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
+            m_Identification: ShapeMaskNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
               Culture=neutral, PublicKeyToken=null
           m_Value: 100
         m_EnumType:
-          m_Identification: ShapeNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
+          m_Identification: ShapeMaskNode+ShapeType, Assembly-CSharp-Editor, Version=0.0.0.0,
             Culture=neutral, PublicKeyToken=null
     - rid: 5976909211556118718
       type: {class: 'Constant`1[[System.Boolean, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -5036,7 +5036,7 @@ MonoBehaviour:
       data:
         m_Value: 0.5
     - rid: 5976909211556118721
-      type: {class: ShapeNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: ShapeMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909211556118722
       type: {class: 'Constant`1[[PreviewImage, Assembly-CSharp-Editor]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
@@ -5170,7 +5170,7 @@ MonoBehaviour:
       data:
         m_Value: 0.25
     - rid: 5976909211556118741
-      type: {class: ConstantNode, ns: , asm: Assembly-CSharp-Editor}
+      type: {class: ConstantMaskNode, ns: , asm: Assembly-CSharp-Editor}
       data: 
     - rid: 5976909211556118743
       type: {class: WireModel, ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}

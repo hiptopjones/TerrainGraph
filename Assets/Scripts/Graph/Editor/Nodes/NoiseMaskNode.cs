@@ -3,7 +3,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class NoiseNode : ExecutableNode<HeightGrid>
+public class NoiseMaskNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
