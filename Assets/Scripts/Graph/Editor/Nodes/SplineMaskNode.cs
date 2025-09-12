@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
@@ -169,17 +170,19 @@ public class SplineMaskNode : ExecutableNode<HeightGrid>
 
         try
         {
-            var spline = inputValues.Spline.Spline;
-            var size = inputValues.Size;
+            var inputSpline = inputValues.Spline;
+            var outputSize = inputValues.Size;
             var step = inputValues.Step;
 
-            var outputGrid = new HeightGrid(size);
+            // TODO: Need a flag to determine if we should center the spline?
 
-            var vertices = SplineHelpers.GetSplineVertices(spline, step);
+            var vertices = SplineHelpers.GetSplineVertices(inputSpline.Spline, step);
 
-            for (int y = 0; y < size; y++)
+            var outputGrid = new HeightGrid(outputSize);
+
+            for (int y = 0; y < outputSize; y++)
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < outputSize; x++)
                 {
                     outputGrid[x, y] = 0;
 

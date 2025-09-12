@@ -1,39 +1,37 @@
 ﻿using System;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Splines;
-using UnityEngine.Windows;
 
 [Serializable]
-public class ContourNode : ExecutableNode<SplineWrapper>
+public class CircleSplineNode : ExecutableNode<SplineWrapper>
 {
     private class InputValues
     {
-        public HeightGrid Grid;
-        public float ContourHeight;
+        public float Radius;
+        public int Points;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, ContourHeight);
+            return HashCode.Combine(Radius, Points);
         }
     }
 
     // Options
     
-    // Input
-    private const string NODE_INPUT_GRID_ID = "grid_input";
-    private const string NODE_INPUT_GRID_TITLE = "Grid";
+    // Inputs
+    private const string NODE_INPUT_RADIUS_ID = "radius_input";
+    private const string NODE_INPUT_RADIUS_TITLE = "Radius";
 
-    private const string NODE_INPUT_HEIGHT_ID = "height_input";
-    private const string NODE_INPUT_HEIGHT_TITLE = "Height";
+    private const string NODE_INPUT_POINTS_ID = "points_input";
+    private const string NODE_INPUT_POINTS_TITLE = "Points";
 
-    // Output
+    // Outputs
     private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
     private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
+
+    private const int MIN_POINTS = 4;
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -48,12 +46,13 @@ public class ContourNode : ExecutableNode<SplineWrapper>
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
-            .WithDisplayName(NODE_INPUT_GRID_TITLE)
+        context.AddInputPort<float>(NODE_INPUT_RADIUS_ID)
+            .WithDisplayName(NODE_INPUT_RADIUS_TITLE)
+            .WithDefaultValue(100f)
             .Build();
-        context.AddInputPort<float>(NODE_INPUT_HEIGHT_ID)
-            .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
-            .WithDefaultValue(0.3f)
+        context.AddInputPort<int>(NODE_INPUT_POINTS_ID)
+            .WithDisplayName(NODE_INPUT_POINTS_TITLE)
+            .WithDefaultValue(10)
             .Build();
 
         if (isPreviewEnabled)
@@ -86,9 +85,15 @@ public class ContourNode : ExecutableNode<SplineWrapper>
 
         var isValid = true;
 
-        if (input.Grid == null || !input.Grid.IsValid)
+        if (input.Radius <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 < n)", this);
+            isValid = false;
+        }
+
+        if (input.Points < MIN_POINTS)
+        {
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_POINTS_TITLE} value invalid: {input.Points} (valid: {MIN_POINTS} <= n)", this);
             isValid = false;
         }
 
@@ -106,8 +111,8 @@ public class ContourNode : ExecutableNode<SplineWrapper>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.ContourHeight);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.Radius) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_POINTS_ID, out temp.Points);
 
         if (success)
         {
@@ -120,15 +125,15 @@ public class ContourNode : ExecutableNode<SplineWrapper>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out SplineWrapper spline)
+    public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
     {
         if (!TryExecuteNode())
         {
-            spline = null;
+            value = null;
             return false;
         }
 
-        spline = CacheData.Output;
+        value = CacheData.Output;
         return true;
     }
 
@@ -152,27 +157,19 @@ public class ContourNode : ExecutableNode<SplineWrapper>
 
         try
         {
-            var inputGrid = inputValues.Grid;
-            var contourHeight = inputValues.ContourHeight;
+            var radius = inputValues.Radius;
+            var points = inputValues.Points;
 
-            var detector = new ContourDetector(inputGrid);
+            var center = Vector2.one * radius;
+            var size = Mathf.RoundToInt(radius * 2);
 
-            var contours = detector.DetectContours(contourHeight);
-            if (contours == null || !contours.Any())
-            {
-                Debug.LogError("Contours not detected");
-                return false;
-            }
-
-            var contour = contours.OrderByDescending(x => x.Count).First();
-
-            // TODO: Should apply some Douglas-Peucker smoothing to reduce points
-            var spline = SplineHelpers.CreateSpline(contour, closed: true);
-
+            var interval = 360f / points;
+            var spline = SplineFunctions.Circle(radius, interval, center);
+        
             var outputSpline = new SplineWrapper
             {
-                Size = inputGrid.Width,
-                Spline = spline,
+                Size = size,
+                Spline = spline
             };
 
             outputSpline.VersionHash = inputValues.VersionHash;

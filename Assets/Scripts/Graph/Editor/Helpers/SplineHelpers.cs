@@ -58,6 +58,11 @@ internal static class SplineHelpers
      
     public static Spline CreateSpline(List<Vector2> points, bool closed = false)
     {
-        return new Spline(points.Select(p => new float3(p.x, 0, p.y)), TangentMode.AutoSmooth, closed);
+        var spline = new Spline(points.Select(p => new float3(p.x, 0, p.y)), closed: closed);
+        
+        // NOTE: A closed spline doesn't seem to always smooth correctly between the last and first
+        spline.SetTangentMode(TangentMode.AutoSmooth);
+
+        return spline;
     }
 }

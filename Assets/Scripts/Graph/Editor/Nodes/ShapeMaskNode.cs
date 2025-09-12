@@ -108,9 +108,9 @@ public class ShapeMaskNode : ExecutableNode<HeightGrid>
             isValid = false;
         }
 
-        if (input.Radius < 0)
+        if (input.Radius <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 <= n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 < n)", this);
             isValid = false;
         }
 

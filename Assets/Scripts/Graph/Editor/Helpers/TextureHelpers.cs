@@ -134,6 +134,8 @@ internal static class TextureHelpers
                 }
             }
 
+            // TODO: Can we draw the spline, rather than just the vertices?
+
             // Draw the spline points
             foreach (var point in spline.Spline)
             {
