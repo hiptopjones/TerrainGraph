@@ -32,7 +32,7 @@ public static class PortEvaluator
                     return evaluatableNode.TryGetOutputValue(connectedPort, out value);
 
                 default:
-                    throw new Exception($"Unhandled node type: {connectedNode.GetType().Name}");
+                    throw new Exception($"Unhandled node type: {connectedNode?.GetType().Name}");
             }
         }
         catch (Exception ex)

@@ -1,13 +1,12 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
-using UnityEngine;
 
 [Serializable]
-public class ShapeMaskNode : ExecutableNode<HeightGrid>
+public class RadialShapeHeightNode : ProviderNode<HeightProvider>
 {
     private class InputValues
     {
-        public ShapeType ShapeType;
+        public RadialShapeFunctions.ShapeType ShapeType;
         public float Radius;
         public int Size;
 
@@ -17,14 +16,6 @@ public class ShapeMaskNode : ExecutableNode<HeightGrid>
         {
             return HashCode.Combine(ShapeType, Radius, Size);
         }
-    }
-
-    private enum ShapeType
-    {
-        Cone = 100,
-        Cylinder = 200,
-        Gaussian = 300,
-        SmoothStep = 400,
     }
 
     // Options
@@ -39,25 +30,19 @@ public class ShapeMaskNode : ExecutableNode<HeightGrid>
     private const string NODE_INPUT_RADIUS_TITLE = "Radius";
 
     // Outputs
-    private const string NODE_OUTPUT_GRID_ID = "grid_output";
-    private const string NODE_OUTPUT_GRID_TITLE = "Grid";
+    private const string NODE_OUTPUT_PROVIDER_ID = "provider_output";
+    private const string NODE_OUTPUT_PROVIDER_TITLE = "Provider";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<ShapeType>(NODE_OPTION_TYPE_ID)
+        context.AddOption<RadialShapeFunctions.ShapeType>(NODE_OPTION_TYPE_ID)
             .WithDisplayName(NODE_OPTION_TYPE_TITLE)
-            .WithDefaultValue(ShapeType.Cone)
-            .Build();
-        context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-            .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
-            .WithDefaultValue(false)
+            .WithDefaultValue(RadialShapeFunctions.ShapeType.Cone)
             .Build();
     }
 
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
-        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-
         // Input
         context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
             .WithDisplayName(NODE_INPUT_SIZE_TITLE)
@@ -68,16 +53,9 @@ public class ShapeMaskNode : ExecutableNode<HeightGrid>
             .WithDefaultValue(0.5f)
             .Build();
 
-        if (isPreviewEnabled)
-        {
-            context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
-                .Build();
-        }
-
         // Output
-        context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
-            .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
+        context.AddOutputPort<HeightProvider>(NODE_OUTPUT_PROVIDER_ID)
+            .WithDisplayName(NODE_OUTPUT_PROVIDER_TITLE)
             .Build();
     }
 
@@ -98,7 +76,7 @@ public class ShapeMaskNode : ExecutableNode<HeightGrid>
 
         var isValid = true;
 
-        if (!Enum.IsDefined(typeof(ShapeType), input.ShapeType))
+        if (!Enum.IsDefined(typeof(RadialShapeFunctions.ShapeType), input.ShapeType))
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_TYPE_TITLE} option invalid", this);
             isValid = false;
@@ -145,83 +123,23 @@ public class ShapeMaskNode : ExecutableNode<HeightGrid>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out HeightGrid value)
+    public override bool TryGetOutputValue(IPort _, out HeightProvider value)
     {
-        if (!TryExecuteNode())
+        if (!TryGetValidatedInputValues(out var inputValues))
         {
             value = null;
             return false;
         }
 
-        value = CacheData.Output;
+        // TODO: Should this be cached?
+        value = new RadialShapeHeightProvider()
+        {
+            ShapeType = inputValues.ShapeType,
+            Radius = inputValues.Radius * inputValues.Size,
+
+            VersionHash = inputValues.VersionHash
+        };
+
         return true;
-    }
-
-    public override bool TryExecuteNode()
-    {
-        if (!TryGetValidatedInputValues(out var inputValues))
-        {
-            // Not in valid state
-            CacheData.Output = null;
-            return false;
-        }
-
-        if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
-        {
-            // Node is already up-to-date
-            return true;
-        }
-
-        // Clear the cached values in case there's an early exit below
-        CacheData.Output = null;
-
-        try
-        {
-            var shapeFunction = GetShapeFunction(inputValues);
-
-            var size = inputValues.Size;
-            var radius = inputValues.Radius * size;
-
-            var center = Vector2.one * size / 2f;
-
-            var outputGrid = new HeightGrid(size);
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    var position = new Vector2(x, y) - center;
-                    outputGrid[x, y] = shapeFunction(position, radius);
-                }
-            }
-
-            outputGrid.VersionHash = inputValues.VersionHash;
-
-            CacheData.Output = outputGrid;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogException(ex);
-            return false;
-        }
-    }
-
-    private Func<Vector2, float, float> GetShapeFunction(InputValues inputValues)
-    {
-        switch (inputValues.ShapeType)
-        {
-            case ShapeType.Cone:
-                return ShapeFunctions.Cone;
-            case ShapeType.Cylinder:
-                return ShapeFunctions.Cylinder;
-            case ShapeType.Gaussian:
-                return ShapeFunctions.Gaussian;
-            case ShapeType.SmoothStep:
-                return ShapeFunctions.SmoothStep;
-            default:
-                Debug.LogError($"Unhandled shape type: {inputValues.ShapeType}");
-                return ShapeFunctions.Invalid;
-        }
     }
 }

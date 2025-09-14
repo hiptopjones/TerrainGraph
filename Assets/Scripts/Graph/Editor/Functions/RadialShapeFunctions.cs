@@ -1,8 +1,34 @@
 ﻿using System;
 using UnityEngine;
 
-public static class ShapeFunctions
+public static class RadialShapeFunctions
 {
+    public enum ShapeType
+    {
+        Cone = 100,
+        Cylinder = 200,
+        Gaussian = 300,
+        SmoothStep = 400,
+    }
+
+    public static Func<Vector2, float, float> GetShapeFunction(ShapeType shapeType)
+    {
+        switch (shapeType)
+        {
+            case ShapeType.Cone:
+                return Cone;
+            case ShapeType.Cylinder:
+                return Cylinder;
+            case ShapeType.Gaussian:
+                return Gaussian;
+            case ShapeType.SmoothStep:
+                return SmoothStep;
+            default:
+                Debug.LogError($"Unhandled shape type: {shapeType}");
+                return RadialShapeFunctions.Invalid;
+        }
+    }
+
     public static float Invalid(Vector2 position, float radius)
     {
         return 1f;

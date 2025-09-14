@@ -3,11 +3,10 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class PerlinNoiseNode : ProviderNode<NoiseProvider>
+public class PerlinNoiseHeightNode : ProviderNode<HeightProvider>
 {
     private class InputValues
     {
-        public int Size;
         public Vector2 Offset;
         public float Frequency;
         public float Amplitude;
@@ -15,16 +14,14 @@ public class PerlinNoiseNode : ProviderNode<NoiseProvider>
         public float Persistence;
         public float Lacunarity;
         public int Seed;
-        public Vector2 Range;
-        public float Scale;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
             return HashCode.Combine(
-                HashCode.Combine(Size, Offset, Frequency, Amplitude, Octaves),
-                HashCode.Combine(Persistence, Lacunarity, Seed, Range, Scale)
+                HashCode.Combine(Offset, Frequency, Amplitude, Octaves),
+                HashCode.Combine(Persistence, Lacunarity, Seed)
             );
         }
     }
@@ -54,8 +51,8 @@ public class PerlinNoiseNode : ProviderNode<NoiseProvider>
     private const string NODE_INPUT_SEED_TITLE = "Seed";
 
     // Outputs
-    private const string NODE_OUTPUT_NOISE_ID = "noise_output";
-    private const string NODE_OUTPUT_NOISE_TITLE = "Noise";
+    private const string NODE_OUTPUT_NOISE_ID = "provider_output";
+    private const string NODE_OUTPUT_NOISE_TITLE = "Provider";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -93,7 +90,7 @@ public class PerlinNoiseNode : ProviderNode<NoiseProvider>
             .Build();
 
         // Output
-        context.AddOutputPort<NoiseProvider>(NODE_OUTPUT_NOISE_ID)
+        context.AddOutputPort<HeightProvider>(NODE_OUTPUT_NOISE_ID)
             .WithDisplayName(NODE_OUTPUT_NOISE_TITLE)
             .Build();
     }
@@ -154,16 +151,16 @@ public class PerlinNoiseNode : ProviderNode<NoiseProvider>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out NoiseProvider provider)
+    public override bool TryGetOutputValue(IPort _, out HeightProvider value)
     {
         if (!TryGetValidatedInputValues(out var inputValues))
         {
-            provider = null;
+            value = null;
             return false;
         }
 
         // TODO: Should this be cached?
-        provider = new PerlinNoiseProvider()
+        value = new PerlinNoiseHeightProvider()
         {
             Offset = inputValues.Offset,
             Frequency = inputValues.Frequency,

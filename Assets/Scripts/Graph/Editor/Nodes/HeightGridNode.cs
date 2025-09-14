@@ -4,21 +4,19 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 [Serializable]
-public class NoiseMaskNode : ExecutableNode<HeightGrid>
+public class HeightGridNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
         public int Size;
-        public NoiseProvider Noise;
-        public Vector2 Range;
-        public float Scale;
-
+        public HeightProvider Provider;
+        
         public int VersionHash;
 
         public override int GetHashCode()
         {
             return HashCode.Combine(
-                HashCode.Combine(Size, Noise, Range, Scale)
+                HashCode.Combine(Size, Provider?.VersionHash)
             );
         }
     }
@@ -26,17 +24,11 @@ public class NoiseMaskNode : ExecutableNode<HeightGrid>
     // Options
 
     // Inputs
-    private const string NODE_INPUT_NOISE_ID = "noise_input";
-    private const string NODE_INPUT_NOISE_TITLE = "Noise";
+    private const string NODE_INPUT_PROVIDER_ID = "provider_input";
+    private const string NODE_INPUT_PROVIDER_TITLE = "Provider";
 
     private const string NODE_INPUT_SIZE_ID = "size_input";
     private const string NODE_INPUT_SIZE_TITLE = "Size";
-
-    private const string NODE_INPUT_RANGE_ID = "range_input";
-    private const string NODE_INPUT_RANGE_TITLE = "Range";
-
-    private const string NODE_INPUT_SCALE_ID = "scale_input";
-    private const string NODE_INPUT_SCALE_TITLE = "Scale";
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -55,20 +47,12 @@ public class NoiseMaskNode : ExecutableNode<HeightGrid>
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<NoiseProvider>(NODE_INPUT_NOISE_ID)
-            .WithDisplayName(NODE_INPUT_NOISE_TITLE)
+        context.AddInputPort<HeightProvider>(NODE_INPUT_PROVIDER_ID)
+            .WithDisplayName(NODE_INPUT_PROVIDER_TITLE)
             .Build();
         context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
             .WithDisplayName(NODE_INPUT_SIZE_TITLE)
             .WithDefaultValue(256)
-            .Build();
-        context.AddInputPort<Vector2>(NODE_INPUT_RANGE_ID)
-            .WithDisplayName(NODE_INPUT_RANGE_TITLE)
-            .WithDefaultValue(new Vector2(0, 1))
-            .Build();
-        context.AddInputPort<float>(NODE_INPUT_SCALE_ID)
-            .WithDisplayName(NODE_INPUT_SCALE_TITLE)
-            .WithDefaultValue(0.1f)
             .Build();
 
         if (isPreviewEnabled)
@@ -107,9 +91,9 @@ public class NoiseMaskNode : ExecutableNode<HeightGrid>
             isValid = false;
         }
 
-        if (input.Noise == null || !input.Noise.IsValid)
+        if (input.Provider == null || !input.Provider.IsValid)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_NOISE_TITLE} value missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value missing", this);
             isValid = false;
         }
 
@@ -127,10 +111,8 @@ public class NoiseMaskNode : ExecutableNode<HeightGrid>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_NOISE_ID, out temp.Noise) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RANGE_ID, out temp.Range) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SCALE_ID, out temp.Scale);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PROVIDER_ID, out temp.Provider) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
 
         if (success)
         {
@@ -147,6 +129,7 @@ public class NoiseMaskNode : ExecutableNode<HeightGrid>
     {
         if (!TryExecuteNode())
         {
+            Debug.Log("No value");
             grid = null;
             return false;
         }
@@ -175,12 +158,13 @@ public class NoiseMaskNode : ExecutableNode<HeightGrid>
 
         try
         {
-            var provider = inputValues.Noise;
+            var provider = inputValues.Provider;
             var size = inputValues.Size;
-            var range = inputValues.Range;
-            var scale = inputValues.Scale;
 
-            var noise = provider.GetNoiseArray2D(Vector2.zero, size);
+            if (!provider.TryGetHeights(size, out var heights))
+            {
+                return false;
+            }
 
             var outputGrid = new HeightGrid(size);
 
@@ -188,10 +172,7 @@ public class NoiseMaskNode : ExecutableNode<HeightGrid>
             {
                 for (int x = 0; x < size; x++)
                 {
-                    var height = noise[x, y];
-                    height = range.x + (range.y - range.x) * height;
-
-                    outputGrid[x, y] = height * scale;
+                    outputGrid[x, y] = heights[x, y];
                 }
             }
 
