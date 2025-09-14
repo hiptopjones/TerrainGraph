@@ -28,7 +28,7 @@ public class SplineNode : ExecutableNode<SplineWrapper>
     private const string NODE_INPUT_PROVIDER_TITLE = "Provider";
 
     private const string NODE_INPUT_COUNT_ID = "count_input";
-    private const string NODE_INPUT_COUNT_TITLE = "Count";
+    private const string NODE_INPUT_COUNT_TITLE = "Vertices";
 
     // Outputs
     private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
