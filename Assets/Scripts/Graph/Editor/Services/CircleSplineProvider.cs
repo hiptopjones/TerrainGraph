@@ -3,17 +3,18 @@ using UnityEngine.Splines;
 
 public class CircleSplineProvider : SplineProvider
 {
-    public float Radius { get; set; }
+    public float Size { get; set; }
 
     public override bool IsValid => true;
     public override int VersionHash { get; set; }
 
     public override bool TryGetSpline(int vertexCount, out Spline spline)
     {
-        var center = Vector2.one * Radius;
+        var radius = Size / 2f;
+        var center = Vector2.one * radius;
         var interval = 360f / vertexCount;
         
-        spline = SplineFunctions.Circle(Radius, interval, center);
+        spline = SplineFunctions.Circle(radius, interval, center);
         return true;
     }
 }

@@ -6,21 +6,21 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
 {
     private class InputValues
     {
-        public float Radius;
+        public int Size;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Radius);
+            return HashCode.Combine(Size);
         }
     }
 
     // Options
 
     // Inputs
-    private const string NODE_INPUT_RADIUS_ID = "radius_input";
-    private const string NODE_INPUT_RADIUS_TITLE = "Radius";
+    private const string NODE_INPUT_SIZE_ID = "size_input";
+    private const string NODE_INPUT_SIZE_TITLE = "Size";
 
     // Outputs
     private const string NODE_OUTPUT_PROVIDER_ID = "provider_output";
@@ -34,9 +34,9 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
         // Input
-        context.AddInputPort<float>(NODE_INPUT_RADIUS_ID)
-            .WithDisplayName(NODE_INPUT_RADIUS_TITLE)
-            .WithDefaultValue(0.5f)
+        context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
+            .WithDisplayName(NODE_INPUT_SIZE_TITLE)
+            .WithDefaultValue(256)
             .Build();
 
         // Output
@@ -62,9 +62,9 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
 
         var isValid = true;
 
-        if (input.Radius <= 0)
+        if (input.Size <= 0)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 < n)", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
             isValid = false;
         }
 
@@ -82,7 +82,7 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.Radius);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
 
         if (success)
         {
@@ -105,7 +105,7 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
 
         value = new CircleSplineProvider()
         {
-            Radius = inputValues.Radius,
+            Size = inputValues.Size,
             
             VersionHash = inputValues.VersionHash
         };
