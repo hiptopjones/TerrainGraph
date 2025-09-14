@@ -86,11 +86,11 @@ internal static class TextureHelpers
                     Color color;
                     if (value > 1)
                     {
-                        color = Color.green;
+                        color = new Color(0, value / texture.height + 0.1f, 0);
                     }
                     else if (value < 0)
                     {
-                        color = Color.red;
+                        color = new Color(Mathf.Abs(value / texture.height) + 0.1f, 0, 0);
                     }
                     else
                     {
