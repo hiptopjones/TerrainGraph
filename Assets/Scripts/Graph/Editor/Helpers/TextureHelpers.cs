@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Splines;
 
@@ -116,7 +115,7 @@ internal static class TextureHelpers
 
     public static bool TryCreatePreviewTexture(SplineWrapper splineWrapper, out Texture2D texture)
     {
-        const float VERTEX_INTERVAL_LENGTH = 20;
+        const float SEGMENT_LENGTH_FACTOR = 10;
 
         try
         {
@@ -139,7 +138,10 @@ internal static class TextureHelpers
             var spline = splineWrapper.Spline;
             var length = spline.GetLength();
 
-            var vertexCount = length / VERTEX_INTERVAL_LENGTH;
+            // This is a preview texture, and is used to get a sense of shape
+            // Scale the vertex count based on the bounds of the spline
+            // This ensures big splines and small splines are represented reasonably well
+            var vertexCount = length / (splineWrapper.Size / SEGMENT_LENGTH_FACTOR);
 
             var firstPosition = Vector3.zero;
             var previousPosition = Vector3.zero;

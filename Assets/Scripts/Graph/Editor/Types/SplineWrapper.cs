@@ -4,7 +4,7 @@ using UnityEngine.Splines;
 [Serializable]
 public class SplineWrapper : IVersionedObject
 {
-    public int Size;
+    public int Size; // Should match max of Spline.Bounds
     public Spline Spline;
 
     // TODO: Create a common pattern and wrapper for expensive, computable objects
