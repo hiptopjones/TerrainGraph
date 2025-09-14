@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-public abstract class NoiseProvider : IVersionedData
+public abstract class NoiseProvider : IVersionedObject
 {
     public abstract bool IsValid { get; }
     public abstract int VersionHash { get; set; }

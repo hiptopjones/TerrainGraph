@@ -9,7 +9,7 @@ public abstract class ExecutableNode<T> : Node,
     IEvaluatableNode<T>, 
     ICacheableNode<T>,
     IPreviewableNode
-    where T : IVersionedData
+    where T : IVersionedObject
 {
     protected const string NODE_OPTION_PREVIEW_ID = "preview_option";
     protected const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";

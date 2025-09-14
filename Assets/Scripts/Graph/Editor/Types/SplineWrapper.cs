@@ -2,7 +2,7 @@
 using UnityEngine.Splines;
 
 [Serializable]
-public class SplineWrapper : IVersionedData
+public class SplineWrapper : IVersionedObject
 {
     public int Size;
     public Spline Spline;

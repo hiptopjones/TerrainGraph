@@ -1,4 +1,4 @@
-﻿interface ICacheableNode<T> where T : IVersionedData
+﻿interface ICacheableNode<T> where T : IVersionedObject
 {
     CacheData<T> CacheData { get; set; }
 }

@@ -49,7 +49,7 @@ internal static class TextureHelpers
         }
     }
 
-    public static bool TryCreatePreviewTexture(IVersionedData value, out Texture2D texture)
+    public static bool TryCreatePreviewTexture(IVersionedObject value, out Texture2D texture)
     {
         texture = null;
 

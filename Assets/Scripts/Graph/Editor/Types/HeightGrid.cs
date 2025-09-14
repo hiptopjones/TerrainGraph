@@ -2,7 +2,7 @@
 using UnityEngine;
 
 [Serializable]
-public class HeightGrid : IVersionedData
+public class HeightGrid : IVersionedObject
 {
     public int Width;
     public int Height;
