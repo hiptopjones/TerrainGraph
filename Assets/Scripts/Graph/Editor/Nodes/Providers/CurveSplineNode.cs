@@ -2,32 +2,28 @@
 using Unity.GraphToolkit.Editor;
 
 [Serializable]
-public class RadialShapeHeightNode : ProviderNode<HeightProvider>
+public class CurveSplineNode : ProviderNode<SplineProvider>
 {
     private class InputValues
     {
-        public RadialShapeFunctions.ShapeType ShapeType;
-        public float Radius;
+        public CurveFunctions.CurveType CurveType;
         public int Size;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(ShapeType, Radius, Size);
+            return HashCode.Combine(CurveType, Size);
         }
     }
 
     // Options
     private const string NODE_OPTION_TYPE_ID = "type_option";
-    private const string NODE_OPTION_TYPE_TITLE = "Shape Type";
+    private const string NODE_OPTION_TYPE_TITLE = "Curve Type";
 
     // Inputs
     private const string NODE_INPUT_SIZE_ID = "size_input";
     private const string NODE_INPUT_SIZE_TITLE = "Size";
-
-    private const string NODE_INPUT_RADIUS_ID = "radius_input";
-    private const string NODE_INPUT_RADIUS_TITLE = "Radius";
 
     // Outputs
     private const string NODE_OUTPUT_PROVIDER_ID = "provider_output";
@@ -35,9 +31,9 @@ public class RadialShapeHeightNode : ProviderNode<HeightProvider>
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<RadialShapeFunctions.ShapeType>(NODE_OPTION_TYPE_ID)
+        context.AddOption<CurveFunctions.CurveType>(NODE_OPTION_TYPE_ID)
             .WithDisplayName(NODE_OPTION_TYPE_TITLE)
-            .WithDefaultValue(RadialShapeFunctions.ShapeType.Cone)
+            .WithDefaultValue(CurveFunctions.CurveType.Line)
             .Build();
     }
 
@@ -48,13 +44,9 @@ public class RadialShapeHeightNode : ProviderNode<HeightProvider>
             .WithDisplayName(NODE_INPUT_SIZE_TITLE)
             .WithDefaultValue(256)
             .Build();
-        context.AddInputPort<float>(NODE_INPUT_RADIUS_ID)
-            .WithDisplayName(NODE_INPUT_RADIUS_TITLE)
-            .WithDefaultValue(0.5f)
-            .Build();
 
         // Output
-        context.AddOutputPort<HeightProvider>(NODE_OUTPUT_PROVIDER_ID)
+        context.AddOutputPort<SplineProvider>(NODE_OUTPUT_PROVIDER_ID)
             .WithDisplayName(NODE_OUTPUT_PROVIDER_TITLE)
             .Build();
     }
@@ -76,7 +68,7 @@ public class RadialShapeHeightNode : ProviderNode<HeightProvider>
 
         var isValid = true;
 
-        if (!Enum.IsDefined(typeof(RadialShapeFunctions.ShapeType), input.ShapeType))
+        if (!Enum.IsDefined(typeof(CurveFunctions.CurveType), input.CurveType))
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_TYPE_TITLE} option invalid", this);
             isValid = false;
@@ -85,12 +77,6 @@ public class RadialShapeHeightNode : ProviderNode<HeightProvider>
         if (input.Size <= 0)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
-            isValid = false;
-        }
-
-        if (input.Radius <= 0)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 < n)", this);
             isValid = false;
         }
 
@@ -108,9 +94,8 @@ public class RadialShapeHeightNode : ProviderNode<HeightProvider>
 
         var temp = new InputValues();
         var success =
-            GetNodeOptionByName(NODE_OPTION_TYPE_ID).TryGetValue(out temp.ShapeType) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.Radius);
+            GetNodeOptionByName(NODE_OPTION_TYPE_ID).TryGetValue(out temp.CurveType) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
 
         if (success)
         {
@@ -123,7 +108,7 @@ public class RadialShapeHeightNode : ProviderNode<HeightProvider>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out HeightProvider value)
+    public override bool TryGetOutputValue(IPort _, out SplineProvider value)
     {
         if (!TryGetValidatedInputValues(out var inputValues))
         {
@@ -131,10 +116,10 @@ public class RadialShapeHeightNode : ProviderNode<HeightProvider>
             return false;
         }
 
-        value = new RadialShapeHeightProvider()
+        value = new CurveSplineProvider()
         {
-            ShapeType = inputValues.ShapeType,
-            Radius = inputValues.Radius * inputValues.Size,
+            CurveType = inputValues.CurveType,
+            Size = inputValues.Size,
 
             VersionHash = inputValues.VersionHash
         };

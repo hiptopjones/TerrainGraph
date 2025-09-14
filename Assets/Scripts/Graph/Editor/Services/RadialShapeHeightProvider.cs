@@ -10,7 +10,12 @@ public class RadialShapeHeightProvider : HeightProvider
 
     public override bool TryGetHeights(int size, out float[,] heights)
     {
-        var shapeFunction = RadialShapeFunctions.GetShapeFunction(ShapeType);
+        heights = null;
+
+        if (!RadialShapeFunctions.GetShapeFunction(ShapeType, out var shapeFunction))
+        {
+            return false;
+        }
 
         var center = Vector2.one * size / 2f;
 

@@ -15,7 +15,7 @@ public class ContourDetector
     public Dictionary<float, List<List<Vector2>>> DetectContours(float start, float step, int count)
     {
         var levels = Enumerable.Range(0, count)
-            .Select(i => MathF.Round((start + i * step) * 100) / 100) // Multiply/divide to avoid precision errors
+            .Select(i => Mathf.Round((start + i * step) * 100) / 100) // Multiply/divide to avoid precision errors
             .ToArray();
 
         return DetectContours(levels);

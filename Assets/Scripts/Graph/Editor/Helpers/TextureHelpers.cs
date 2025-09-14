@@ -115,7 +115,8 @@ internal static class TextureHelpers
 
     public static bool TryCreatePreviewTexture(SplineWrapper splineWrapper, out Texture2D texture)
     {
-        const float SEGMENT_LENGTH_FACTOR = 10;
+        // Bigger numbers result in nicer previews, but cost performance
+        const float SEGMENT_LENGTH_FACTOR = 100;
 
         try
         {

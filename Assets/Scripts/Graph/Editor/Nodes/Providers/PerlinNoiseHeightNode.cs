@@ -159,7 +159,6 @@ public class PerlinNoiseHeightNode : ProviderNode<HeightProvider>
             return false;
         }
 
-        // TODO: Should this be cached?
         value = new PerlinNoiseHeightProvider()
         {
             Offset = inputValues.Offset,

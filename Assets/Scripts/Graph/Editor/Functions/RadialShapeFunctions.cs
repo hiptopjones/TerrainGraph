@@ -11,27 +11,32 @@ public static class RadialShapeFunctions
         SmoothStep = 400,
     }
 
-    public static Func<Vector2, float, float> GetShapeFunction(ShapeType shapeType)
+    public static bool GetShapeFunction(ShapeType shapeType, out Func<Vector2, float, float> shapeFunction)
     {
+        shapeFunction = null;
+
         switch (shapeType)
         {
             case ShapeType.Cone:
-                return Cone;
+                shapeFunction = Cone;
+                return true;
+
             case ShapeType.Cylinder:
-                return Cylinder;
+                shapeFunction = Cylinder;
+                return true;
+
             case ShapeType.Gaussian:
-                return Gaussian;
+                shapeFunction = Gaussian;
+                return true;
+
             case ShapeType.SmoothStep:
-                return SmoothStep;
+                shapeFunction = SmoothStep;
+                return true;
+
             default:
                 Debug.LogError($"Unhandled shape type: {shapeType}");
-                return RadialShapeFunctions.Invalid;
+                return false;
         }
-    }
-
-    public static float Invalid(Vector2 position, float radius)
-    {
-        return 1f;
     }
 
     public static float Cone(Vector2 position, float radius)
