@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Splines;
 
 internal static class TextureHelpers
 {
@@ -113,13 +114,14 @@ internal static class TextureHelpers
         }
     }
 
-    // TODO: Instead, use the spline-to-mask conversion, and then reuse the above method
-    public static bool TryCreatePreviewTexture(SplineWrapper spline, out Texture2D texture)
+    public static bool TryCreatePreviewTexture(SplineWrapper splineWrapper, out Texture2D texture)
     {
+        const float VERTEX_INTERVAL_LENGTH = 20;
+
         try
         {
-            var width = spline.Size;
-            var height = spline.Size;
+            var width = splineWrapper.Size;
+            var height = splineWrapper.Size;
 
             texture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
             texture.wrapMode = TextureWrapMode.Clamp;
@@ -134,30 +136,39 @@ internal static class TextureHelpers
                 }
             }
 
-            // TODO: Can we draw the spline, rather than just the vertices?
+            var spline = splineWrapper.Spline;
+            var length = spline.GetLength();
 
-            // Draw the spline points
-            foreach (var point in spline.Spline)
+            var vertexCount = length / VERTEX_INTERVAL_LENGTH;
+
+            var firstPosition = Vector3.zero;
+            var previousPosition = Vector3.zero;
+
+            // Draw the spline outline
+            for (int i = 0; i < vertexCount; i++)
             {
-                var x = Mathf.RoundToInt(point.Position.x);
-                var y = Mathf.RoundToInt(point.Position.z);
-                var value = point.Position.y;
+                var t = i / vertexCount;
 
-                Color color;
-                if (value > 1)
+                var p = spline.EvaluatePosition(t);
+
+                var currentPosition = new Vector2(p.x, p.z);
+
+                if (i > 0)
                 {
-                    color = Color.green;
-                }
-                else if (value < 0)
-                {
-                    color = Color.red;
-                }
-                else
-                {
-                    color = Color.white;
+                    DrawLine(texture, previousPosition, currentPosition);
                 }
 
-                texture.SetPixel(x, y, color);
+                previousPosition = currentPosition;
+
+                if (i == 0)
+                {
+                    firstPosition = currentPosition;
+                }
+            }
+
+            if (spline.Closed)
+            {
+                DrawLine(texture, previousPosition, firstPosition);
             }
 
             texture.Apply(false, false);
@@ -169,6 +180,46 @@ internal static class TextureHelpers
 
             texture = null;
             return false;
+        }
+    }
+
+    public static void DrawLine(Texture2D texture, Vector2 start, Vector2 end)
+    {
+        int x0 = Mathf.RoundToInt(start.x);
+        int y0 = Mathf.RoundToInt(start.y);
+        int x1 = Mathf.RoundToInt(end.x);
+        int y1 = Mathf.RoundToInt(end.y);
+
+        int dx = Mathf.Abs(x1 - x0);
+        int dy = Mathf.Abs(y1 - y0);
+        int sx = x0 < x1 ? 1 : -1;
+        int sy = y0 < y1 ? 1 : -1;
+        int err = dx - dy;
+
+        while (true)
+        {
+            if (x0 >= 0 && x0 < texture.width &&
+                y0 >= 0 && y0 < texture.height)
+            {
+                texture.SetPixel(x0, y0, Color.white);
+            }
+
+            if (x0 == x1 && y0 == y1)
+            {
+                break;
+            }
+
+            int e2 = 2 * err;
+            if (e2 > -dy)
+            {
+                err -= dy;
+                x0 += sx;
+            }
+            if (e2 < dx)
+            {
+                err += dx;
+                y0 += sy;
+            }
         }
     }
 }
