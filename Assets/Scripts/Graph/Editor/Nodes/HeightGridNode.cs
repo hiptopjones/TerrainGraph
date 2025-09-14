@@ -1,22 +1,21 @@
 using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 [Serializable]
 public class HeightGridNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
-        public int Size;
         public HeightProvider Provider;
+        public int Size;
         
         public int VersionHash;
 
         public override int GetHashCode()
         {
             return HashCode.Combine(
-                HashCode.Combine(Size, Provider?.VersionHash)
+                HashCode.Combine(Provider?.VersionHash, Size)
             );
         }
     }
@@ -85,15 +84,15 @@ public class HeightGridNode : ExecutableNode<HeightGrid>
 
         var isValid = true;
 
-        if (input.Size <= 0)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
-            isValid = false;
-        }
-
         if (input.Provider == null || !input.Provider.IsValid)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value missing", this);
+            isValid = false;
+        }
+
+        if (input.Size <= 0)
+        {
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
             isValid = false;
         }
 
@@ -129,7 +128,6 @@ public class HeightGridNode : ExecutableNode<HeightGrid>
     {
         if (!TryExecuteNode())
         {
-            Debug.Log("No value");
             grid = null;
             return false;
         }

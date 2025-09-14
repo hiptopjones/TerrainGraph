@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Splines;
-using UnityEngine.Windows;
 
 [Serializable]
 public class ContourNode : ExecutableNode<SplineWrapper>

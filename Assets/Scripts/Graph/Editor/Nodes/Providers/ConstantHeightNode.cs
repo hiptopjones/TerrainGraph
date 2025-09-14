@@ -6,14 +6,13 @@ public class ConstantHeightNode : ProviderNode<HeightProvider>
 {
     private class InputValues
     {
-        public int Size;
         public float Height;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Size, Height);
+            return HashCode.Combine(Height);
         }
     }
 
@@ -104,7 +103,6 @@ public class ConstantHeightNode : ProviderNode<HeightProvider>
             return false;
         }
 
-        // TODO: Should this be cached?
         value = new ConstantHeightProvider()
         {
             Height = inputValues.Height,

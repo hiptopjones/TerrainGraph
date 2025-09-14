@@ -35,7 +35,7 @@ public class TextureHeightNode : ProviderNode<HeightProvider>
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
         // Input
-        context.AddInputPort<Texture>(NODE_INPUT_TEXTURE_ID)
+        context.AddInputPort<Texture2D>(NODE_INPUT_TEXTURE_ID)
             .WithDisplayName(NODE_INPUT_TEXTURE_TITLE)
             .Build();
 
