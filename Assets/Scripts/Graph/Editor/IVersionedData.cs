@@ -1,6 +1,4 @@
-﻿using Unity.GraphToolkit.Editor;
-
-public interface IVersionedData
+﻿public interface IVersionedData
 {
     bool IsValid { get; }
     int VersionHash { get; }
