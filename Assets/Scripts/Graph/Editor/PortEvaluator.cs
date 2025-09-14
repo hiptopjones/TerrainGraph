@@ -11,6 +11,14 @@ public static class PortEvaluator
         try
         {
             var port = node.GetInputPortByName(portId);
+
+            // Sanity check, since I keep wasting time finding these mismatches
+            if (typeof(T) != port.dataType)
+            {
+                Debug.Log($"Type mismatch on {node} input port {portId}: {typeof(T).Name} != {port.dataType}");
+                return false;
+            }
+
             if (!port.isConnected)
             {
                 // If no connection exists, try to get the port's embedded value (returns type default if unavailable)
