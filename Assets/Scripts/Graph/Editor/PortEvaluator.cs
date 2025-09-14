@@ -27,6 +27,11 @@ public static class PortEvaluator
 
             var connectedPort = port.firstConnectedPort;
             var connectedNode = connectedPort.GetNode();
+            if (connectedNode == null)
+            {
+                Debug.Log($"Missing node on {node} input port {portId}: check for orphaned portals");
+                return false;
+            }
 
             switch (connectedNode)
             {
