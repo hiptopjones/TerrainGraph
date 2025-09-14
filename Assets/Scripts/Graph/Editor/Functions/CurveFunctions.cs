@@ -1,9 +1,6 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.UIElements.Experimental;
 
 public static class CurveFunctions
 {
@@ -11,6 +8,7 @@ public static class CurveFunctions
     {
         Line = 100,
         SmoothStep = 200,
+        Parabolic,
 
         InQuad = 300,
         OutQuad,
@@ -67,6 +65,10 @@ public static class CurveFunctions
                 curveFunction = SmoothStep;
                 return true;
 
+            case CurveType.Parabolic:
+                curveFunction = Parabolic;
+                return true;
+
             default:
                 if (TryGetEasingFunction(curveType, out curveFunction))
                 {
@@ -86,6 +88,12 @@ public static class CurveFunctions
     public static Vector2 SmoothStep(float t)
     {
         return new Vector2(t, Mathf.SmoothStep(0, 1, t));
+    }
+
+    public static Vector2 Parabolic(float t)
+    {
+        var x = 2 * (t - 0.5f);
+        return new Vector2(t, x * x);
     }
 
     private static bool TryGetEasingFunction(CurveType curveType, out Func<float, Vector2> easingFunction)
