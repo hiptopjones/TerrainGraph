@@ -8,12 +8,13 @@ public class SplineHeightNode : ProviderNode<HeightProvider>
     {
         public SplineWrapper Spline;
         public int Samples;
+        public bool Center;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Spline.VersionHash, Samples);
+            return HashCode.Combine(Spline.VersionHash, Samples, Center);
         }
     }
 
@@ -25,6 +26,9 @@ public class SplineHeightNode : ProviderNode<HeightProvider>
 
     private const string NODE_INPUT_SAMPLES_ID = "samples_input";
     private const string NODE_INPUT_SAMPLES_TITLE = "Samples";
+
+    private const string NODE_INPUT_CENTER_ID = "center_input";
+    private const string NODE_INPUT_CENTER_TITLE = "Center";
 
     // Outputs
     private const string NODE_OUTPUT_PROVIDER_ID = "provider_output";
@@ -46,6 +50,10 @@ public class SplineHeightNode : ProviderNode<HeightProvider>
         context.AddInputPort<int>(NODE_INPUT_SAMPLES_ID)
             .WithDisplayName(NODE_INPUT_SAMPLES_TITLE)
             .WithDefaultValue(10)
+            .Build();
+        context.AddInputPort<bool>(NODE_INPUT_CENTER_ID)
+            .WithDisplayName(NODE_INPUT_CENTER_TITLE)
+            .WithDefaultValue(true)
             .Build();
 
         // Output
@@ -98,7 +106,8 @@ public class SplineHeightNode : ProviderNode<HeightProvider>
         var temp = new InputValues();
         var success =
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.Spline) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SAMPLES_ID, out temp.Samples);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SAMPLES_ID, out temp.Samples) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_CENTER_ID, out temp.Center);
 
         if (success)
         {
@@ -123,6 +132,7 @@ public class SplineHeightNode : ProviderNode<HeightProvider>
         {
             Spline = inputValues.Spline.Spline,
             Samples = inputValues.Samples,
+            Center = inputValues.Center,
 
             VersionHash = inputValues.VersionHash
         };
