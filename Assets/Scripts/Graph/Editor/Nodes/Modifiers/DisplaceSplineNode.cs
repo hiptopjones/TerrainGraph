@@ -15,12 +15,13 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
         public IProvider Provider;
         public int VertexCount;
         public float Amplitude;
+        public int IterationCount;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Spline?.VersionHash, Provider?.VersionHash, VertexCount, Amplitude);
+            return HashCode.Combine(Spline?.VersionHash, Provider?.VersionHash, VertexCount, Amplitude, IterationCount);
         }
     }
 
@@ -38,6 +39,9 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
 
     private const string NODE_INPUT_AMPLITUDE_ID = "amplitude_input";
     private const string NODE_INPUT_AMPLITUDE_TITLE = "Amplitude";
+
+    private const string NODE_INPUT_ITERATIONS_ID = "iterations_input";
+    private const string NODE_INPUT_ITERATIONS_TITLE = "Iterations";
 
     // Outputs
     private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
@@ -71,6 +75,10 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
         context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
             .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
             .WithDefaultValue(30)
+            .Build();
+        context.AddInputPort<int>(NODE_INPUT_ITERATIONS_ID)
+            .WithDisplayName(NODE_INPUT_ITERATIONS_TITLE)
+            .WithDefaultValue(3)
             .Build();
 
         if (isPreviewEnabled)
@@ -126,6 +134,12 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             isValid = false;
         }
 
+        if (input.IterationCount <= 0)
+        {
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: 0 < n)", this);
+            isValid = false;
+        }
+
         if (isValid)
         {
             validatedInput = input;
@@ -143,7 +157,8 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.Spline) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PROVIDER_ID, out temp.Provider) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.IterationCount);
 
         if (success)
         {
@@ -192,36 +207,44 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             var inputSpline = inputValues.Spline;
             var vertexCount = inputValues.VertexCount;
             var amplitude = inputValues.Amplitude;
+            var iterationCount = inputValues.IterationCount;
 
-            var vertices = new List<Vector3>();
+            var currentSpline = inputSpline.Spline;
 
-            // Ignores the first and last vertex, so it remains anchored
-            for (int i = 1; i < vertexCount; i++)
+            for (int i = 0; i < iterationCount; i++)
             {
-                float t = i / (float)vertexCount;
+                var vertices = new List<Vector3>();
 
-                Vector3 position = inputSpline.Spline.EvaluatePosition(t);
-                Vector3 tangent = ((Vector3)inputSpline.Spline.EvaluateTangent(t)).normalized;
+                // Ignores the first and last vertex, so it remains anchored
+                for (int vertexIndex = 1; vertexIndex < vertexCount; vertexIndex++)
+                {
+                    float t = vertexIndex / (float)vertexCount;
 
-                Vector3 up = Vector3.up;
-                Vector3 binormal = Vector3.Cross(up, tangent).normalized;
+                    Vector3 position = currentSpline.EvaluatePosition(t);
+                    Vector3 tangent = ((Vector3)currentSpline.EvaluateTangent(t)).normalized;
 
-                noiseProvider.TryGetNoise(new Vector2(t, t), out var noise);
-                Vector3 displacement = binormal * (noise - 0.5f) * amplitude;
+                    Vector3 up = Vector3.up;
+                    Vector3 binormal = Vector3.Cross(up, tangent).normalized;
 
-                Vector3 displacedPosition = position + displacement;
-                vertices.Add(displacedPosition);
+                    noiseProvider.TryGetNoise(new Vector2(t, t), out var noise);
+                    Vector3 displacement = binormal * (noise - 0.5f) * amplitude;
+
+                    Vector3 displacedPosition = position + displacement;
+                    vertices.Add(displacedPosition);
+                }
+
+                var displacedSpline = new Spline(vertices.Select(v => (float3)v));
+                displacedSpline.Closed = inputSpline.Spline.Closed;
+
+                currentSpline = displacedSpline;
             }
 
-            var spline = new Spline(vertices.Select(v => (float3)v));
-            spline.Closed = inputSpline.Spline.Closed;
-
-            var bounds = spline.GetBounds();
+            var bounds = currentSpline.GetBounds();
             var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
 
             var outputSpline = new SplineWrapper
             {
-                Spline = spline,
+                Spline = currentSpline,
                 Size = size
             };
 
