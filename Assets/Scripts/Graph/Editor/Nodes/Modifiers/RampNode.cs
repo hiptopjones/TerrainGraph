@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
@@ -16,7 +17,12 @@ public class RampNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(RampType, Grid.VersionHash, Curve, Gradient);
+            return HashCode.Combine(RampType, Grid.VersionHash, Curve, CalculateHashCode(Gradient));
+        }
+
+        private int CalculateHashCode(Gradient gradient)
+        {
+            return HashCode.Combine(gradient?.colorKeys);
         }
     }
 
