@@ -1,4 +1,5 @@
 ﻿using System;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
 
@@ -138,6 +139,8 @@ internal static class TextureHelpers
 
             var spline = splineWrapper.Spline;
             var length = spline.GetLength();
+            var bounds = spline.GetBounds();
+            var center = bounds.center;
 
             // This is a preview texture, and is used to get a sense of shape
             // Scale the vertex count based on the bounds of the spline
@@ -153,6 +156,9 @@ internal static class TextureHelpers
                 var t = i / (vertexCount - 1);
 
                 var p = spline.EvaluatePosition(t);
+
+                // Center the spline and fill the viewport with it
+                p = p - (float3)center + (float3)bounds.extents;
 
                 var currentPosition = new Vector2(p.x, p.z);
 
