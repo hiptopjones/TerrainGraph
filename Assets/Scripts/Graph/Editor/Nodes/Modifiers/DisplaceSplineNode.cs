@@ -78,7 +78,7 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             .Build();
         context.AddInputPort<int>(NODE_INPUT_ITERATIONS_ID)
             .WithDisplayName(NODE_INPUT_ITERATIONS_TITLE)
-            .WithDefaultValue(3)
+            .WithDefaultValue(1)
             .Build();
 
         if (isPreviewEnabled)

@@ -160,7 +160,6 @@ public class EncloseNode : ExecutableNode<SplineWrapper>
             }
 
             var hull = GeometryHelpers.GetConvexHull(nonZeroPoints);
-            Debug.Log($"input: {nonZeroPoints.Count} hull: {hull.Count}");
 
             var spline = SplineHelpers.CreateSpline(hull, closed: true);
 
