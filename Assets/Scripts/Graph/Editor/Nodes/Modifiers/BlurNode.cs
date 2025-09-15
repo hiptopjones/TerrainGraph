@@ -36,7 +36,7 @@ public class BlurNode : ExecutableNode<HeightGrid>
     private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
     // Other
-    private const int MAX_ITERATIONS = 20;
+    private const int MAX_ITERATIONS = 50;
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
@@ -178,12 +178,13 @@ public class BlurNode : ExecutableNode<HeightGrid>
 
             int size = inputGrid.Size;
 
-            var outputGrid = new HeightGrid(size);
+            var sourceGrid = inputGrid;
 
-            var tmp = new HeightGrid(size);
-
-            for (int it = 0; it < iterations; it++)
+            for (int i = 0; i < iterations; i++)
             {
+                var tempGrid = new HeightGrid(size);
+                var targetGrid = new HeightGrid(size);
+
                 // Horizontal
                 for (int y = 0; y < size; y++)
                 {
@@ -192,17 +193,17 @@ public class BlurNode : ExecutableNode<HeightGrid>
 
                     for (int x = -radius; x <= radius; x++)
                     {
-                        sum += GridHelpers.SafeIndex(inputGrid, x, y);
+                        sum += GridHelpers.SafeIndex(sourceGrid, x, y);
                         count++;
                     }
 
                     for (int x = 0; x < size; x++)
                     {
-                        tmp[x, y] = sum / count;
+                        tempGrid[x, y] = sum / count;
 
                         // slide window
-                        float left = GridHelpers.SafeIndex(inputGrid, x - radius, y);
-                        float right = GridHelpers.SafeIndex(inputGrid, x + 1 + radius, y);
+                        float left = GridHelpers.SafeIndex(sourceGrid, x - radius, y);
+                        float right = GridHelpers.SafeIndex(sourceGrid, x + 1 + radius, y);
                         sum += right - left;
                     }
                 }
@@ -215,20 +216,24 @@ public class BlurNode : ExecutableNode<HeightGrid>
 
                     for (int y = -radius; y <= radius; y++)
                     {
-                        sum += GridHelpers.SafeIndex(tmp, x, y);
+                        sum += GridHelpers.SafeIndex(tempGrid, x, y);
                         count++;
                     }
 
                     for (int y = 0; y < size; y++)
                     {
-                        outputGrid[x, y] = Mathf.Clamp01(sum / count);
+                        targetGrid[x, y] = Mathf.Clamp01(sum / count);
 
-                        float top = GridHelpers.SafeIndex(tmp, x, y - radius);
-                        float bottom = GridHelpers.SafeIndex(tmp, x, y + 1 + radius);
+                        float top = GridHelpers.SafeIndex(tempGrid, x, y - radius);
+                        float bottom = GridHelpers.SafeIndex(tempGrid, x, y + 1 + radius);
                         sum += bottom - top;
                     }
                 }
+
+                sourceGrid = targetGrid;
             }
+
+            var outputGrid = sourceGrid;
 
             outputGrid.VersionHash = inputValues.VersionHash;
 
