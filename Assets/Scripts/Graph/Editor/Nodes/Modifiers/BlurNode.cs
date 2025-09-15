@@ -221,7 +221,7 @@ public class BlurNode : ExecutableNode<HeightGrid>
 
                     for (int y = 0; y < size; y++)
                     {
-                        outputGrid[x, y] = sum / count;
+                        outputGrid[x, y] = Mathf.Clamp01(sum / count);
 
                         float top = GridHelpers.SafeIndex(tmp, x, y - radius);
                         float bottom = GridHelpers.SafeIndex(tmp, x, y + 1 + radius);
