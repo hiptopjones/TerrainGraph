@@ -1,14 +1,14 @@
 ﻿using System;
 using UnityEngine;
 
-public class TextureHeightProvider : HeightProvider
+public class TextureHeightProvider : IHeightProvider
 {
     public Texture2D Texture { get; set; }
 
-    public override bool IsValid => true;
-    public override int VersionHash { get; set; }
+    public bool IsValid => true;
+    public int VersionHash { get; set; }
 
-    public override bool TryGetHeights(int size, out float[,] heights)
+    public bool TryGetHeights(int size, out float[,] heights)
     {
         try
         {

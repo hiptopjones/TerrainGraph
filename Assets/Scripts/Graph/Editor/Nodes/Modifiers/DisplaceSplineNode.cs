@@ -1,34 +1,43 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.GraphToolkit.Editor;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
 
 [Serializable]
-public class SplineNode : ExecutableNode<SplineWrapper>
+public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
 {
     private class InputValues
     {
+        public SplineWrapper Spline;
         public IProvider Provider;
         public int VertexCount;
-        
+        public float Amplitude;
+
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(
-                HashCode.Combine(Provider?.VersionHash, VertexCount)
-            );
+            return HashCode.Combine(Spline?.VersionHash, Provider?.VersionHash, VertexCount, Amplitude);
         }
     }
 
     // Options
 
     // Inputs
+    private const string NODE_INPUT_SPLINE_ID = "spline_input";
+    private const string NODE_INPUT_SPLINE_TITLE = "Spline";
+
     private const string NODE_INPUT_PROVIDER_ID = "provider_input";
     private const string NODE_INPUT_PROVIDER_TITLE = "Provider";
 
     private const string NODE_INPUT_VERTICES_ID = "vertices_input";
     private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
+
+    private const string NODE_INPUT_AMPLITUDE_ID = "amplitude_input";
+    private const string NODE_INPUT_AMPLITUDE_TITLE = "Amplitude";
 
     // Outputs
     private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
@@ -49,11 +58,18 @@ public class SplineNode : ExecutableNode<SplineWrapper>
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
+        context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
+            .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
+            .Build();
         context.AddInputPort<IProvider>(NODE_INPUT_PROVIDER_ID)
             .WithDisplayName(NODE_INPUT_PROVIDER_TITLE)
             .Build();
         context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
             .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
+            .WithDefaultValue(10)
+            .Build();
+        context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
+            .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
             .WithDefaultValue(10)
             .Build();
 
@@ -87,12 +103,18 @@ public class SplineNode : ExecutableNode<SplineWrapper>
 
         var isValid = true;
 
+        if (input.Spline == null || !input.Spline.IsValid)
+        {
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
+            isValid = false;
+        }
+
         if (input.Provider == null || !input.Provider.IsValid)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value missing", this);
             isValid = false;
         }
-        else if (input.Provider is not ISplineProvider)
+        else if (input.Provider is not INoiseProvider)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value incorrect", this);
             isValid = false;
@@ -118,8 +140,10 @@ public class SplineNode : ExecutableNode<SplineWrapper>
 
         var temp = new InputValues();
         var success =
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.Spline) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PROVIDER_ID, out temp.Provider) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude);
 
         if (success)
         {
@@ -132,15 +156,15 @@ public class SplineNode : ExecutableNode<SplineWrapper>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out SplineWrapper spline)
+    public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
     {
         if (!TryExecuteNode())
         {
-            spline = null;
+            value = null;
             return false;
         }
 
-        spline = CacheData.Output;
+        value = CacheData.Output;
         return true;
     }
 
@@ -164,21 +188,41 @@ public class SplineNode : ExecutableNode<SplineWrapper>
 
         try
         {
-            var splineProvider = inputValues.Provider as ISplineProvider;
-            var count = inputValues.VertexCount;
+            var noiseProvider = inputValues.Provider as INoiseProvider;
+            var inputSpline = inputValues.Spline;
+            var vertexCount = inputValues.VertexCount;
+            var amplitude = inputValues.Amplitude;
 
-            if (!splineProvider.TryGetSpline(count, out var spline))
+            var vertices = new List<Vector3>();
+
+            // Ignores the first and last vertex, so it remains anchored
+            for (int i = 1; i < vertexCount; i++)
             {
-                return false;
+                float t = i / (float)vertexCount;
+
+                Vector3 position = inputSpline.Spline.EvaluatePosition(t);
+                Vector3 tangent = ((Vector3)inputSpline.Spline.EvaluateTangent(t)).normalized;
+
+                Vector3 up = Vector3.up;
+                Vector3 binormal = Vector3.Cross(up, tangent).normalized;
+
+                noiseProvider.TryGetNoise(new Vector2(t, t), out var noise);
+                Vector3 displacement = binormal * (noise - 0.5f) * amplitude;
+
+                Vector3 displacedPosition = position + displacement;
+                vertices.Add(displacedPosition);
             }
+
+            var spline = new Spline(vertices.Select(v => (float3)v));
+            spline.Closed = inputSpline.Spline.Closed;
 
             var bounds = spline.GetBounds();
             var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
 
             var outputSpline = new SplineWrapper
             {
-                Size = size,
-                Spline = spline
+                Spline = spline,
+                Size = size
             };
 
             outputSpline.VersionHash = inputValues.VersionHash;

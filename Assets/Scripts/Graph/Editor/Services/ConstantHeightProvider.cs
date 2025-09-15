@@ -1,11 +1,11 @@
-﻿public class ConstantHeightProvider : HeightProvider
+﻿public class ConstantHeightProvider : IHeightProvider
 {
     public float Height { get; set; }
 
-    public override bool IsValid => true;
-    public override int VersionHash { get; set; }
+    public bool IsValid => true;
+    public int VersionHash { get; set; }
 
-    public override bool TryGetHeights(int size, out float[,] heights)
+    public bool TryGetHeights(int size, out float[,] heights)
     {
         heights = new float[size, size];
 

@@ -2,7 +2,7 @@
 using Unity.GraphToolkit.Editor;
 
 [Serializable]
-public class RadialShapeHeightNode : ProviderNode<HeightProvider>
+public class RadialShapeHeightNode : ProviderNode<IProvider>
 {
     private class InputValues
     {
@@ -54,7 +54,7 @@ public class RadialShapeHeightNode : ProviderNode<HeightProvider>
             .Build();
 
         // Output
-        context.AddOutputPort<HeightProvider>(NODE_OUTPUT_PROVIDER_ID)
+        context.AddOutputPort<IProvider>(NODE_OUTPUT_PROVIDER_ID)
             .WithDisplayName(NODE_OUTPUT_PROVIDER_TITLE)
             .Build();
     }
@@ -123,7 +123,7 @@ public class RadialShapeHeightNode : ProviderNode<HeightProvider>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out HeightProvider value)
+    public override bool TryGetOutputValue(IPort _, out IProvider value)
     {
         if (!TryGetValidatedInputValues(out var inputValues))
         {

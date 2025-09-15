@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class PerlinNoiseHeightProvider : HeightProvider
+public class PerlinNoiseProvider : IHeightProvider, INoiseProvider
 {
     public Vector2 Offset { get; set; }
     public float Frequency { get; set; }
@@ -10,12 +10,18 @@ public class PerlinNoiseHeightProvider : HeightProvider
     public float Lacunarity { get; set; }
     public int Seed { get; set; }
 
-    public override bool IsValid => true;
-    public override int VersionHash { get; set; }
+    public bool IsValid => true;
+    public int VersionHash { get; set; }
 
-    public override bool TryGetHeights(int size, out float[,] heights)
+    public bool TryGetHeights(int size, out float[,] heights)
     {
         heights = NoiseHelpers.GeneratePerlinNoise(size, Offset, Frequency, Amplitude, Octaves, Persistence, Lacunarity, Seed);
+        return true;
+    }
+
+    public bool TryGetNoise(Vector2 position, out float noise)
+    {
+        noise = NoiseHelpers.GeneratePerlinNoise(position, Frequency, Amplitude, Octaves, Persistence, Lacunarity, Seed);
         return true;
     }
 }

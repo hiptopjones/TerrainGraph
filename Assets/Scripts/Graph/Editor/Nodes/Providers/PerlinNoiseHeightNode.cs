@@ -3,7 +3,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 [Serializable]
-public class PerlinNoiseHeightNode : ProviderNode<HeightProvider>
+public class PerlinNoiseHeightNode : ProviderNode<IProvider>
 {
     private class InputValues
     {
@@ -90,7 +90,7 @@ public class PerlinNoiseHeightNode : ProviderNode<HeightProvider>
             .Build();
 
         // Output
-        context.AddOutputPort<HeightProvider>(NODE_OUTPUT_NOISE_ID)
+        context.AddOutputPort<IProvider>(NODE_OUTPUT_NOISE_ID)
             .WithDisplayName(NODE_OUTPUT_NOISE_TITLE)
             .Build();
     }
@@ -151,7 +151,7 @@ public class PerlinNoiseHeightNode : ProviderNode<HeightProvider>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out HeightProvider value)
+    public override bool TryGetOutputValue(IPort _, out IProvider value)
     {
         if (!TryGetValidatedInputValues(out var inputValues))
         {
@@ -159,7 +159,7 @@ public class PerlinNoiseHeightNode : ProviderNode<HeightProvider>
             return false;
         }
 
-        value = new PerlinNoiseHeightProvider()
+        value = new PerlinNoiseProvider()
         {
             Offset = inputValues.Offset,
             Frequency = inputValues.Frequency,

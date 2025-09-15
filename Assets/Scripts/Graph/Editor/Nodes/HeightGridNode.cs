@@ -7,7 +7,7 @@ public class HeightGridNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
-        public HeightProvider Provider;
+        public IProvider Provider;
         public int Size;
         
         public int VersionHash;
@@ -46,7 +46,7 @@ public class HeightGridNode : ExecutableNode<HeightGrid>
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<HeightProvider>(NODE_INPUT_PROVIDER_ID)
+        context.AddInputPort<IProvider>(NODE_INPUT_PROVIDER_ID)
             .WithDisplayName(NODE_INPUT_PROVIDER_TITLE)
             .Build();
         context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
@@ -87,6 +87,11 @@ public class HeightGridNode : ExecutableNode<HeightGrid>
         if (input.Provider == null || !input.Provider.IsValid)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value missing", this);
+            isValid = false;
+        }
+        else if (input.Provider is not IHeightProvider)
+        {
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value incorrect", this);
             isValid = false;
         }
 
@@ -156,10 +161,10 @@ public class HeightGridNode : ExecutableNode<HeightGrid>
 
         try
         {
-            var provider = inputValues.Provider;
+            var heightProvider = inputValues.Provider as IHeightProvider;
             var size = inputValues.Size;
 
-            if (!provider.TryGetHeights(size, out var heights))
+            if (!heightProvider.TryGetHeights(size, out var heights))
             {
                 return false;
             }

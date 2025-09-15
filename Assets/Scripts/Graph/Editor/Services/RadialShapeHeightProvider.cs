@@ -1,14 +1,14 @@
 ﻿using UnityEngine;
 
-public class RadialShapeHeightProvider : HeightProvider
+public class RadialShapeHeightProvider : IHeightProvider
 {
     public RadialShapeFunctions.ShapeType ShapeType { get; set; }
     public float Radius { get; set; }
 
-    public override bool IsValid => true;
-    public override int VersionHash { get; set; }
+    public bool IsValid => true;
+    public int VersionHash { get; set; }
 
-    public override bool TryGetHeights(int size, out float[,] heights)
+    public bool TryGetHeights(int size, out float[,] heights)
     {
         heights = null;
 

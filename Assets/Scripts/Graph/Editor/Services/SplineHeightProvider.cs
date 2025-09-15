@@ -2,17 +2,17 @@
 using UnityEngine;
 using UnityEngine.Splines;
 
-public class SplineHeightProvider : HeightProvider
+public class SplineHeightProvider : IHeightProvider
 {
     public Spline Spline { get; set; }
     public float Width { get; set; }
     public int Samples { get; set; }
     public bool Center { get; set; }
 
-    public override bool IsValid => true;
-    public override int VersionHash { get; set; }
+    public bool IsValid => true;
+    public int VersionHash { get; set; }
 
-    public override bool TryGetHeights(int size, out float[,] heights)
+    public bool TryGetHeights(int size, out float[,] heights)
     {
         var spline = Spline;
 

@@ -2,7 +2,7 @@
 using Unity.GraphToolkit.Editor;
 
 [Serializable]
-public class CircleSplineNode : ProviderNode<SplineProvider>
+public class CircleSplineNode : ProviderNode<IProvider>
 {
     private class InputValues
     {
@@ -48,7 +48,7 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
             .Build();
 
         // Output
-        context.AddOutputPort<SplineProvider>(NODE_OUTPUT_PROVIDER_ID)
+        context.AddOutputPort<IProvider>(NODE_OUTPUT_PROVIDER_ID)
             .WithDisplayName(NODE_OUTPUT_PROVIDER_TITLE)
             .Build();
     }
@@ -110,7 +110,7 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out SplineProvider value)
+    public override bool TryGetOutputValue(IPort _, out IProvider value)
     {
         if (!TryGetValidatedInputValues(out var inputValues))
         {

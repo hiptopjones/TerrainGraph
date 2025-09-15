@@ -2,7 +2,7 @@
 using Unity.GraphToolkit.Editor;
 
 [Serializable]
-public class ConstantHeightNode : ProviderNode<HeightProvider>
+public class ConstantHeightNode : ProviderNode<IProvider>
 {
     private class InputValues
     {
@@ -40,7 +40,7 @@ public class ConstantHeightNode : ProviderNode<HeightProvider>
             .Build();
 
         // Output
-        context.AddOutputPort<HeightProvider>(NODE_OUTPUT_PROVIDER_ID)
+        context.AddOutputPort<IProvider>(NODE_OUTPUT_PROVIDER_ID)
             .WithDisplayName(NODE_OUTPUT_PROVIDER_TITLE)
             .Build();
     }
@@ -95,7 +95,7 @@ public class ConstantHeightNode : ProviderNode<HeightProvider>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out HeightProvider value)
+    public override bool TryGetOutputValue(IPort _, out IProvider value)
     {
         if (!TryGetValidatedInputValues(out var inputValues))
         {

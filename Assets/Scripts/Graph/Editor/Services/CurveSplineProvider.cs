@@ -4,15 +4,15 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
 
-public class CurveSplineProvider : SplineProvider
+public class CurveSplineProvider : ISplineProvider
 {
     public CurveFunctions.CurveType CurveType{ get; set; }
     public float Size { get; set; }
 
-    public override bool IsValid => true;
-    public override int VersionHash { get; set; }
+    public bool IsValid => true;
+    public int VersionHash { get; set; }
 
-    public override bool TryGetSpline(int vertexCount, out Spline spline)
+    public bool TryGetSpline(int vertexCount, out Spline spline)
     {
         spline = null;
 
