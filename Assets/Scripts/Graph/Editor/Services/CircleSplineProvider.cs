@@ -3,7 +3,8 @@ using UnityEngine.Splines;
 
 public class CircleSplineProvider : SplineProvider
 {
-    public float Size { get; set; }
+    public int Size { get; set; }
+    public float Angle { get; set; }
 
     public override bool IsValid => true;
     public override int VersionHash { get; set; }
@@ -12,9 +13,9 @@ public class CircleSplineProvider : SplineProvider
     {
         var radius = Size / 2f;
         var center = Vector2.one * radius;
-        var interval = 360f / vertexCount;
+        var interval = Angle / vertexCount;
         
-        spline = SplineFunctions.Circle(radius, interval, center);
+        spline = SplineFunctions.Circle(radius, Angle, interval,    center);
         return true;
     }
 }

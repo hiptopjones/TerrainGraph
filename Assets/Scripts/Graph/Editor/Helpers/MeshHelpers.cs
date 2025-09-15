@@ -12,8 +12,8 @@ public static class MeshHelpers
 
         public MeshData(HeightGrid grid)
         {
-            var width = grid.Width;
-            var height = grid.Height;
+            var width = grid.Size;
+            var height = grid.Size;
 
             Vertices = new Vector3[width * height];
             Uvs = new Vector2[width * height];
@@ -36,8 +36,8 @@ public static class MeshHelpers
     {
         MeshData meshData = new MeshData(grid);
 
-        int width = grid.Width;
-        int height = grid.Height;
+        int width = grid.Size;
+        int height = grid.Size;
 
         int vertexIndex = 0;
         int triangleIndex = 0;

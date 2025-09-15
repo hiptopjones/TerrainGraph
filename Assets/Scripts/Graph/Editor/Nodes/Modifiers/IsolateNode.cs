@@ -151,7 +151,7 @@ public class IsolateNode : ExecutableNode<HeightGrid>
             var inputGrid = inputValues.Grid;
             var value = inputValues.Value;
 
-            var size = inputGrid.Width;
+            var size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
 

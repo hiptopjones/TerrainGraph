@@ -176,7 +176,7 @@ public class BlurNode : ExecutableNode<HeightGrid>
             var radius = inputValues.Radius;
             var iterations = inputValues.Iterations;
 
-            int size = inputGrid.Width;
+            int size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
 
@@ -192,7 +192,7 @@ public class BlurNode : ExecutableNode<HeightGrid>
 
                     for (int x = -radius; x <= radius; x++)
                     {
-                        sum += GridHelpers.SafeGet(inputGrid, x, y);
+                        sum += GridHelpers.SafeIndex(inputGrid, x, y);
                         count++;
                     }
 
@@ -201,8 +201,8 @@ public class BlurNode : ExecutableNode<HeightGrid>
                         tmp[x, y] = sum / count;
 
                         // slide window
-                        float left = GridHelpers.SafeGet(inputGrid, x - radius, y);
-                        float right = GridHelpers.SafeGet(inputGrid, x + 1 + radius, y);
+                        float left = GridHelpers.SafeIndex(inputGrid, x - radius, y);
+                        float right = GridHelpers.SafeIndex(inputGrid, x + 1 + radius, y);
                         sum += right - left;
                     }
                 }
@@ -215,7 +215,7 @@ public class BlurNode : ExecutableNode<HeightGrid>
 
                     for (int y = -radius; y <= radius; y++)
                     {
-                        sum += GridHelpers.SafeGet(tmp, x, y);
+                        sum += GridHelpers.SafeIndex(tmp, x, y);
                         count++;
                     }
 
@@ -223,8 +223,8 @@ public class BlurNode : ExecutableNode<HeightGrid>
                     {
                         outputGrid[x, y] = sum / count;
 
-                        float top = GridHelpers.SafeGet(tmp, x, y - radius);
-                        float bottom = GridHelpers.SafeGet(tmp, x, y + 1 + radius);
+                        float top = GridHelpers.SafeIndex(tmp, x, y - radius);
+                        float bottom = GridHelpers.SafeIndex(tmp, x, y + 1 + radius);
                         sum += bottom - top;
                     }
                 }

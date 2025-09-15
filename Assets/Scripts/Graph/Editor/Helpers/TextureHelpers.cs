@@ -21,8 +21,8 @@ internal static class TextureHelpers
     {
         try
         {
-            var width = grid.Width;
-            var height = grid.Height;
+            var width = grid.Size;
+            var height = grid.Size;
 
             texture = new Texture2D(width, height, TextureFormat.R16, mipChain: false, linear: true);
             texture.wrapMode = TextureWrapMode.Clamp;
@@ -70,8 +70,8 @@ internal static class TextureHelpers
     {
         try
         {
-            var width = grid.Width;
-            var height = grid.Height;
+            var width = grid.Size;
+            var height = grid.Size;
 
             texture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
             texture.wrapMode = TextureWrapMode.Clamp;

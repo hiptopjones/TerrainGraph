@@ -3,8 +3,7 @@
 [Serializable]
 public class HeightGrid : IVersionedObject
 {
-    public int Width;
-    public int Height;
+    public int Size;
 
     public float[] Values { get; set; }
     public int VersionHash { get; set; }
@@ -19,14 +18,13 @@ public class HeightGrid : IVersionedObject
 
     public float this[int x, int y]
     {
-        get => Values[x + y * Width];
-        set => Values[x + y * Width] = value;
+        get => Values[x + y * Size];
+        set => Values[x + y * Size] = value;
     }
 
     public HeightGrid(int size)
     {
-        Width = size;
-        Height = size;
+        Size = size;
         Values = new float[size * size];
     }
 }

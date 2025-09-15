@@ -151,7 +151,7 @@ public class RotateNode : ExecutableNode<HeightGrid>
             var inputGrid = inputValues.Grid;
             var rotationDegrees = inputValues.RotationDegrees;
 
-            var size = inputGrid.Width;
+            var size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
 
@@ -185,10 +185,10 @@ public class RotateNode : ExecutableNode<HeightGrid>
                         var x2 = Mathf.FloorToInt(sourceX + 1);
                         var y2 = Mathf.FloorToInt(sourceY + 1);
 
-                        var q11 = GridHelpers.SafeGet(inputGrid, x1, y1);
-                        var q21 = GridHelpers.SafeGet(inputGrid, x2, y1);
-                        var q22 = GridHelpers.SafeGet(inputGrid, x2, y2);
-                        var q12 = GridHelpers.SafeGet(inputGrid, x1, y2);
+                        var q11 = GridHelpers.SafeIndex(inputGrid, x1, y1);
+                        var q21 = GridHelpers.SafeIndex(inputGrid, x2, y1);
+                        var q22 = GridHelpers.SafeIndex(inputGrid, x2, y2);
+                        var q12 = GridHelpers.SafeIndex(inputGrid, x1, y2);
 
                         outputGrid[x, y] = GeometryHelpers.BilinearInterpolate(sourceX, sourceY, q11, q21, q22, q12, x1, y1, x2, y2);
                     }

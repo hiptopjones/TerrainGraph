@@ -191,7 +191,7 @@ public class BlendNode : ExecutableNode<HeightGrid>
             Func<float, float, float> blendFunction = GetBlendFunction(blendMethod);
 
             // TODO: Validate all lengths are expected
-            var size = inputGrid1.Width;
+            var size = inputGrid1.Size;
 
             var outputGrid = new HeightGrid(size);
 

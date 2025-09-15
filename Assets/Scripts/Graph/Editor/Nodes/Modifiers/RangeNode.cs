@@ -173,7 +173,7 @@ public class RangeNode : ExecutableNode<HeightGrid>
             var fromRange = inputValues.FromRange;
             var toRange = inputValues.ToRange;
 
-            var size = inputGrid.Width;
+            var size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
 

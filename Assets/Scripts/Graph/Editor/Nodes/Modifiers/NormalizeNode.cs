@@ -141,7 +141,7 @@ public class NormalizeNode : ExecutableNode<HeightGrid>
         {
             var inputGrid = inputValues.Grid;
 
-            var size = inputGrid.Width;
+            var size = inputGrid.Size;
 
             (var min, var max) = GridHelpers.GetRange(inputGrid);
 

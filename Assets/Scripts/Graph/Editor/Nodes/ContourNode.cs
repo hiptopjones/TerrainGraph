@@ -168,7 +168,7 @@ public class ContourNode : ExecutableNode<SplineWrapper>
 
             var outputSpline = new SplineWrapper
             {
-                Size = inputGrid.Width,
+                Size = inputGrid.Size,
                 Spline = spline,
             };
 

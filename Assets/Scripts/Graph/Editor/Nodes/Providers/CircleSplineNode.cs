@@ -7,12 +7,13 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
     private class InputValues
     {
         public int Size;
+        public float Angle;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Size);
+            return HashCode.Combine(Size, Angle);
         }
     }
 
@@ -21,6 +22,9 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
     // Inputs
     private const string NODE_INPUT_SIZE_ID = "size_input";
     private const string NODE_INPUT_SIZE_TITLE = "Size";
+
+    private const string NODE_INPUT_ANGLE_ID = "angle_input";
+    private const string NODE_INPUT_ANGLE_TITLE = "Angle";
 
     // Outputs
     private const string NODE_OUTPUT_PROVIDER_ID = "provider_output";
@@ -37,6 +41,10 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
         context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
             .WithDisplayName(NODE_INPUT_SIZE_TITLE)
             .WithDefaultValue(256)
+            .Build();
+        context.AddInputPort<float>(NODE_INPUT_ANGLE_ID)
+            .WithDisplayName(NODE_INPUT_ANGLE_TITLE)
+            .WithDefaultValue(360)
             .Build();
 
         // Output
@@ -68,6 +76,12 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
             isValid = false;
         }
 
+        if (input.Angle <= 0 || input.Angle > 360)
+        {
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ANGLE_TITLE} value invalid: {input.Angle} (valid: 0 < n <= 360)", this);
+            isValid = false;
+        }
+
         if (isValid)
         {
             validatedInput = input;
@@ -82,7 +96,8 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ANGLE_ID, out temp.Angle);
 
         if (success)
         {
@@ -106,6 +121,7 @@ public class CircleSplineNode : ProviderNode<SplineProvider>
         value = new CircleSplineProvider()
         {
             Size = inputValues.Size,
+            Angle = inputValues.Angle,
             
             VersionHash = inputValues.VersionHash
         };

@@ -168,7 +168,7 @@ public class ClampNode : ExecutableNode<HeightGrid>
             var minimum = inputValues.Minimum;
             var maximum = inputValues.Maximum;
 
-            var size = inputGrid.Width;
+            var size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
 

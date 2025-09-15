@@ -174,7 +174,7 @@ public class RebaseNode : ExecutableNode<HeightGrid>
             var inputGrid = inputValues.Grid;
             var value = inputValues.Value;
 
-            var size = inputGrid.Width;
+            var size = inputGrid.Size;
 
             (var min, var max) = GridHelpers.GetRange(inputGrid);
 

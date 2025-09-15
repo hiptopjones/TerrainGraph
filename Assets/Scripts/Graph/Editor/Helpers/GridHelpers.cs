@@ -2,18 +2,20 @@
 
 public static class GridHelpers
 {
-    public static float SafeGet(HeightGrid grid, int x, int y)
+    public static float SafeIndex(HeightGrid grid, int x, int y)
     {
-        int w = grid.Width;
-        int h = grid.Height;
+        int w = grid.Size;
+        int h = grid.Size;
+
         x = Mathf.Clamp(x, 0, w - 1);
         y = Mathf.Clamp(y, 0, h - 1);
+
         return grid[x, y];
     }
 
     public static (float, float) GetRange(HeightGrid grid)
     {
-        var size = grid.Width;
+        var size = grid.Size;
 
         var maxValue = float.MinValue;
         var minValue = float.MaxValue;

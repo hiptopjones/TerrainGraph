@@ -206,7 +206,7 @@ public class RampNode : ExecutableNode<HeightGrid>
 
             var rampFunction = GetRampFunction(inputValues);
 
-            var size = inputGrid.Width;
+            var size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
 

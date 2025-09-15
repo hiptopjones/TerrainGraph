@@ -174,7 +174,7 @@ public class ShorelineSmootherNode : ExecutableNode<HeightGrid>
             var falloffWidth = inputValues.FalloffWidth;
             var falloffCurve = inputValues.FalloffCurve;
 
-            int size = inputGrid.Width;
+            int size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
 

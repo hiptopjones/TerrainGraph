@@ -4,13 +4,13 @@ using UnityEngine.Splines;
 
 public static class SplineFunctions
 {
-    public static Spline Circle(float radius, float interval, Vector2 center)
+    public static Spline Circle(float radius, float angle, float interval, Vector2 center)
     {
         var points = new List<Vector2>();
 
-        for (float angle = 0; angle < 360; angle += interval)
+        for (float theta = 0; theta < angle; theta += interval)
         {
-            var radians = angle * Mathf.Deg2Rad;
+            var radians = theta * Mathf.Deg2Rad;
 
             float x = center.x + radius * Mathf.Cos(radians);
             float y = center.y + radius * Mathf.Sin(radians);
@@ -18,7 +18,7 @@ public static class SplineFunctions
             points.Add(new Vector2(x, y));
         }
 
-        var spline = SplineHelpers.CreateSpline(points, closed: true);
+        var spline = SplineHelpers.CreateSpline(points, angle == 360);
         return spline;
     }
 }

@@ -45,7 +45,7 @@ public class ContourDetector
     // Returns a grid that indicates if each cell is above or below the threshold level
     private byte[,] GetSampleGrid(float level)
     {
-        var size = _grid.Width;
+        var size = _grid.Size;
 
         byte[,] samples = new byte[size, size];
 

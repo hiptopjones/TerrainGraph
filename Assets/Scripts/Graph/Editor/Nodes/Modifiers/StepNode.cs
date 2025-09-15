@@ -151,7 +151,7 @@ public class StepNode : ExecutableNode<HeightGrid>
             var inputGrid = inputValues.Grid;
             var threshold = inputValues.Threshold;
 
-            var size = inputGrid.Width;
+            var size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
 

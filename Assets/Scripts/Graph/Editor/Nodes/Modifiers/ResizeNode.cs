@@ -1,5 +1,6 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
+using UnityEditor.PackageManager.UI;
 using UnityEngine;
 
 [Serializable]
@@ -9,12 +10,13 @@ public class ResizeNode : ExecutableNode<HeightGrid>
     {
         public HeightGrid Grid;
         public int Size;
+        public bool Zoom;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, Size);
+            return HashCode.Combine(Grid.VersionHash, Size, Zoom);
         }
     }
 
@@ -26,6 +28,9 @@ public class ResizeNode : ExecutableNode<HeightGrid>
 
     private const string NODE_INPUT_SIZE_ID = "size_input";
     private const string NODE_INPUT_SIZE_TITLE = "Size";
+
+    private const string NODE_INPUT_ZOOM_ID = "zoom_input";
+    private const string NODE_INPUT_ZOOM_TITLE = "Zoom";
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -50,6 +55,10 @@ public class ResizeNode : ExecutableNode<HeightGrid>
         context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
             .WithDisplayName(NODE_INPUT_SIZE_TITLE)
             .WithDefaultValue(256)
+            .Build();
+        context.AddInputPort<bool>(NODE_INPUT_ZOOM_ID)
+            .WithDisplayName(NODE_INPUT_ZOOM_TITLE)
+            .WithDefaultValue(true)
             .Build();
 
         if (isPreviewEnabled)
@@ -109,7 +118,8 @@ public class ResizeNode : ExecutableNode<HeightGrid>
         var temp = new InputValues();
         var success =
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ZOOM_ID, out temp.Zoom);
 
         if (success)
         {
@@ -155,32 +165,20 @@ public class ResizeNode : ExecutableNode<HeightGrid>
         try
         {
             var inputGrid = inputValues.Grid;
+            var inputSize = inputGrid.Size;
             var outputSize = inputValues.Size;
+            var zoom = inputValues.Zoom;
 
-            var inputSize = inputGrid.Width;
+            HeightGrid outputGrid = null;
 
-            var outputGrid = new HeightGrid(outputSize);
-
-            var outputCenter = Vector2Int.one * outputSize / 2;
-            var inputCenter = Vector2Int.one * inputSize / 2;
-
-            for (int y = 0; y < outputSize; y++)
+            if (zoom)
             {
-                for (int x = 0; x < outputSize; x++)
-                {
-                    var target = new Vector2Int(x, y);
-                    var source = target - outputCenter + inputCenter;
-
-                    if (source.x < 0 || source.x > inputSize - 1 ||
-                        source.y < 0 || source.y > inputSize - 1)
-                    {
-                        outputGrid[x, y] = 0;
-                    }
-                    else
-                    {
-                        outputGrid[x, y] = inputGrid[source.x, source.y];
-                    }
-                }
+                outputGrid = Zoom(inputGrid, outputSize);
+            }
+            else
+            {
+                var scalePercent = outputSize / (float)inputSize;
+                outputGrid = Resample(inputGrid, outputSize, scalePercent);
             }
 
             outputGrid.VersionHash = inputValues.VersionHash;
@@ -193,5 +191,77 @@ public class ResizeNode : ExecutableNode<HeightGrid>
             Debug.LogException(ex);
             return false;
         }
+    }
+
+    public static HeightGrid Zoom(HeightGrid inputGrid, int outputSize)
+    {
+        var inputSize = inputGrid.Size;
+        
+        var outputCenter = Vector2Int.one * outputSize / 2;
+        var inputCenter = Vector2Int.one * inputSize / 2;
+
+        var outputGrid = new HeightGrid(outputSize);
+
+        for (int y = 0; y < outputSize; y++)
+        {
+            for (int x = 0; x < outputSize; x++)
+            {
+                var target = new Vector2Int(x, y);
+                var source = target - outputCenter + inputCenter;
+
+                if (source.x < 0 || source.x > inputSize - 1 ||
+                    source.y < 0 || source.y > inputSize - 1)
+                {
+                    outputGrid[x, y] = 0;
+                }
+                else
+                {
+                    outputGrid[x, y] = inputGrid[source.x, source.y];
+                }
+            }
+        }
+
+        return outputGrid;
+    }
+
+    public static HeightGrid Resample(HeightGrid inputGrid, int outputSize, float scalePercent)
+    {
+        var inputSize = inputGrid.Size;
+
+        var outputCenter = Vector2Int.one * outputSize / 2;
+        var inputCenter = Vector2Int.one * inputSize / 2;
+
+        var outputGrid = new HeightGrid(outputSize);
+
+        for (int y = 0; y < outputSize; y++)
+        {
+            for (int x = 0; x < outputSize; x++)
+            {
+                var target = new Vector2(x, y);
+                var source = (target - outputCenter) / scalePercent + inputCenter;
+
+                if (source.x < 0 || source.x > inputSize - 1 ||
+                    source.y < 0 || source.y > inputSize - 1)
+                {
+                    outputGrid[x, y] = 0;
+                }
+                else
+                {
+                    var x1 = Mathf.FloorToInt(source.x);
+                    var y1 = Mathf.FloorToInt(source.y);
+                    var x2 = Mathf.FloorToInt(source.x + 1);
+                    var y2 = Mathf.FloorToInt(source.y + 1);
+
+                    var q11 = GridHelpers.SafeIndex(inputGrid, x1, y1);
+                    var q21 = GridHelpers.SafeIndex(inputGrid, x2, y1);
+                    var q22 = GridHelpers.SafeIndex(inputGrid, x2, y2);
+                    var q12 = GridHelpers.SafeIndex(inputGrid, x1, y2);
+
+                    outputGrid[x, y] = GeometryHelpers.BilinearInterpolate(source.x, source.y, q11, q21, q22, q12, x1, y1, x2, y2);
+                }
+            }
+        }
+
+        return outputGrid;
     }
 }
