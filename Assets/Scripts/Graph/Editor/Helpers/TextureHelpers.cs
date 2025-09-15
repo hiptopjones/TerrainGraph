@@ -157,8 +157,9 @@ internal static class TextureHelpers
 
                 var p = spline.EvaluatePosition(t);
 
-                // Center the spline and fill the viewport with it
-                p = p - (float3)center + (float3)bounds.extents;
+                // Center the spline and fill the viewport with it 
+                var size = Mathf.Max(bounds.extents.x, bounds.extents.z);
+                p = p - (float3)center + new float3(size, 0, size);
 
                 var currentPosition = new Vector2(p.x, p.z);
 

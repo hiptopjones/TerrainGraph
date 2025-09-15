@@ -2,6 +2,7 @@
 using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using UnityEngine.Splines;
 
 [Serializable]
 public class ContourNode : ExecutableNode<SplineWrapper>
@@ -166,9 +167,12 @@ public class ContourNode : ExecutableNode<SplineWrapper>
             // TODO: Should apply some Douglas-Peucker smoothing to reduce points
             var spline = SplineHelpers.CreateSpline(contour, closed: true);
 
+            var bounds = spline.GetBounds();
+            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+
             var outputSpline = new SplineWrapper
             {
-                Size = inputGrid.Size,
+                Size = size,
                 Spline = spline,
             };
 
