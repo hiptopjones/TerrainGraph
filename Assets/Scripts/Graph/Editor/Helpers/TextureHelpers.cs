@@ -150,7 +150,7 @@ internal static class TextureHelpers
             // Draw the spline outline
             for (int i = 0; i < vertexCount; i++)
             {
-                var t = i / vertexCount;
+                var t = i / (vertexCount - 1);
 
                 var p = spline.EvaluatePosition(t);
 
