@@ -59,4 +59,14 @@ public static class NoiseHelpers
 
         return Mathf.Clamp01(totalNoise / totalAmplitude);
     }
+
+    // Returns a "cell noise" value for a given world position
+    public static float GetCellHeight(Vector2Int cellIndex, int seed = 0)
+    {
+        // Get deterministic random height for this cell
+        int rand = HashHelpers.S32(cellIndex.x, cellIndex.y, seed);
+
+        // Scale to desired range
+        return Mathf.Clamp01(Mathf.Abs(rand / (float)int.MaxValue));
+    }
 }

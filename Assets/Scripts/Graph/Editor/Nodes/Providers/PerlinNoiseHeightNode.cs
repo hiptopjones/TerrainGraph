@@ -29,8 +29,8 @@ public class PerlinNoiseHeightNode : ProviderNode<IProvider>
     // Options
 
     // Inputs
-    private const string NODE_INPUT_POSITION_ID = "position_input";
-    private const string NODE_INPUT_POSITION_TITLE = "Position";
+    private const string NODE_INPUT_OFFSET_ID = "offset_input";
+    private const string NODE_INPUT_OFFSET_TITLE = "Offset";
 
     private const string NODE_INPUT_FREQUENCY_ID = "frequency_input";
     private const string NODE_INPUT_FREQUENCY_TITLE = "Frequency";
@@ -62,8 +62,8 @@ public class PerlinNoiseHeightNode : ProviderNode<IProvider>
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
         // Input
-        context.AddInputPort<Vector2>(NODE_INPUT_POSITION_ID)
-            .WithDisplayName(NODE_INPUT_POSITION_TITLE)
+        context.AddInputPort<Vector2>(NODE_INPUT_OFFSET_ID)
+            .WithDisplayName(NODE_INPUT_OFFSET_TITLE)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_FREQUENCY_ID)
             .WithDisplayName(NODE_INPUT_FREQUENCY_TITLE)
@@ -132,7 +132,7 @@ public class PerlinNoiseHeightNode : ProviderNode<IProvider>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_POSITION_ID, out temp.Offset) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_OFFSET_ID, out temp.Offset) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_FREQUENCY_ID, out temp.Frequency) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_OCTAVES_ID, out temp.Octaves) &&

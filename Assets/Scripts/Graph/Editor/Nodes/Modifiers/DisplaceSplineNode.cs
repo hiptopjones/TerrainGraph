@@ -66,11 +66,11 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             .Build();
         context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
             .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-            .WithDefaultValue(10)
+            .WithDefaultValue(100)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
             .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
-            .WithDefaultValue(10)
+            .WithDefaultValue(30)
             .Build();
 
         if (isPreviewEnabled)

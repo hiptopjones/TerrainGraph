@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 internal class GeometryHelpers
 {
@@ -56,4 +57,81 @@ internal class GeometryHelpers
         return ((y2 - y) / (y2 - y1)) * r1 + ((y - y1) / (y2 - y1)) * r2;
     }
 
+
+    public static List<Vector2> GetConvexHull(List<Vector2> points)
+    {
+        if (points == null || points.Count < 3)
+        {
+            return new List<Vector2>(points);
+        }
+
+        // Step 1: Find the lowest point (pivot)
+        Vector2 pivot = points[0];
+        foreach (var p in points)
+        {
+            if (p.y < pivot.y || (Mathf.Approximately(p.y, pivot.y) && p.x < pivot.x))
+                pivot = p;
+        }
+
+        // Step 2: Sort points by polar angle relative to pivot
+        points.Sort((a, b) =>
+        {
+            if (a == pivot)
+            {
+                return -1;
+            }
+            if (b == pivot)
+            {
+                return 1;
+            }
+
+            float angleA = Mathf.Atan2(a.y - pivot.y, a.x - pivot.x);
+            float angleB = Mathf.Atan2(b.y - pivot.y, b.x - pivot.x);
+
+            if (Mathf.Approximately(angleA, angleB))
+            {
+                // If same angle, keep closer one first
+                float distA = (a - pivot).sqrMagnitude;
+                float distB = (b - pivot).sqrMagnitude;
+                return distA.CompareTo(distB);
+            }
+
+            return angleA.CompareTo(angleB);
+        });
+
+        // Step 3: Build hull using stack
+        Stack<Vector2> hull = new Stack<Vector2>();
+        hull.Push(points[0]);
+        hull.Push(points[1]);
+
+        for (int i = 2; i < points.Count; i++)
+        {
+            Vector2 top = hull.Pop();
+            Vector2 nextToTop = hull.Peek();
+            hull.Push(top);
+
+            while (hull.Count >= 2 && Cross(nextToTop, top, points[i]) <= 0)
+            {
+                hull.Pop();
+                if (hull.Count < 2)
+                {
+                    break;
+                }
+
+                top = hull.Pop();
+                nextToTop = hull.Peek();
+                hull.Push(top);
+            }
+
+            hull.Push(points[i]);
+        }
+
+        return new List<Vector2>(hull);
+    }
+
+    // Cross product to check orientation
+    private static float Cross(Vector2 a, Vector2 b, Vector2 c)
+    {
+        return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    }
 }

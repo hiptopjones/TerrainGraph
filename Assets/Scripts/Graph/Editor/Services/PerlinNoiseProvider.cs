@@ -21,7 +21,7 @@ public class PerlinNoiseProvider : IHeightProvider, INoiseProvider
 
     public bool TryGetNoise(Vector2 position, out float noise)
     {
-        noise = NoiseHelpers.GeneratePerlinNoise(position, Frequency, Amplitude, Octaves, Persistence, Lacunarity, Seed);
+        noise = NoiseHelpers.GeneratePerlinNoise(position + Offset, Frequency, Amplitude, Octaves, Persistence, Lacunarity, Seed);
         return true;
     }
 }
