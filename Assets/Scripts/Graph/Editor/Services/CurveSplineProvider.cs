@@ -16,7 +16,7 @@ public class CurveSplineProvider : ISplineProvider
     {
         spline = null;
 
-        if (!CurveFunctions.TryGetCurveFunction(CurveType, out var curveFunction))
+        if (!CurveFunctions.TryGetFunction(CurveType, out var curveFunction))
         {
             return false;
         }

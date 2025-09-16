@@ -12,7 +12,7 @@ public class RadialShapeHeightProvider : IHeightProvider
     {
         heights = null;
 
-        if (!RadialShapeFunctions.GetShapeFunction(ShapeType, out var shapeFunction))
+        if (!RadialShapeFunctions.TryGetFunction(ShapeType, out var shapeFunction))
         {
             return false;
         }

@@ -1,45 +1,45 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using BlendMethod = BlendFunctions.BlendMethod;
+using ArithmeticOperator = ArithmeticFunctions.ArithmeticOperator;
 
 [Serializable]
-public class BlendNode : ExecutableNode<HeightGrid>
+public class ArithmeticNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
-        public BlendMethod BlendMethod;
-        public HeightGrid Grid1;
-        public HeightGrid Grid2;
+        public ArithmeticOperator ArithmeticOperator;
+        public HeightGrid Grid;
+        public float Value;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(BlendMethod, Grid1?.VersionHash, Grid2?.VersionHash);
+            return HashCode.Combine(ArithmeticOperator, Grid?.VersionHash, Value);
         }
     }
 
     // Options
-    private const string NODE_OPTION_METHOD_ID = "method_option";
-    private const string NODE_OPTION_METHOD_TITLE = "Blend Method";
+    private const string NODE_OPTION_OPERATOR_ID = "operator_option";
+    private const string NODE_OPTION_OPERATOR_TITLE = "Arithmetic Operator";
 
-    // Input
-    private const string NODE_INPUT_GRID1_ID = "grid1_input";
-    private const string NODE_INPUT_GRID1_TITLE = "Grid 1";
+    // Inputs
+    private const string NODE_INPUT_GRID_ID = "grid_input";
+    private const string NODE_INPUT_GRID_TITLE = "Grid";
 
-    private const string NODE_INPUT_GRID2_ID = "grid2_input";
-    private const string NODE_INPUT_GRID2_TITLE = "Grid 2";
+    private const string NODE_INPUT_VALUE_ID = "value_input";
+    private const string NODE_INPUT_VALUE_TITLE = "Value";
 
-    // Output
+    // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
     private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<BlendMethod>(NODE_OPTION_METHOD_ID)
-            .WithDisplayName(NODE_OPTION_METHOD_TITLE)
-            .WithDefaultValue(BlendMethod.Maximum)
+        context.AddOption<ArithmeticOperator>(NODE_OPTION_OPERATOR_ID)
+            .WithDisplayName(NODE_OPTION_OPERATOR_TITLE)
+            .WithDefaultValue(ArithmeticOperator.Add)
             .Build();
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
             .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
@@ -52,11 +52,12 @@ public class BlendNode : ExecutableNode<HeightGrid>
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
         // Input
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID1_ID)
-            .WithDisplayName(NODE_INPUT_GRID1_TITLE)
+        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
+            .WithDisplayName(NODE_INPUT_GRID_TITLE)
             .Build();
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID2_ID)
-            .WithDisplayName(NODE_INPUT_GRID2_TITLE)
+        context.AddInputPort<float>(NODE_INPUT_VALUE_ID)
+            .WithDisplayName(NODE_INPUT_VALUE_TITLE)
+            .WithDefaultValue(0.5f)
             .Build();
 
         if (isPreviewEnabled)
@@ -89,27 +90,15 @@ public class BlendNode : ExecutableNode<HeightGrid>
 
         var isValid = true;
 
-        if (!Enum.IsDefined(typeof(BlendMethod), input.BlendMethod))
+        if (!Enum.IsDefined(typeof(ArithmeticOperator), input.ArithmeticOperator))
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_METHOD_TITLE} option invalid", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_OPERATOR_TITLE} option invalid", this);
             isValid = false;
         }
 
-        if (input.Grid1 == null || !input.Grid1.IsValid)
+        if (input.Grid == null || !input.Grid.IsValid)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} value missing", this);
-            isValid = false;
-        }
-
-        if (input.Grid2 == null || !input.Grid2.IsValid)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID2_TITLE} value missing", this);
-            isValid = false;
-        }
-
-        if (isValid && input.Grid1.Values.Length != input.Grid2.Values.Length)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} and {NODE_INPUT_GRID2_TITLE} size mismatch", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
             isValid = false;
         }
 
@@ -127,9 +116,9 @@ public class BlendNode : ExecutableNode<HeightGrid>
 
         var temp = new InputValues();
         var success =
-            GetNodeOptionByName(NODE_OPTION_METHOD_ID).TryGetValue(out temp.BlendMethod) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID1_ID, out temp.Grid1) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID2_ID, out temp.Grid2);
+            GetNodeOptionByName(NODE_OPTION_OPERATOR_ID).TryGetValue(out temp.ArithmeticOperator) && 
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VALUE_ID, out temp.Value);
 
         if (success)
         {
@@ -174,17 +163,16 @@ public class BlendNode : ExecutableNode<HeightGrid>
 
         try
         {
-            var blendMethod = inputValues.BlendMethod;
-            var inputGrid1 = inputValues.Grid1;
-            var inputGrid2 = inputValues.Grid2;
+            var arithmeticOperator = inputValues.ArithmeticOperator;
+            var inputGrid = inputValues.Grid;
+            var value = inputValues.Value;
 
-            if (!BlendFunctions.TryGetFunction(blendMethod, out Func<float, float, float> blendFunction))
+            if (!ArithmeticFunctions.TryGetFunction(arithmeticOperator, out Func<float, float, float> blendFunction))
             {
                 return false;
             }
 
-            // TODO: Validate all lengths are expected
-            var size = inputGrid1.Size;
+            var size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
 
@@ -192,7 +180,7 @@ public class BlendNode : ExecutableNode<HeightGrid>
             {
                 for (int x = 0; x < size; x++)
                 {
-                    outputGrid[x, y] = blendFunction(inputGrid1[x, y], inputGrid2[x, y]);
+                    outputGrid[x, y] = blendFunction.Invoke(inputGrid[x, y], value);
                 }
             }
 

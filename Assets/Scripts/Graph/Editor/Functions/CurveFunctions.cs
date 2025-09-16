@@ -10,6 +10,7 @@ public static class CurveFunctions
         SmoothStep = 200,
         Parabolic,
 
+        // Easings
         InQuad = 300,
         OutQuad,
         InOutQuad,
@@ -51,63 +52,42 @@ public static class CurveFunctions
         InOutBounce,
     }
 
-    public static bool TryGetCurveFunction(CurveType curveType, out Func<float, Vector2> curveFunction)
+    public static bool TryGetFunction(CurveType curveType, out Func<float, Vector2> function)
     {
-        curveFunction = null;
+        function = null;
 
-        switch (curveType)
+        // Include the easing functions as curves
+        var definingTypes = new[] { typeof(CurveFunctions), typeof(EasingFunctions) };
+        foreach (var definingType in definingTypes)
         {
-            case CurveType.Line:
-                curveFunction = Line;
-                return true;
+            var methodName = curveType.ToString();
+            var method = definingType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
+            if (method == null)
+            {
+                continue;
+            }
 
-            case CurveType.SmoothStep:
-                curveFunction = SmoothStep;
-                return true;
-
-            case CurveType.Parabolic:
-                curveFunction = Parabolic;
-                return true;
-
-            default:
-                if (TryGetEasingFunction(curveType, out curveFunction))
-                {
-                    return true;
-                }
-
-                Debug.LogError($"Unhandled curve type: {curveType}");
-                return false;
+            function = (t) => new Vector2(t, (float)method.Invoke(null, new object[] { t }));
+            return true;
         }
+
+        Debug.LogError($"Unsupported curve type: {curveType}");
+        return false;
     }
 
-    public static Vector2 Line(float t)
+    public static float Line(float t)
     {
-        return new Vector2(t, t);
+        return t;
     }
 
-    public static Vector2 SmoothStep(float t)
+    public static float SmoothStep(float t)
     {
-        return new Vector2(t, Mathf.SmoothStep(0, 1, t));
+        return Mathf.SmoothStep(0, 1, t);
     }
 
-    public static Vector2 Parabolic(float t)
+    public static float Parabolic(float t)
     {
         var x = 2 * (t - 0.5f);
-        return new Vector2(t, x * x);
-    }
-
-    private static bool TryGetEasingFunction(CurveType curveType, out Func<float, Vector2> easingFunction)
-    {
-        easingFunction = null;
-
-        var methodName = curveType.ToString();
-        var method = typeof(EasingFunctions).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
-        if (method == null)
-        {
-            return false;
-        }
-
-        easingFunction = (t) => new Vector2(t, (float)method.Invoke(null, new object[] { t }));
-        return true;
+        return x * x;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using UnityEngine;
 
 public static class RadialShapeFunctions
@@ -11,32 +12,20 @@ public static class RadialShapeFunctions
         SmoothStep = 400,
     }
 
-    public static bool GetShapeFunction(ShapeType shapeType, out Func<Vector2, float, float> shapeFunction)
+    public static bool TryGetFunction(ShapeType shapeType, out Func<Vector2, float, float> function)
     {
-        shapeFunction = null;
+        function = null;
 
-        switch (shapeType)
+        var methodName = shapeType.ToString();
+        var method = typeof(RadialShapeFunctions).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
+        if (method == null)
         {
-            case ShapeType.Cone:
-                shapeFunction = Cone;
-                return true;
-
-            case ShapeType.Cylinder:
-                shapeFunction = Cylinder;
-                return true;
-
-            case ShapeType.Gaussian:
-                shapeFunction = Gaussian;
-                return true;
-
-            case ShapeType.SmoothStep:
-                shapeFunction = SmoothStep;
-                return true;
-
-            default:
-                Debug.LogError($"Unhandled shape type: {shapeType}");
-                return false;
+            Debug.LogError($"Unsupported shape type: {shapeType}");
+            return false;
         }
+
+        function = (p, r) => (float)method.Invoke(null, new object[] { p, r });
+        return true;
     }
 
     public static float Cone(Vector2 position, float radius)

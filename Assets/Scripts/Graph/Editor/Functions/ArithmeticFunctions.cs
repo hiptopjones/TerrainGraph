@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Reflection;
 using UnityEngine;
+using static BlendFunctions;
 
-public static class BlendFunctions
+public static class ArithmeticFunctions
 {
-    public enum BlendMethod
+    public enum ArithmeticOperator
     {
         Add = 100,
         Subtract = 200,
@@ -12,19 +13,18 @@ public static class BlendFunctions
         Divide = 400,
         Minimum = 500,
         Maximum = 600,
-        Average = 700,
         Compare = 1000,
     }
 
-    public static bool TryGetFunction(BlendMethod blendMethod, out Func<float, float, float> function)
+    public static bool TryGetFunction(ArithmeticOperator arithmeticOperator, out Func<float, float, float> function)
     {
         function = null;
 
-        var methodName = blendMethod.ToString();
-        var method = typeof(BlendFunctions).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
+        var methodName = arithmeticOperator.ToString();
+        var method = typeof(ArithmeticFunctions).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
         if (method == null)
         {
-            Debug.LogError($"Unsupported blend method: {blendMethod}");
+            Debug.LogError($"Unsupported arithmetic operation: {arithmeticOperator}");
             return false;
         }
 
@@ -60,11 +60,6 @@ public static class BlendFunctions
     public static float Maximum(float a, float b)
     {
         return Mathf.Max(a, b);
-    }
-
-    public static float Average(float a, float b)
-    {
-        return (a + b) / 2;
     }
 
     public static float Compare(float a, float b)
