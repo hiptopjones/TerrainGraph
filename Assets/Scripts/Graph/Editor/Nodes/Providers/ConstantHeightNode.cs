@@ -62,12 +62,6 @@ public class ConstantHeightNode : ProviderNode<IProvider>
 
         var isValid = true;
 
-        if (input.Height < 0)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_HEIGHT_TITLE} value invalid: {input.Height} (valid: 0 <= n)", this);
-            isValid = false;
-        }
-
         if (isValid)
         {
             validatedInput = input;
