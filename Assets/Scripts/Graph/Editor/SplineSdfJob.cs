@@ -17,7 +17,8 @@ public struct SplineSdfJob : IJobParallelFor
     [ReadOnly] public NativeArray<SplineSegment> Segments;
     [ReadOnly] public int Size;
 
-    [WriteOnly] public NativeArray<float> Output;
+    [WriteOnly] public NativeArray<float> Heights;
+    [WriteOnly] public NativeArray<float2> NearestPositions;
 
     public void Execute(int index)
     {
@@ -27,15 +28,14 @@ public struct SplineSdfJob : IJobParallelFor
         // Use pixel center
         float2 position = new float2(x + 0.5f, y + 0.5f);
 
-        // Distance to polyline
         float minDistance2 = float.PositiveInfinity;
-        float sign = 0;
+        float distanceSign = 0;
+        float2 nearestPosition = float2.zero;
 
         for (int i = 0; i < Segments.Length; i++)
         {
             var segment = Segments[i];
 
-            // project p onto segment
             float t = 0f;
             if (segment.ab2 > 1e-12f)
             {
@@ -51,13 +51,17 @@ public struct SplineSdfJob : IJobParallelFor
                 minDistance2 = distance2;
 
                 // 2D cross product to get side of line
+                // Left is -ve, right is +ve
                 float cross = segment.ab.x * d.y - segment.ab.y * d.x;
-                sign = math.sign(cross);
+                distanceSign = -math.sign(cross);
+
+                nearestPosition = q;
             }
         }
 
         float distance = math.sqrt(minDistance2);
 
-        Output[index] = distance * sign;
+        Heights[index] = distance * distanceSign;
+        NearestPositions[index] = nearestPosition;
     }
 }

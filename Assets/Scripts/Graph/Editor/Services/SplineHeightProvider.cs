@@ -32,6 +32,6 @@ public class SplineHeightProvider : IHeightProvider
             }
         }
 
-        return SplineSdfJobRunner.TryCreateSdf(spline, Samples, size, out heights);
+        return SplineSdfJobRunner.TryCreateSdf(spline, Samples, size, out heights, out _);
     }
 }

@@ -49,7 +49,7 @@ public class SplineHeightNode : ProviderNode<IProvider>
             .Build();
         context.AddInputPort<int>(NODE_INPUT_SAMPLES_ID)
             .WithDisplayName(NODE_INPUT_SAMPLES_TITLE)
-            .WithDefaultValue(10)
+            .WithDefaultValue(100)
             .Build();
         context.AddInputPort<bool>(NODE_INPUT_CENTER_ID)
             .WithDisplayName(NODE_INPUT_CENTER_TITLE)

@@ -10,7 +10,8 @@ public static class SplineFunctions
 
         for (float theta = 0; theta < angle; theta += interval)
         {
-            var radians = theta * Mathf.Deg2Rad;
+            // Go clockwise from the top
+            var radians = (90 - theta) * Mathf.Deg2Rad;
 
             float x = center.x + radius * Mathf.Cos(radians);
             float y = center.y + radius * Mathf.Sin(radians);
