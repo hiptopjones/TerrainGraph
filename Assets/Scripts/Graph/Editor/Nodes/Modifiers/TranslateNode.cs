@@ -161,18 +161,14 @@ public class TranslateNode : ExecutableNode<HeightGrid>
                     var target = new Vector2Int(x, y);
                     var source = target - translation * size;
 
-                    var sourceX = Mathf.RoundToInt(source.x);
-                    var sourceY = Mathf.RoundToInt(source.y);
-
-                    if (sourceX < 0 || sourceX >= size ||
-                        sourceY < 0 || sourceY >= size)
+                    if (source.x < 0 || source.x >= size ||
+                        source.y < 0 || source.y >= size)
                     {
                         outputGrid[x, y] = 0;
                     }
                     else
                     {
-                        // TODO: Should use bilinear interpolation here
-                        outputGrid[x, y] = inputGrid[sourceX, sourceY];
+                        outputGrid[x, y] = GridHelpers.SafeIndex(inputGrid, source.x, source.y);
                     }
                 }
             }
