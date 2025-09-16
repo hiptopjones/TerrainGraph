@@ -6,7 +6,7 @@ public class SplineHeightNode : ProviderNode<IProvider>
 {
     private class InputValues
     {
-        public SplineWrapper Spline;
+        public SplineWrapper SplineWrapper;
         public int Samples;
         public bool Center;
 
@@ -14,7 +14,7 @@ public class SplineHeightNode : ProviderNode<IProvider>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Spline.VersionHash, Samples, Center);
+            return HashCode.Combine(SplineWrapper?.VersionHash, Samples, Center);
         }
     }
 
@@ -79,7 +79,7 @@ public class SplineHeightNode : ProviderNode<IProvider>
 
         var isValid = true;
 
-        if (input.Spline == null || !input.Spline.IsValid)
+        if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
             isValid = false;
@@ -105,7 +105,7 @@ public class SplineHeightNode : ProviderNode<IProvider>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.Spline) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SAMPLES_ID, out temp.Samples) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_CENTER_ID, out temp.Center);
 
@@ -130,7 +130,7 @@ public class SplineHeightNode : ProviderNode<IProvider>
 
         value = new SplineHeightProvider()
         {
-            Spline = inputValues.Spline.Spline,
+            Spline = inputValues.SplineWrapper.Spline,
             Samples = inputValues.Samples,
             Center = inputValues.Center,
 

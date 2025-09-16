@@ -58,8 +58,8 @@ internal static class TextureHelpers
             case HeightGrid grid:
                 return TryCreatePreviewTexture(grid, out texture);
 
-            case SplineWrapper spline:
-                return TryCreatePreviewTexture(spline, out texture);
+            case SplineWrapper splineWrapper:
+                return TryCreatePreviewTexture(splineWrapper, out texture);
 
             default:
                 Debug.LogError($"Unhandled data type: {value.GetType().Name}");

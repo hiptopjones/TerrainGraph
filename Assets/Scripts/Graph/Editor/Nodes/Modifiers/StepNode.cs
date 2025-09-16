@@ -14,7 +14,7 @@ public class StepNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, Threshold);
+            return HashCode.Combine(Grid?.VersionHash, Threshold);
         }
     }
 

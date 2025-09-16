@@ -16,7 +16,7 @@ public class ResizeNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, Size, Zoom);
+            return HashCode.Combine(Grid?.VersionHash, Size, Zoom);
         }
     }
 

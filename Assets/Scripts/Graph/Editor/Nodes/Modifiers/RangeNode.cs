@@ -15,7 +15,7 @@ public class RangeNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, FromRange, ToRange);
+            return HashCode.Combine(Grid?.VersionHash, FromRange, ToRange);
         }
     }
 

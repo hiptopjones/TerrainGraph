@@ -15,7 +15,7 @@ public class ClampNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, Minimum, Maximum);
+            return HashCode.Combine(Grid?.VersionHash, Minimum, Maximum);
         }
     }
 

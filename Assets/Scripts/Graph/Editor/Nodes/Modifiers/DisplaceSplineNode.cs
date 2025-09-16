@@ -11,7 +11,7 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
 {
     private class InputValues
     {
-        public SplineWrapper Spline;
+        public SplineWrapper SplineWrapper;
         public IProvider Provider;
         public int VertexCount;
         public float Amplitude;
@@ -21,7 +21,7 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Spline?.VersionHash, Provider?.VersionHash, VertexCount, Amplitude, IterationCount);
+            return HashCode.Combine(SplineWrapper?.VersionHash, Provider?.VersionHash, VertexCount, Amplitude, IterationCount);
         }
     }
 
@@ -111,7 +111,7 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
 
         var isValid = true;
 
-        if (input.Spline == null || !input.Spline.IsValid)
+        if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
             isValid = false;
@@ -154,7 +154,7 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.Spline) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PROVIDER_ID, out temp.Provider) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude) &&
@@ -204,12 +204,12 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
         try
         {
             var noiseProvider = inputValues.Provider as INoiseProvider;
-            var inputSpline = inputValues.Spline;
+            var inputSplineWrapper = inputValues.SplineWrapper;
             var vertexCount = inputValues.VertexCount;
             var amplitude = inputValues.Amplitude;
             var iterationCount = inputValues.IterationCount;
 
-            var currentSpline = inputSpline.Spline;
+            var currentSpline = inputSplineWrapper.Spline;
 
             for (int i = 0; i < iterationCount; i++)
             {
@@ -234,23 +234,25 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
                 }
 
                 var displacedSpline = new Spline(vertices.Select(v => (float3)v));
-                displacedSpline.Closed = inputSpline.Spline.Closed;
+                displacedSpline.Closed = currentSpline.Closed;
 
                 currentSpline = displacedSpline;
             }
 
-            var bounds = currentSpline.GetBounds();
-            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+            var outputSpline = currentSpline;
 
-            var outputSpline = new SplineWrapper
+            var bounds = currentSpline.GetBounds();
+            var outputSplineSize = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+
+            var outputSplineWrapper = new SplineWrapper
             {
-                Spline = currentSpline,
-                Size = size
+                Spline = outputSpline,
+                Size = outputSplineSize
             };
 
-            outputSpline.VersionHash = inputValues.VersionHash;
+            outputSplineWrapper.VersionHash = inputValues.VersionHash;
 
-            CacheData.Output = outputSpline;
+            CacheData.Output = outputSplineWrapper;
             return true;
         }
         catch (Exception ex)

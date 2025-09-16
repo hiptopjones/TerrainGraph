@@ -10,7 +10,7 @@ public class SplineMaskNode2 : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
-        public SplineWrapper Spline;
+        public SplineWrapper SplineWrapper;
         public int Size;
         public float Width;
         public float Angle;
@@ -19,7 +19,7 @@ public class SplineMaskNode2 : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Spline.VersionHash, Size, Width, Angle);
+            return HashCode.Combine(SplineWrapper?.VersionHash, Size, Width, Angle);
         }
     }
 
@@ -101,7 +101,7 @@ public class SplineMaskNode2 : ExecutableNode<HeightGrid>
 
         var isValid = true;
 
-        if (input.Spline == null || !input.Spline.IsValid)
+        if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
             isValid = false;
@@ -133,7 +133,7 @@ public class SplineMaskNode2 : ExecutableNode<HeightGrid>
 
         var temp = new InputValues();
         var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.Spline) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_WIDTH_ID, out temp.Width) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ANGLE_ID, out temp.Angle);
@@ -149,15 +149,15 @@ public class SplineMaskNode2 : ExecutableNode<HeightGrid>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out HeightGrid grid)
+    public override bool TryGetOutputValue(IPort _, out HeightGrid value)
     {
         if (!TryExecuteNode())
         {
-            grid = null;
+            value = null;
             return false;
         }
 
-        grid = CacheData.Output;
+        value = CacheData.Output;
         return true;
     }
 
@@ -181,7 +181,7 @@ public class SplineMaskNode2 : ExecutableNode<HeightGrid>
 
         try
         {
-            var inputSpline = inputValues.Spline;
+            var inputSplineWrapper = inputValues.SplineWrapper;
             var outputSize = inputValues.Size;
             var width = inputValues.Width;
             var angle = inputValues.Angle;
@@ -190,7 +190,7 @@ public class SplineMaskNode2 : ExecutableNode<HeightGrid>
 
             var outputGrid = new HeightGrid(outputSize);
             
-            var spline = inputSpline.Spline;
+            var inputSpline = inputSplineWrapper.Spline;
 
             for (int y = 0; y < outputSize; y++)
             {
@@ -198,7 +198,7 @@ public class SplineMaskNode2 : ExecutableNode<HeightGrid>
                 {
                     var position = new Vector3(x, 0, y);
 
-                    var distance = SplineUtility.GetNearestPoint(spline, position, out var nearest, out var t);
+                    var distance = SplineUtility.GetNearestPoint(inputSpline, position, out var nearest, out var t);
 
                     outputGrid[x, y] = Mathf.SmoothStep(0, 1, distance / width);
                 }

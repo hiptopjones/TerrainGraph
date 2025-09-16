@@ -132,15 +132,15 @@ public class SplineNode : ExecutableNode<SplineWrapper>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out SplineWrapper spline)
+    public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
     {
         if (!TryExecuteNode())
         {
-            spline = null;
+            value = null;
             return false;
         }
 
-        spline = CacheData.Output;
+        value = CacheData.Output;
         return true;
     }
 
@@ -167,23 +167,23 @@ public class SplineNode : ExecutableNode<SplineWrapper>
             var splineProvider = inputValues.Provider as ISplineProvider;
             var count = inputValues.VertexCount;
 
-            if (!splineProvider.TryGetSpline(count, out var spline))
+            if (!splineProvider.TryGetSpline(count, out var outputSpline))
             {
                 return false;
             }
 
-            var bounds = spline.GetBounds();
-            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+            var bounds = outputSpline.GetBounds();
+            var outputSplineSize = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
 
-            var outputSpline = new SplineWrapper
+            var outputSplineWrapper = new SplineWrapper
             {
-                Size = size,
-                Spline = spline
+                Spline = outputSpline,
+                Size = outputSplineSize
             };
 
-            outputSpline.VersionHash = inputValues.VersionHash;
+            outputSplineWrapper.VersionHash = inputValues.VersionHash;
 
-            CacheData.Output = outputSpline;
+            CacheData.Output = outputSplineWrapper;
             return true;
         }
         catch (Exception ex)

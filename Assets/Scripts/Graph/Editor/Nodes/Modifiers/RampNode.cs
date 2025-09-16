@@ -17,12 +17,7 @@ public class RampNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(RampType, Grid.VersionHash, Curve, CalculateHashCode(Gradient));
-        }
-
-        private int CalculateHashCode(Gradient gradient)
-        {
-            return HashCode.Combine(gradient?.colorKeys);
+            return HashCode.Combine(RampType, Grid?.VersionHash, Curve, Gradient?.colorKeys);
         }
     }
 

@@ -152,15 +152,15 @@ public class BlendNode : ExecutableNode<HeightGrid>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out HeightGrid grid)
+    public override bool TryGetOutputValue(IPort _, out HeightGrid value)
     {
         if (!TryExecuteNode())
         {
-            grid = null;
+            value = null;
             return false;
         }
 
-        grid = CacheData.Output;
+        value = CacheData.Output;
         return true;
     }
 

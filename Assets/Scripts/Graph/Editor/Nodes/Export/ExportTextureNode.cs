@@ -18,7 +18,7 @@ public class ExportTextureNode : Node,
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, ExportPath);
+            return HashCode.Combine(Grid?.VersionHash, ExportPath);
         }
     }
 

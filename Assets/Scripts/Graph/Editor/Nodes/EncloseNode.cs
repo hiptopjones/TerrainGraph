@@ -16,7 +16,7 @@ public class EncloseNode : ExecutableNode<SplineWrapper>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash);
+            return HashCode.Combine(Grid?.VersionHash);
         }
     }
 
@@ -110,15 +110,15 @@ public class EncloseNode : ExecutableNode<SplineWrapper>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out SplineWrapper spline)
+    public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
     {
         if (!TryExecuteNode())
         {
-            spline = null;
+            value = null;
             return false;
         }
 
-        spline = CacheData.Output;
+        value = CacheData.Output;
         return true;
     }
 
@@ -161,20 +161,20 @@ public class EncloseNode : ExecutableNode<SplineWrapper>
 
             var hull = GeometryHelpers.GetConvexHull(nonZeroPoints);
 
-            var spline = SplineHelpers.CreateSpline(hull, closed: true);
+            var outputSpline = SplineHelpers.CreateSpline(hull, closed: true);
 
-            var bounds = spline.GetBounds();
-            var splineSize = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+            var bounds = outputSpline.GetBounds();
+            var outputSplineSize = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
 
-            var outputSpline = new SplineWrapper
+            var outputSplineWrapper = new SplineWrapper
             {
-                Size = splineSize,
-                Spline = spline,
+                Size = outputSplineSize,
+                Spline = outputSpline,
             };
 
-            outputSpline.VersionHash = inputValues.VersionHash;
+            outputSplineWrapper.VersionHash = inputValues.VersionHash;
 
-            CacheData.Output = outputSpline;
+            CacheData.Output = outputSplineWrapper;
             return true;
         }
         catch (Exception ex)

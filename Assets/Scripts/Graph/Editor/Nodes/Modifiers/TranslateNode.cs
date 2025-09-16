@@ -14,7 +14,7 @@ public class TranslateNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, TranslationPercent);
+            return HashCode.Combine(Grid?.VersionHash, TranslationPercent);
         }
     }
 

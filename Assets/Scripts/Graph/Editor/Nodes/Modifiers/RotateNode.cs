@@ -14,7 +14,7 @@ public class RotateNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, RotationDegrees);
+            return HashCode.Combine(Grid?.VersionHash, RotationDegrees);
         }
     }
 

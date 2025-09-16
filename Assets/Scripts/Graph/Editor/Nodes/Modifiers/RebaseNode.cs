@@ -15,7 +15,7 @@ public class RebaseNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(RebaseType, Grid.VersionHash, Value);
+            return HashCode.Combine(RebaseType, Grid?.VersionHash, Value);
         }
     }
 

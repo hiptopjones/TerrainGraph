@@ -14,7 +14,7 @@ public class IsolateNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, Value);
+            return HashCode.Combine(Grid?.VersionHash, Value);
         }
     }
 

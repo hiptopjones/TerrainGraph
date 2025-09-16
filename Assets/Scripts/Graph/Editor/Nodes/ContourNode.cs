@@ -16,7 +16,7 @@ public class ContourNode : ExecutableNode<SplineWrapper>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, ContourHeight);
+            return HashCode.Combine(Grid?.VersionHash, ContourHeight);
         }
     }
 
@@ -118,15 +118,15 @@ public class ContourNode : ExecutableNode<SplineWrapper>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out SplineWrapper spline)
+    public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
     {
         if (!TryExecuteNode())
         {
-            spline = null;
+            value = null;
             return false;
         }
 
-        spline = CacheData.Output;
+        value = CacheData.Output;
         return true;
     }
 
@@ -165,20 +165,20 @@ public class ContourNode : ExecutableNode<SplineWrapper>
             var contour = contours.OrderByDescending(x => x.Count).First();
 
             // TODO: Should apply some Douglas-Peucker smoothing to reduce points
-            var spline = SplineHelpers.CreateSpline(contour, closed: true);
+            var outputSpline = SplineHelpers.CreateSpline(contour, closed: true);
 
-            var bounds = spline.GetBounds();
-            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+            var bounds = outputSpline.GetBounds();
+            var outputSplineSize = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
 
-            var outputSpline = new SplineWrapper
+            var outputSplineWrapper = new SplineWrapper
             {
-                Size = size,
-                Spline = spline,
+                Size = outputSplineSize,
+                Spline = outputSpline,
             };
 
-            outputSpline.VersionHash = inputValues.VersionHash;
+            outputSplineWrapper.VersionHash = inputValues.VersionHash;
 
-            CacheData.Output = outputSpline;
+            CacheData.Output = outputSplineWrapper;
             return true;
         }
         catch (Exception ex)

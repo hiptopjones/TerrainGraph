@@ -15,7 +15,7 @@ public class BlurNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, Radius, Iterations);
+            return HashCode.Combine(Grid?.VersionHash, Radius, Iterations);
         }
     }
 
@@ -140,15 +140,15 @@ public class BlurNode : ExecutableNode<HeightGrid>
         return false;
     }
 
-    public override bool TryGetOutputValue(IPort _, out HeightGrid grid)
+    public override bool TryGetOutputValue(IPort _, out HeightGrid value)
     {
         if (!TryExecuteNode())
         {
-            grid = null;
+            value = null;
             return false;
         }
 
-        grid = CacheData.Output;
+        value = CacheData.Output;
         return true;
     }
 

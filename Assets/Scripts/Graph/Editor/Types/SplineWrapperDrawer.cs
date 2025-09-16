@@ -22,14 +22,14 @@ public class SplineWrapperDrawer : PropertyDrawer
             var selectedSpline = SplineHelpers.GetWorldSpaceSpline(selectedSplineContainer);
 
             // Get the actual object instance we're drawing
-            object target = property.serializedObject.targetObject;
+            var target = property.serializedObject.targetObject;
 
             // fieldInfo is provided by PropertyDrawer; it points at the SplineWrapper field
-            var wrapper = fieldInfo.GetValue(target) as SplineWrapper;
-            if (wrapper != null)
+            var splineWrapper = fieldInfo.GetValue(target) as SplineWrapper;
+            if (splineWrapper != null)
             {
-                wrapper.Spline = selectedSpline;   // assign the new spline
-                EditorUtility.SetDirty((UnityEngine.Object)target);
+                splineWrapper.Spline = selectedSpline;   // assign the new spline
+                EditorUtility.SetDirty(target);
             }
 
             property.serializedObject.ApplyModifiedProperties();

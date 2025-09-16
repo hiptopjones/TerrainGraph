@@ -13,7 +13,7 @@ public class OneMinusNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash);
+            return HashCode.Combine(Grid?.VersionHash);
         }
     }
 

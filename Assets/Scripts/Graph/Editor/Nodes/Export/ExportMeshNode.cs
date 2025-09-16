@@ -19,7 +19,7 @@ public class ExportMeshNode : Node,
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid.VersionHash, HeightScale, ExportPath);
+            return HashCode.Combine(Grid?.VersionHash, HeightScale, ExportPath);
         }
     }
 
