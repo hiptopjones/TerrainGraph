@@ -41,4 +41,14 @@ public static class BlendFunctions
     {
         return (a + b) / 2;
     }
+
+    public static float Compare(float a, float b)
+    {
+        if (a == b)
+        {
+            return 0;
+        }
+
+        return a > b ? -1 : 1.1f; // over 1 so it's green in the preview
+    }
 }

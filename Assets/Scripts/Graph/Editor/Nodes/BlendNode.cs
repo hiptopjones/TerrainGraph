@@ -28,6 +28,7 @@ public class BlendNode : ExecutableNode<HeightGrid>
         Minimum = 500,
         Maximum = 600,
         Average = 700,
+        Compare = 1000,
     }
 
     // Options
@@ -239,6 +240,9 @@ public class BlendNode : ExecutableNode<HeightGrid>
 
             case BlendMethod.Average:
                 return BlendFunctions.Average;
+
+            case BlendMethod.Compare:
+                return BlendFunctions.Compare;
 
             default:
                 Debug.LogError($"Unhandled blend method: {blendMethod}");
