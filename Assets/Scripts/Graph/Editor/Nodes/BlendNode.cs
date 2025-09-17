@@ -183,7 +183,6 @@ public class BlendNode : ExecutableNode<HeightGrid>
                 return false;
             }
 
-            // TODO: Validate all lengths are expected
             var size = inputGrid1.Size;
 
             var outputGrid = new HeightGrid(size);
