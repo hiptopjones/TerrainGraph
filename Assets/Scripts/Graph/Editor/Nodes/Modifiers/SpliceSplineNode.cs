@@ -217,6 +217,9 @@ public class SpliceSplineNode : ExecutableNode<SplineWrapper>
             var inputSpline1 = inputSplineWrapper1.Spline;
             var inputSpline2 = inputSplineWrapper2.Spline;
 
+            // Prepare the partial spline for "seamless" splicing
+            var transformedSpline2 = TransformSpline(inputSpline1, inputSpline2, start, end);
+
             var points = new List<float3>();
 
             var interval = 1 / (float)(vertexCount - 1);
@@ -230,7 +233,7 @@ public class SpliceSplineNode : ExecutableNode<SplineWrapper>
             for (var t1 = start; t1 < end; t1 += interval)
             {
                 var t2 = Mathf.InverseLerp(start, end, t1);
-                var position = SplineUtility.EvaluatePosition(inputSpline2, t2);
+                var position = SplineUtility.EvaluatePosition(transformedSpline2, t2);
                 points.Add(position);
             }
 
@@ -265,5 +268,33 @@ public class SpliceSplineNode : ExecutableNode<SplineWrapper>
             Debug.LogException(ex);
             return false;
         }
+    }
+
+    private Spline TransformSpline(Spline fullSpline, Spline partialSpline, float t1, float t2)
+    {
+        Vector3 fp1 = fullSpline.EvaluatePosition(t1);
+        Vector3 fp2 = fullSpline.EvaluatePosition(t2);
+
+        Vector3 pp1 = partialSpline.EvaluatePosition(0f);
+        Vector3 pp2 = partialSpline.EvaluatePosition(1f);
+
+        Vector3 fullDirection = (fp2 - fp1);
+        float fullLength = fullDirection.magnitude;
+
+        Vector3 partialDirection = (pp2 - pp1);
+        float partialLength = partialDirection.magnitude;
+
+        float scale = fullLength / partialLength;
+        Quaternion rotation = Quaternion.FromToRotation(partialDirection, fullDirection);
+        Vector3 offset = fp1 - rotation * (pp1 * scale);
+
+        var transformedPoints = new List<Vector2>();
+        foreach (var knot in partialSpline.Knots)
+        {
+            Vector3 transformedPosition = rotation * (knot.Position * scale) + offset;
+            transformedPoints.Add(new Vector2(transformedPosition.x, transformedPosition.z));
+        }
+
+        return SplineHelpers.CreateSpline(transformedPoints);
     }
 }
