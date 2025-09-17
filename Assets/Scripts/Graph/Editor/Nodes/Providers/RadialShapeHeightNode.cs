@@ -1,12 +1,13 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
+using ShapeType = RadialShapeFunctions.ShapeType;
 
 [Serializable]
 public class RadialShapeHeightNode : ProviderNode<IProvider>
 {
     private class InputValues
     {
-        public RadialShapeFunctions.ShapeType ShapeType;
+        public ShapeType ShapeType;
         public float Radius;
         public int Size;
 
@@ -35,9 +36,9 @@ public class RadialShapeHeightNode : ProviderNode<IProvider>
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<RadialShapeFunctions.ShapeType>(NODE_OPTION_TYPE_ID)
+        context.AddOption<ShapeType>(NODE_OPTION_TYPE_ID)
             .WithDisplayName(NODE_OPTION_TYPE_TITLE)
-            .WithDefaultValue(RadialShapeFunctions.ShapeType.Cone)
+            .WithDefaultValue(ShapeType.Cone)
             .Build();
     }
 
@@ -76,7 +77,7 @@ public class RadialShapeHeightNode : ProviderNode<IProvider>
 
         var isValid = true;
 
-        if (!Enum.IsDefined(typeof(RadialShapeFunctions.ShapeType), input.ShapeType))
+        if (!Enum.IsDefined(typeof(ShapeType), input.ShapeType))
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_TYPE_TITLE} option invalid", this);
             isValid = false;

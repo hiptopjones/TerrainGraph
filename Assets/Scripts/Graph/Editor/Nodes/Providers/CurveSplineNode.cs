@@ -1,12 +1,13 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
+using CurveType = CurveFunctions.CurveType;
 
 [Serializable]
 public class CurveSplineNode : ProviderNode<IProvider>
 {
     private class InputValues
     {
-        public CurveFunctions.CurveType CurveType;
+        public CurveType CurveType;
         public int Size;
 
         public int VersionHash;
@@ -31,9 +32,9 @@ public class CurveSplineNode : ProviderNode<IProvider>
 
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
-        context.AddOption<CurveFunctions.CurveType>(NODE_OPTION_TYPE_ID)
+        context.AddOption<CurveType>(NODE_OPTION_TYPE_ID)
             .WithDisplayName(NODE_OPTION_TYPE_TITLE)
-            .WithDefaultValue(CurveFunctions.CurveType.Line)
+            .WithDefaultValue(CurveType.Line)
             .Build();
     }
 
@@ -68,7 +69,7 @@ public class CurveSplineNode : ProviderNode<IProvider>
 
         var isValid = true;
 
-        if (!Enum.IsDefined(typeof(CurveFunctions.CurveType), input.CurveType))
+        if (!Enum.IsDefined(typeof(CurveType), input.CurveType))
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_TYPE_TITLE} option invalid", this);
             isValid = false;
