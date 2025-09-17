@@ -1,4 +1,7 @@
-﻿using System;
+﻿using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using ArithmeticOperator = ArithmeticFunctions.ArithmeticOperator;
@@ -9,6 +12,7 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
     private class InputValues
     {
         public ArithmeticOperator ArithmeticOperator;
+        public bool IsFlipped;
         public HeightGrid Grid;
         public float Value;
 
@@ -16,13 +20,16 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(ArithmeticOperator, Grid?.VersionHash, Value);
+            return HashCode.Combine(ArithmeticOperator, IsFlipped, Grid?.VersionHash, Value);
         }
     }
 
     // Options
     private const string NODE_OPTION_OPERATOR_ID = "operator_option";
     private const string NODE_OPTION_OPERATOR_TITLE = "Arithmetic Operator";
+
+    private const string NODE_OPTION_FLIP_ID = "flipped_option";
+    private const string NODE_OPTION_FLIP_TITLE = "Flip Order";
 
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
@@ -41,6 +48,10 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
             .WithDisplayName(NODE_OPTION_OPERATOR_TITLE)
             .WithDefaultValue(ArithmeticOperator.Add)
             .Build();
+        context.AddOption<bool>(NODE_OPTION_FLIP_ID)
+            .WithDisplayName(NODE_OPTION_FLIP_TITLE)
+            .WithDefaultValue(false)
+            .Build();
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
             .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
             .WithDefaultValue(false)
@@ -50,15 +61,26 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        GetNodeOptionByName(NODE_OPTION_FLIP_ID).TryGetValue<bool>(out var isFlipped);
 
         // Input
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
-            .WithDisplayName(NODE_INPUT_GRID_TITLE)
-            .Build();
-        context.AddInputPort<float>(NODE_INPUT_VALUE_ID)
-            .WithDisplayName(NODE_INPUT_VALUE_TITLE)
-            .WithDefaultValue(0.5f)
-            .Build();
+        var actions = new List<Action>
+        {
+            () => context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
+                .WithDisplayName(NODE_INPUT_GRID_TITLE)
+                .Build(),
+            () => context.AddInputPort<float>(NODE_INPUT_VALUE_ID)
+                .WithDisplayName(NODE_INPUT_VALUE_TITLE)
+                .WithDefaultValue(0.5f)
+                .Build(),
+        };
+
+        // All this to avoid duplicating the port definitions
+        actions = isFlipped ? actions.AsEnumerable().Reverse().ToList() : actions;
+        foreach (var action in actions)
+        {
+            action.Invoke();
+        }
 
         if (isPreviewEnabled)
         {
@@ -116,7 +138,8 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
 
         var temp = new InputValues();
         var success =
-            GetNodeOptionByName(NODE_OPTION_OPERATOR_ID).TryGetValue(out temp.ArithmeticOperator) && 
+            GetNodeOptionByName(NODE_OPTION_OPERATOR_ID).TryGetValue(out temp.ArithmeticOperator) &&
+            GetNodeOptionByName(NODE_OPTION_FLIP_ID).TryGetValue(out temp.IsFlipped) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VALUE_ID, out temp.Value);
 
@@ -164,6 +187,7 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
         try
         {
             var arithmeticOperator = inputValues.ArithmeticOperator;
+            var isFlipped = inputValues.IsFlipped;
             var inputGrid = inputValues.Grid;
             var value = inputValues.Value;
 
@@ -180,7 +204,9 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
             {
                 for (int x = 0; x < size; x++)
                 {
-                    outputGrid[x, y] = blendFunction.Invoke(inputGrid[x, y], value);
+                    outputGrid[x, y] = isFlipped ?
+                        blendFunction.Invoke(value, inputGrid[x, y]) :
+                        blendFunction.Invoke(inputGrid[x, y], value);
                 }
             }
 

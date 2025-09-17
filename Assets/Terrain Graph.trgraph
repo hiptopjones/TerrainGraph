@@ -8608,12 +8608,14 @@ MonoBehaviour:
           - grid_input
           - value_input
           - preview_input
+          - flipped_option
           m_ValueList:
           - rid: 5976909307539357859
           - rid: 5976909307539357860
           - rid: 5976909307539357861
           - rid: 5976909307539357862
           - rid: 5976909307539357864
+          - rid: 5976909307539358030
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -8716,12 +8718,14 @@ MonoBehaviour:
           - grid_input
           - value_input
           - preview_input
+          - flipped_option
           m_ValueList:
           - rid: 5976909307539357868
           - rid: 5976909307539357869
           - rid: 5976909307539357870
           - rid: 5976909307539357871
           - rid: 5976909307539357874
+          - rid: 5976909307539358031
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -8989,12 +8993,14 @@ MonoBehaviour:
           - grid_input
           - value_input
           - preview_input
+          - flipped_option
           m_ValueList:
           - rid: 5976909307539357887
           - rid: 5976909307539357888
           - rid: 5976909307539357889
           - rid: 5976909307539357890
           - rid: 5976909307539357892
+          - rid: 5976909307539358032
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -9129,12 +9135,14 @@ MonoBehaviour:
           - grid_input
           - value_input
           - preview_input
+          - flipped_option
           m_ValueList:
           - rid: 5976909307539357904
           - rid: 5976909307539357905
           - rid: 5976909307539357906
           - rid: 5976909307539357907
           - rid: 5976909307539357910
+          - rid: 5976909307539358033
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -9269,12 +9277,14 @@ MonoBehaviour:
           - grid_input
           - value_input
           - preview_input
+          - flipped_option
           m_ValueList:
           - rid: 5976909307539357913
           - rid: 5976909307539357914
           - rid: 5976909307539357915
           - rid: 5976909307539357916
           - rid: 5976909307539357919
+          - rid: 5976909307539358034
         m_InputPortInfos:
           expandedPortsById:
             m_KeyList: []
@@ -9482,3 +9492,23 @@ MonoBehaviour:
       type: {class: 'Constant`1[[System.Single, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
       data:
         m_Value: -0.5
+    - rid: 5976909307539358030
+      type: {class: 'Constant`1[[System.Boolean, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value: 0
+    - rid: 5976909307539358031
+      type: {class: 'Constant`1[[System.Boolean, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value: 0
+    - rid: 5976909307539358032
+      type: {class: 'Constant`1[[System.Boolean, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value: 0
+    - rid: 5976909307539358033
+      type: {class: 'Constant`1[[System.Boolean, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value: 0
+    - rid: 5976909307539358034
+      type: {class: 'Constant`1[[System.Boolean, mscorlib]]', ns: Unity.GraphToolkit.Editor, asm: Unity.GraphToolkit.Internal.Editor}
+      data:
+        m_Value: 0
