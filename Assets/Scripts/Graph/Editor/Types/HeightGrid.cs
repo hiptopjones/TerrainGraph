@@ -6,6 +6,7 @@ public class HeightGrid : IVersionedObject
     public int Size;
 
     public float[] Values { get; set; }
+    public float ExecutionTime { get; set; }
     public int VersionHash { get; set; }
 
     public bool IsValid => Values != null && Values.Length > 0;

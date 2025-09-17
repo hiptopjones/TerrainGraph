@@ -10,6 +10,7 @@ public class CurveSplineProvider : ISplineProvider
     public float Size { get; set; }
 
     public bool IsValid => true;
+    public float ExecutionTime => 0;
     public int VersionHash { get; set; }
 
     public bool TryGetSpline(int vertexCount, out Spline spline)

@@ -7,6 +7,7 @@ public class CircleSplineProvider : ISplineProvider
     public float Angle { get; set; }
 
     public bool IsValid => true;
+    public float ExecutionTime => 0;
     public int VersionHash { get; set; }
 
     public bool TryGetSpline(int vertexCount, out Spline spline)

@@ -3,6 +3,7 @@
     public float Height { get; set; }
 
     public bool IsValid => true;
+    public float ExecutionTime => 0;
     public int VersionHash { get; set; }
 
     public bool TryGetHeights(int size, out float[,] heights)

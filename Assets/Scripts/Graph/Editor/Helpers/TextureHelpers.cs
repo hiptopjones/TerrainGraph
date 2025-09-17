@@ -29,9 +29,9 @@ internal static class TextureHelpers
             texture.wrapMode = TextureWrapMode.Clamp;
             texture.filterMode = FilterMode.Bilinear;
 
-            for (int y = 0; y < texture.height; y++)
+            for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < texture.width; x++)
+                for (int x = 0; x < width; x++)
                 {
                     texture.SetPixel(x, y, new Color(grid[x, y], 0, 0, 1));
                 }
@@ -102,6 +102,8 @@ internal static class TextureHelpers
                 }
             }
 
+            AddExecutionTime(grid.ExecutionTime, texture);
+
             texture.Apply(false, false);
             return true;
         }
@@ -119,8 +121,18 @@ internal static class TextureHelpers
         // Bigger numbers result in nicer previews, but cost performance
         const float SEGMENT_LENGTH_FACTOR = 100;
 
+        texture = null;
+
         try
         {
+            var splineSize = splineWrapper.Size;
+
+            if (splineSize <= 0 || splineSize > Mathf.Pow(2, 14))
+            {
+                Debug.LogError($"Spline size is invalid: {splineWrapper.Size} (valid: 0 < n < 16384)");
+                return false;
+            }
+
             var width = splineWrapper.Size;
             var height = splineWrapper.Size;
 
@@ -181,6 +193,8 @@ internal static class TextureHelpers
                 DrawLine(texture, previousPosition, firstPosition);
             }
 
+            AddExecutionTime(splineWrapper.ExecutionTime, texture);
+
             texture.Apply(false, false);
             return true;
         }
@@ -229,6 +243,33 @@ internal static class TextureHelpers
             {
                 err += dx;
                 y0 += sy;
+            }
+        }
+    }
+
+    private static void AddExecutionTime(float executionTime, Texture2D texture)
+    {
+        if (executionTime != 0)
+        {
+            const int BAR_HEIGHT = 5;
+            const float MAX_EXECUTION_TIME = 1f;
+            const float MIN_EXECUTION_TIME = 0.0001f;
+
+            // Logarithmic normalization
+            var executionTimePercent =
+                (Mathf.Log10(executionTime) - Mathf.Log10(MIN_EXECUTION_TIME)) /
+                (Mathf.Log10(MAX_EXECUTION_TIME) - Mathf.Log10(MIN_EXECUTION_TIME));
+
+            for (int y = 0; y < BAR_HEIGHT; y++)
+            {
+                for (int x = 0; x < texture.width; x++)
+                {
+                    var t = x / (float)(texture.width - 1);
+                    if (t < executionTimePercent)
+                    {
+                        texture.SetPixel(x, y, new Color(1, 1, 0));
+                    }
+                }
             }
         }
     }

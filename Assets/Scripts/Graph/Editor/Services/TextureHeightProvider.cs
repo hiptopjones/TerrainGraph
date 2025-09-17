@@ -6,6 +6,7 @@ public class TextureHeightProvider : IHeightProvider
     public Texture2D Texture { get; set; }
 
     public bool IsValid => true;
+    public float ExecutionTime => 0;
     public int VersionHash { get; set; }
 
     public bool TryGetHeights(int size, out float[,] heights)

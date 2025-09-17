@@ -139,6 +139,18 @@ public class EncloseNode : ExecutableNode<SplineWrapper>
         // Clear the cached values in case there's an early exit below
         CacheData.Output = null;
 
+        var startTime = DateTime.Now;
+        if (TryExecuteNodeInternal(inputValues))
+        {
+            CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryExecuteNodeInternal(InputValues inputValues)
+    {
         try
         {
             var inputGrid = inputValues.Grid;
