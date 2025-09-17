@@ -1,14 +1,23 @@
-﻿using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using ArithmeticOperator = ArithmeticFunctions.ArithmeticOperator;
 
 [Serializable]
 public class ArithmeticNode : ExecutableNode<HeightGrid>
 {
+    public enum ArithmeticOperator
+    {
+        Add = 100,
+        Subtract = 200,
+        Multiply = 300,
+        Divide = 400,
+        Minimum = 500,
+        Maximum = 600,
+        Compare = 1000,
+    }
+
     private class InputValues
     {
         public ArithmeticOperator ArithmeticOperator;
@@ -26,10 +35,10 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
 
     // Options
     private const string NODE_OPTION_OPERATOR_ID = "operator_option";
-    private const string NODE_OPTION_OPERATOR_TITLE = "Arithmetic Operator";
+    private const string NODE_OPTION_OPERATOR_TITLE = "Operation";
 
     private const string NODE_OPTION_FLIP_ID = "flipped_option";
-    private const string NODE_OPTION_FLIP_TITLE = "Flip Order";
+    private const string NODE_OPTION_FLIP_TITLE = "Flip Inputs";
 
     // Inputs
     private const string NODE_INPUT_GRID_ID = "grid_input";
@@ -203,11 +212,6 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
             var inputGrid = inputValues.Grid;
             var value = inputValues.Value;
 
-            if (!ArithmeticFunctions.TryGetFunction(arithmeticOperator, out Func<float, float, float> blendFunction))
-            {
-                return false;
-            }
-
             var size = inputGrid.Size;
 
             var outputGrid = new HeightGrid(size);
@@ -216,9 +220,36 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
             {
                 for (int x = 0; x < size; x++)
                 {
-                    outputGrid[x, y] = isFlipped ?
-                        blendFunction.Invoke(value, inputGrid[x, y]) :
-                        blendFunction.Invoke(inputGrid[x, y], value);
+                    var a = inputGrid[x, y];
+                    var b = value;
+
+                    switch (arithmeticOperator)
+                    {
+                        case ArithmeticOperator.Add:
+                            outputGrid[x, y] = isFlipped ? b + a : a + b;
+                            break;
+                        case ArithmeticOperator.Subtract:
+                            outputGrid[x, y] = isFlipped ? b - a : a - b;
+                            break;
+                        case ArithmeticOperator.Multiply:
+                            outputGrid[x, y] = isFlipped ? b * a : a * b;
+                            break;
+                        case ArithmeticOperator.Divide:
+                            outputGrid[x, y] = isFlipped ? b / a : a / b;
+                            break;
+                        case ArithmeticOperator.Minimum:
+                            outputGrid[x, y] = isFlipped ? Mathf.Min(b, a) : Mathf.Min(a, b);
+                            break;
+                        case ArithmeticOperator.Maximum:
+                            outputGrid[x, y] = isFlipped ? Mathf.Max(b, a) : Mathf.Max(a, b);
+                            break;
+                        case ArithmeticOperator.Compare:
+                            outputGrid[x, y] = isFlipped ? Compare(b, a) : Compare(a, b);
+                            break;
+                        default:
+                            // Validation ensures we don't get here
+                            break;
+                    }
                 }
             }
 
@@ -232,5 +263,15 @@ public class ArithmeticNode : ExecutableNode<HeightGrid>
             Debug.LogException(ex);
             return false;
         }
+    }
+
+    private static float Compare(float a, float b)
+    {
+        if (a == b)
+        {
+            return 0;
+        }
+
+        return a > b ? -1 : 1.1f; // over 1 so it's green in the preview
     }
 }

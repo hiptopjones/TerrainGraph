@@ -1,14 +1,28 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using BlendMethod = BlendFunctions.BlendMethod;
 
 [Serializable]
 public class BlendNode : ExecutableNode<HeightGrid>
 {
+    public enum BlendMethod
+    {
+        Add = 100,
+        Subtract = 200,
+        Multiply = 300,
+        Divide = 400,
+        Minimum = 500,
+        Maximum = 600,
+        Average = 700,
+        Compare = 1000,
+    }
+
     private class InputValues
     {
         public BlendMethod BlendMethod;
+        public bool IsFlipped;
         public HeightGrid Grid1;
         public HeightGrid Grid2;
 
@@ -16,13 +30,16 @@ public class BlendNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(BlendMethod, Grid1?.VersionHash, Grid2?.VersionHash);
+            return HashCode.Combine(BlendMethod, IsFlipped, Grid1?.VersionHash, Grid2?.VersionHash);
         }
     }
 
     // Options
     private const string NODE_OPTION_METHOD_ID = "method_option";
-    private const string NODE_OPTION_METHOD_TITLE = "Blend Method";
+    private const string NODE_OPTION_METHOD_TITLE = "Operation";
+
+    private const string NODE_OPTION_FLIP_ID = "flipped_option";
+    private const string NODE_OPTION_FLIP_TITLE = "Flip Inputs";
 
     // Input
     private const string NODE_INPUT_GRID1_ID = "grid1_input";
@@ -41,6 +58,10 @@ public class BlendNode : ExecutableNode<HeightGrid>
             .WithDisplayName(NODE_OPTION_METHOD_TITLE)
             .WithDefaultValue(BlendMethod.Maximum)
             .Build();
+        context.AddOption<bool>(NODE_OPTION_FLIP_ID)
+            .WithDisplayName(NODE_OPTION_FLIP_TITLE)
+            .WithDefaultValue(false)
+            .Build();
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
             .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
             .WithDefaultValue(false)
@@ -50,14 +71,25 @@ public class BlendNode : ExecutableNode<HeightGrid>
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+        GetNodeOptionByName(NODE_OPTION_FLIP_ID).TryGetValue<bool>(out var isFlipped);
 
         // Input
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID1_ID)
-            .WithDisplayName(NODE_INPUT_GRID1_TITLE)
-            .Build();
-        context.AddInputPort<HeightGrid>(NODE_INPUT_GRID2_ID)
-            .WithDisplayName(NODE_INPUT_GRID2_TITLE)
-            .Build();
+        var actions = new List<Action>
+        {
+            () => context.AddInputPort<HeightGrid>(NODE_INPUT_GRID1_ID)
+                .WithDisplayName(NODE_INPUT_GRID1_TITLE)
+                .Build(),
+            () => context.AddInputPort<HeightGrid>(NODE_INPUT_GRID2_ID)
+                .WithDisplayName(NODE_INPUT_GRID2_TITLE)
+                .Build(),
+        };
+
+        // All this to avoid duplicating the port definitions
+        actions = isFlipped ? actions.AsEnumerable().Reverse().ToList() : actions;
+        foreach (var action in actions)
+        {
+            action.Invoke();
+        }
 
         if (isPreviewEnabled)
         {
@@ -128,6 +160,7 @@ public class BlendNode : ExecutableNode<HeightGrid>
         var temp = new InputValues();
         var success =
             GetNodeOptionByName(NODE_OPTION_METHOD_ID).TryGetValue(out temp.BlendMethod) &&
+            GetNodeOptionByName(NODE_OPTION_FLIP_ID).TryGetValue(out temp.IsFlipped) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID1_ID, out temp.Grid1) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID2_ID, out temp.Grid2);
 
@@ -187,13 +220,9 @@ public class BlendNode : ExecutableNode<HeightGrid>
         try
         {
             var blendMethod = inputValues.BlendMethod;
+            var isFlipped = inputValues.IsFlipped;
             var inputGrid1 = inputValues.Grid1;
             var inputGrid2 = inputValues.Grid2;
-
-            if (!BlendFunctions.TryGetFunction(blendMethod, out Func<float, float, float> blendFunction))
-            {
-                return false;
-            }
 
             var size = inputGrid1.Size;
 
@@ -203,7 +232,39 @@ public class BlendNode : ExecutableNode<HeightGrid>
             {
                 for (int x = 0; x < size; x++)
                 {
-                    outputGrid[x, y] = blendFunction(inputGrid1[x, y], inputGrid2[x, y]);
+                    var a = inputGrid1[x, y];
+                    var b = inputGrid2[x, y];
+
+                    switch (blendMethod)
+                    {
+                        case BlendMethod.Add:
+                            outputGrid[x, y] = isFlipped ? b + a : a + b;
+                            break;
+                        case BlendMethod.Subtract:
+                            outputGrid[x, y] = isFlipped ? b - a : a - b;
+                            break;
+                        case BlendMethod.Multiply:
+                            outputGrid[x, y] = isFlipped ? b * a : a * b;
+                            break;
+                        case BlendMethod.Divide:
+                            outputGrid[x, y] = isFlipped ? b / a : a / b;
+                            break;
+                        case BlendMethod.Minimum:
+                            outputGrid[x, y] = isFlipped ? Mathf.Min(b, a) : Mathf.Min(a, b);
+                            break;
+                        case BlendMethod.Maximum:
+                            outputGrid[x, y] = isFlipped ? Mathf.Max(b, a) : Mathf.Max(a, b);
+                            break;
+                        case BlendMethod.Average:
+                            outputGrid[x, y] = isFlipped ? (b + a) / 2f : (a + b) / 2f;
+                            break;
+                        case BlendMethod.Compare:
+                            outputGrid[x, y] = isFlipped ? Compare(b, a) : Compare(a, b);
+                            break;
+                        default:
+                            // Validation ensures we don't get here
+                            break;
+                    }
                 }
             }
 
@@ -217,5 +278,15 @@ public class BlendNode : ExecutableNode<HeightGrid>
             Debug.LogException(ex);
             return false;
         }
+    }
+
+    private static float Compare(float a, float b)
+    {
+        if (a == b)
+        {
+            return 0;
+        }
+
+        return a > b ? -1 : 1.1f; // over 1 so it's green in the preview
     }
 }
