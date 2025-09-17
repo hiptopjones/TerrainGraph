@@ -249,26 +249,25 @@ internal static class TextureHelpers
 
     private static void AddExecutionTime(float executionTime, Texture2D texture)
     {
-        if (executionTime != 0)
+        const int BAR_HEIGHT = 5;
+        const float MAX_EXECUTION_TIME = 1f;
+        const float MIN_EXECUTION_TIME = 0.01f;
+
+        // Logarithmic normalization
+        var executionTimePercent =
+            (Mathf.Log10(executionTime) - Mathf.Log10(MIN_EXECUTION_TIME)) /
+            (Mathf.Log10(MAX_EXECUTION_TIME) - Mathf.Log10(MIN_EXECUTION_TIME));
+
+        executionTimePercent = Mathf.Clamp01(executionTimePercent);
+
+        for (int y = 0; y < BAR_HEIGHT; y++)
         {
-            const int BAR_HEIGHT = 5;
-            const float MAX_EXECUTION_TIME = 1f;
-            const float MIN_EXECUTION_TIME = 0.0001f;
-
-            // Logarithmic normalization
-            var executionTimePercent =
-                (Mathf.Log10(executionTime) - Mathf.Log10(MIN_EXECUTION_TIME)) /
-                (Mathf.Log10(MAX_EXECUTION_TIME) - Mathf.Log10(MIN_EXECUTION_TIME));
-
-            for (int y = 0; y < BAR_HEIGHT; y++)
+            for (int x = 0; x < texture.width; x++)
             {
-                for (int x = 0; x < texture.width; x++)
+                var t = x / (float)(texture.width - 1);
+                if (t < executionTimePercent)
                 {
-                    var t = x / (float)(texture.width - 1);
-                    if (t < executionTimePercent)
-                    {
-                        texture.SetPixel(x, y, new Color(1, 1, 0));
-                    }
+                    texture.SetPixel(x, y, new Color(1, 1, 0));
                 }
             }
         }
