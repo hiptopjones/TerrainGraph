@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
-using static Unity.VisualScripting.Member;
 
 [Serializable]
 public class FootprintNode : ExecutableNode<HeightGrid>
@@ -13,12 +11,14 @@ public class FootprintNode : ExecutableNode<HeightGrid>
     {
         public HeightGrid Grid;
         public SplineWrapper SplineWrapper;
+        public float MaxDistance;
+        public float MinDepth;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Grid?.VersionHash, SplineWrapper?.VersionHash);
+            return HashCode.Combine(Grid?.VersionHash, SplineWrapper?.VersionHash, MaxDistance, MinDepth);
         }
     }
 
@@ -30,6 +30,12 @@ public class FootprintNode : ExecutableNode<HeightGrid>
 
     private const string NODE_INPUT_SPLINE_ID = "spline_input";
     private const string NODE_INPUT_SPLINE_TITLE = "Spline";
+
+    private const string NODE_INPUT_DISTANCE_ID = "distance_input";
+    private const string NODE_INPUT_DISTANCE_TITLE = "Distance";
+
+    private const string NODE_INPUT_DEPTH_ID = "depth_input";
+    private const string NODE_INPUT_DEPTH_TITLE = "Depth";
 
     // Outputs
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -53,6 +59,14 @@ public class FootprintNode : ExecutableNode<HeightGrid>
             .Build();
         context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
             .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
+            .Build();
+        context.AddInputPort<float>(NODE_INPUT_DISTANCE_ID)
+            .WithDisplayName(NODE_INPUT_DISTANCE_TITLE)
+            .WithDefaultValue(30)
+            .Build();
+        context.AddInputPort<float>(NODE_INPUT_DEPTH_ID)
+            .WithDisplayName(NODE_INPUT_DEPTH_TITLE)
+            .WithDefaultValue(0.3f)
             .Build();
 
         if (isPreviewEnabled)
@@ -96,11 +110,6 @@ public class FootprintNode : ExecutableNode<HeightGrid>
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
             isValid = false;
         }
-        else if (!input.SplineWrapper.Spline.Closed)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value not closed", this);
-            isValid = false;
-        }
 
         if (isValid)
         {
@@ -117,7 +126,9 @@ public class FootprintNode : ExecutableNode<HeightGrid>
         var temp = new InputValues();
         var success =
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_DISTANCE_ID, out temp.MaxDistance) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_DEPTH_ID, out temp.MinDepth);
 
         if (success)
         {
@@ -164,6 +175,8 @@ public class FootprintNode : ExecutableNode<HeightGrid>
         {
             var inputGrid = inputValues.Grid;
             var inputSplineWrapper = inputValues.SplineWrapper;
+            var maxDistance = inputValues.MaxDistance;
+            var minDepth = inputValues.MinDepth;
 
             var inputSpline = inputSplineWrapper.Spline;
 
@@ -202,9 +215,13 @@ public class FootprintNode : ExecutableNode<HeightGrid>
 
                     // SDF contains positive distances inside and negative outside
                     var positiveDistance = Mathf.Abs(distance);
-                    var extrapolatedHeight = height * positiveDistance / SAMPLE_DISTANCE;
-                    
-                    outputGrid[x, y] = Mathf.Max(-1, -extrapolatedHeight);
+                    var depth = -height * positiveDistance / SAMPLE_DISTANCE;
+
+                    // Smooth the depth to an end value by some distance
+                    var t = Mathf.InverseLerp(maxDistance / 2, maxDistance, positiveDistance);
+                    depth = Mathf.SmoothStep(depth, minDepth, t);
+
+                    outputGrid[x, y] = depth;
                 }
             }
 
