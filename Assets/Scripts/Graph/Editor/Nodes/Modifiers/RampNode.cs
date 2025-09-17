@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
@@ -17,7 +16,23 @@ public class RampNode : ExecutableNode<HeightGrid>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(RampType, Grid?.VersionHash, Curve, Gradient?.colorKeys);
+            return HashCode.Combine(RampType, Grid?.VersionHash, Curve, GetHashCode(Gradient));
+        }
+
+        private int GetHashCode(Gradient gradient)
+        {
+            // Gradient's hashcode doesn't seem to respond to value changes, and
+            // the colorKeys property's hashcode changes each time its retrieved.
+            // So we build our own hashcode to detect the changes we care about.
+            var hashCode = new HashCode();
+
+            foreach (var key in gradient.colorKeys)
+            {
+                hashCode.Add(key.color.grayscale);
+                hashCode.Add(key.time);
+            }
+
+            return hashCode.ToHashCode();
         }
     }
 
