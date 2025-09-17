@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
-using static BlendFunctions;
 
 public static class ArithmeticFunctions
 {
@@ -16,9 +16,16 @@ public static class ArithmeticFunctions
         Compare = 1000,
     }
 
+    private static Dictionary<ArithmeticOperator, Func<float, float, float>> _functionLookup = new();
+
     public static bool TryGetFunction(ArithmeticOperator arithmeticOperator, out Func<float, float, float> function)
     {
         function = null;
+
+        if (_functionLookup.TryGetValue(arithmeticOperator, out function))
+        {
+            return true;
+        }
 
         var methodName = arithmeticOperator.ToString();
         var method = typeof(ArithmeticFunctions).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
@@ -29,6 +36,8 @@ public static class ArithmeticFunctions
         }
 
         function = (t1, t2) => (float)method.Invoke(null, new object[] { t1, t2 });
+        _functionLookup[arithmeticOperator] = function;
+
         return true;
     }
 

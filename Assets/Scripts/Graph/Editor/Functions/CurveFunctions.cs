@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
@@ -52,9 +53,16 @@ public static class CurveFunctions
         InOutBounce,
     }
 
+    private static Dictionary<CurveType, Func<float, Vector2>> _functionLookup = new();
+
     public static bool TryGetFunction(CurveType curveType, out Func<float, Vector2> function)
     {
         function = null;
+
+        if (_functionLookup.TryGetValue(curveType, out function))
+        {
+            return true;
+        }
 
         // Include the easing functions as curves
         var definingTypes = new[] { typeof(CurveFunctions), typeof(EasingFunctions) };
@@ -68,6 +76,8 @@ public static class CurveFunctions
             }
 
             function = (t) => new Vector2(t, (float)method.Invoke(null, new object[] { t }));
+            _functionLookup[curveType] = function;
+
             return true;
         }
 

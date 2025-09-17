@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
@@ -12,9 +13,16 @@ public static class RadialShapeFunctions
         SmoothStep = 400,
     }
 
+    private static Dictionary<ShapeType, Func<Vector2, float, float>> _functionLookup = new();
+
     public static bool TryGetFunction(ShapeType shapeType, out Func<Vector2, float, float> function)
     {
         function = null;
+
+        if (_functionLookup.TryGetValue(shapeType, out function))
+        {
+            return true;
+        }
 
         var methodName = shapeType.ToString();
         var method = typeof(RadialShapeFunctions).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
@@ -25,6 +33,8 @@ public static class RadialShapeFunctions
         }
 
         function = (p, r) => (float)method.Invoke(null, new object[] { p, r });
+        _functionLookup[shapeType] = function;
+
         return true;
     }
 
