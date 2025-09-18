@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 internal class GeometryHelpers
 {
@@ -129,9 +130,13 @@ internal class GeometryHelpers
         return new List<Vector2>(hull);
     }
 
-    // Cross product to check orientation
-    private static float Cross(Vector2 a, Vector2 b, Vector2 c)
+    public static float Cross(Vector2 a, Vector2 b, Vector2 c)
     {
-        return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+        return Cross(b - a, c - a);
+    }
+
+    public static float Cross(Vector2 a, Vector2 b)
+    {
+        return a.x * b.y - a.y * b.x;
     }
 }
