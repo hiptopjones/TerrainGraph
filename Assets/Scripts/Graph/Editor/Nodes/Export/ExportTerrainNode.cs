@@ -49,23 +49,11 @@ public class ExportTerrainNode : Node,
 
     private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
     {
-        Action<string, object> LogError = (m, o) =>
-        {
-            if (graphLogger != null)
-            {
-                graphLogger.LogError(m, o);
-            }
-            else
-            {
-                Debug.LogError(m);
-            }
-        };
-
         validatedInput = null;
 
         if (!TryGetInputValues(out var input))
         {
-            LogError("Upstream failure", this);
+            if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
             return false;
         }
 
@@ -73,13 +61,13 @@ public class ExportTerrainNode : Node,
 
         if (input.Grid == null || !input.Grid.IsValid)
         {
-            LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
             isValid = false;
         }
 
         if (input.TerrainDataWrapper == null || !input.TerrainDataWrapper.IsValid)
         {
-            LogError($"{NODE_INPUT_TERRAIN_TITLE} value missing", this);
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_TERRAIN_TITLE} value missing", this);
             isValid = false;
         }
         else
@@ -89,7 +77,7 @@ public class ExportTerrainNode : Node,
 
             if (input.Grid.Size != terrainSize)
             {
-                LogError($"{NODE_INPUT_GRID_TITLE} and {NODE_INPUT_TERRAIN_TITLE} size mismatch", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} and {NODE_INPUT_TERRAIN_TITLE} size mismatch", this);
                 isValid = false;
             }
         }
@@ -127,7 +115,6 @@ public class ExportTerrainNode : Node,
         if (!TryGetValidatedInputValues(out var inputValues))
         {
             // Not in valid state
-            Debug.Log("Failed validation");
             return false;
         }
 
