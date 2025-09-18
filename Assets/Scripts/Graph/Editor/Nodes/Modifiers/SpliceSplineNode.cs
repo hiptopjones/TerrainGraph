@@ -261,13 +261,9 @@ public class SpliceSplineNode : ExecutableNode<SplineWrapper>
             var outputSpline = new Spline(points);
             outputSpline.Closed = inputSpline1.Closed;
 
-            var bounds = outputSpline.GetBounds();
-            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
-
             var outputSplineWrapper = new SplineWrapper
             {
-                Spline = outputSpline,
-                Size = size
+                Spline = outputSpline
             };
 
             outputSplineWrapper.VersionHash = inputValues.VersionHash;

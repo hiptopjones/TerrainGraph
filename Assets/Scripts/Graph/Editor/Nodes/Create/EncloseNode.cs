@@ -174,12 +174,8 @@ public class EncloseNode : ExecutableNode<SplineWrapper>
 
             var outputSpline = SplineHelpers.CreateSpline(hull, closed: true);
 
-            var bounds = outputSpline.GetBounds();
-            var outputSplineSize = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
-
             var outputSplineWrapper = new SplineWrapper
             {
-                Size = outputSplineSize,
                 Spline = outputSpline,
             };
 

@@ -179,12 +179,8 @@ public class ContourNode : ExecutableNode<SplineWrapper>
             // TODO: Should apply some Douglas-Peucker smoothing to reduce points
             var outputSpline = SplineHelpers.CreateSpline(contour, closed: true);
 
-            var bounds = outputSpline.GetBounds();
-            var outputSplineSize = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
-
             var outputSplineWrapper = new SplineWrapper
             {
-                Size = outputSplineSize,
                 Spline = outputSpline,
             };
 

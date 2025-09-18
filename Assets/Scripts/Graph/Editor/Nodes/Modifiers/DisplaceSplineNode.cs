@@ -253,13 +253,9 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
 
             var outputSpline = currentSpline;
 
-            var bounds = currentSpline.GetBounds();
-            var outputSplineSize = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
-
             var outputSplineWrapper = new SplineWrapper
             {
-                Spline = outputSpline,
-                Size = outputSplineSize
+                Spline = outputSpline
             };
 
             outputSplineWrapper.VersionHash = inputValues.VersionHash;

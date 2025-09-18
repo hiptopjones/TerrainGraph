@@ -125,16 +125,21 @@ internal static class TextureHelpers
 
         try
         {
-            var splineSize = splineWrapper.Size;
+            var spline = splineWrapper.Spline;
+            var length = spline.GetLength();
+            var bounds = spline.GetBounds();
+            var center = bounds.center;
 
-            if (splineSize <= 0 || splineSize > Mathf.Pow(2, 14))
+            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+
+            if (size <= 0 || size > Mathf.Pow(2, 14))
             {
-                Debug.LogError($"Spline size is invalid: {splineWrapper.Size} (valid: 0 < n < 16384)");
+                Debug.LogError($"Spline size is invalid: {size} (valid: 0 < n < 16384)");
                 return false;
             }
 
-            var width = splineWrapper.Size;
-            var height = splineWrapper.Size;
+            var width = size;
+            var height = size;
 
             texture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
             texture.wrapMode = TextureWrapMode.Clamp;
@@ -149,15 +154,10 @@ internal static class TextureHelpers
                 }
             }
 
-            var spline = splineWrapper.Spline;
-            var length = spline.GetLength();
-            var bounds = spline.GetBounds();
-            var center = bounds.center;
-
             // This is a preview texture, and is used to get a sense of shape
             // Scale the vertex count based on the bounds of the spline
             // This ensures big splines and small splines are represented reasonably well
-            var vertexCount = length / (splineWrapper.Size / SEGMENT_LENGTH_FACTOR);
+            var vertexCount = length / (size / SEGMENT_LENGTH_FACTOR);
 
             var firstPosition = Vector3.zero;
             var previousPosition = Vector3.zero;
@@ -169,8 +169,6 @@ internal static class TextureHelpers
 
                 var p = spline.EvaluatePosition(t);
 
-                // Center the spline and fill the viewport with it 
-                var size = Mathf.Max(bounds.extents.x, bounds.extents.z);
                 p = p - (float3)center + new float3(size, 0, size);
 
                 var currentPosition = new Vector2(p.x, p.z);

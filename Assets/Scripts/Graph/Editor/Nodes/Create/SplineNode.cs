@@ -184,13 +184,9 @@ public class SplineNode : ExecutableNode<SplineWrapper>
                 return false;
             }
 
-            var bounds = outputSpline.GetBounds();
-            var outputSplineSize = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
-
             var outputSplineWrapper = new SplineWrapper
             {
                 Spline = outputSpline,
-                Size = outputSplineSize
             };
 
             outputSplineWrapper.VersionHash = inputValues.VersionHash;
