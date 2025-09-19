@@ -5,6 +5,7 @@ using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
+using static ArithmeticNode;
 
 [Serializable]
 public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
@@ -14,6 +15,7 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
         public SplineWrapper SplineWrapper;
         public IProvider Provider;
         public int VertexCount;
+        public DisplacementAxis DisplacementAxis;
         public float Amplitude;
         public int IterationCount;
 
@@ -21,7 +23,7 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(SplineWrapper?.VersionHash, Provider?.VersionHash, VertexCount, Amplitude, IterationCount);
+            return HashCode.Combine(SplineWrapper?.VersionHash, Provider?.VersionHash, VertexCount, DisplacementAxis, Amplitude, IterationCount);
         }
     }
 
@@ -36,6 +38,9 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
 
     private const string NODE_INPUT_VERTICES_ID = "vertices_input";
     private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
+
+    private const string NODE_INPUT_AXIS_ID = "axis_input";
+    private const string NODE_INPUT_AXIS_TITLE = "Axis";
 
     private const string NODE_INPUT_AMPLITUDE_ID = "amplitude_input";
     private const string NODE_INPUT_AMPLITUDE_TITLE = "Amplitude";
@@ -57,6 +62,13 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             .Build();
     }
 
+    private enum DisplacementAxis
+    {
+        Horizontal,
+        Vertical,
+        Both
+    }
+
     protected override void OnDefinePorts(IPortDefinitionContext context)
     {
         GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
@@ -71,6 +83,10 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
         context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
             .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
             .WithDefaultValue(100)
+            .Build();
+        context.AddInputPort<DisplacementAxis>(NODE_INPUT_AXIS_ID)
+            .WithDisplayName(NODE_INPUT_AXIS_TITLE)
+            .WithDefaultValue(DisplacementAxis.Horizontal)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
             .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
@@ -134,6 +150,12 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             isValid = false;
         }
 
+        if (!Enum.IsDefined(typeof(DisplacementAxis), input.DisplacementAxis))
+        {
+            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_AXIS_TITLE} option invalid", this);
+            isValid = false;
+        }
+
         if (input.IterationCount <= 0)
         {
             if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: 0 < n)", this);
@@ -157,6 +179,7 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PROVIDER_ID, out temp.Provider) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AXIS_ID, out temp.DisplacementAxis) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.IterationCount);
 
@@ -218,6 +241,7 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             var noiseProvider = inputValues.Provider as INoiseProvider;
             var inputSplineWrapper = inputValues.SplineWrapper;
             var vertexCount = inputValues.VertexCount;
+            var displacementAxis = inputValues.DisplacementAxis;
             var amplitude = inputValues.Amplitude;
             var iterationCount = inputValues.IterationCount;
 
@@ -227,10 +251,10 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             {
                 var vertices = new List<Vector3>();
 
-                // Ignores the first and last vertex, so it remains anchored
-                for (int vertexIndex = 1; vertexIndex < vertexCount; vertexIndex++)
+                // TODO: Consider controlling whether the first and last vertex are displaced
+                for (int j = 0; j < vertexCount; j++)
                 {
-                    float t = vertexIndex / (float)vertexCount;
+                    float t = j / (float)(vertexCount - 1);
 
                     Vector3 position = currentSpline.EvaluatePosition(t);
                     Vector3 tangent = ((Vector3)currentSpline.EvaluateTangent(t)).normalized;
@@ -238,8 +262,23 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
                     Vector3 up = Vector3.up;
                     Vector3 binormal = Vector3.Cross(up, tangent).normalized;
 
-                    noiseProvider.TryGetNoise(new Vector2(t, t), out var noise);
-                    Vector3 displacement = binormal * (noise - 0.5f) * amplitude;
+                    Vector3 displacement = Vector3.zero;
+
+                    if (displacementAxis == DisplacementAxis.Horizontal || displacementAxis == DisplacementAxis.Both)
+                    {
+                        const float HORIZONTAL_NOISE_RADIUS = 1.0f;
+                        NoiseHelpers.TryGetSeamlessNoise(noiseProvider, HORIZONTAL_NOISE_RADIUS, t, out var noise);
+                        displacement += binormal * (noise - 0.5f) * amplitude;
+                    }
+                 
+                    if (displacementAxis == DisplacementAxis.Vertical || displacementAxis == DisplacementAxis.Both)
+                    {
+                        const float VERTICAL_NOISE_RADIUS = 1.1f;
+                        NoiseHelpers.TryGetSeamlessNoise(noiseProvider, VERTICAL_NOISE_RADIUS, t, out var noise);
+
+                        // Unlike horizontal, this limits vertical displacement to half the noise range and only in the positive direction
+                        displacement += up * Mathf.Clamp01(noise - 0.5f) * amplitude;
+                    }
 
                     Vector3 displacedPosition = position + displacement;
                     vertices.Add(displacedPosition);
@@ -269,4 +308,5 @@ public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
             return false;
         }
     }
+
 }

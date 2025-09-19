@@ -69,4 +69,14 @@ public static class NoiseHelpers
         // Scale to desired range
         return Mathf.Clamp01(Mathf.Abs(rand / (float)int.MaxValue));
     }
+
+
+    // Sample noise in a circle through the noise field, which makes it seamless
+    public static bool TryGetSeamlessNoise(INoiseProvider noiseProvider, float radius, float t, out float noise)
+    {
+        var x = radius * Mathf.Cos(t * 2 * Mathf.PI);
+        var y = radius * Mathf.Sin(t * 2 * Mathf.PI);
+
+        return noiseProvider.TryGetNoise(new Vector2(x, y), out noise);
+    }
 }

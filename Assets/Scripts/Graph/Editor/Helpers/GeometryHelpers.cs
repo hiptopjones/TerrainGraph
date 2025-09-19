@@ -130,6 +130,7 @@ internal class GeometryHelpers
         return new List<Vector2>(hull);
     }
 
+    // Cross a -> b with a -> c
     public static float Cross(Vector2 a, Vector2 b, Vector2 c)
     {
         return Cross(b - a, c - a);

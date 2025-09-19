@@ -8,7 +8,8 @@ public struct SplineSegment
     public float2 a;     // segment start
     public float2 b;     // segment end
     public float2 ab;    // (b - a)
-    public float ab2;   // dot(ab, ab) (squared length)
+    public float ab2;    // dot(ab, ab) (squared length)
+    public float height;
 }
 
 [BurstCompile(FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low)]
@@ -17,8 +18,8 @@ public struct SplineSdfJob : IJobParallelFor
     [ReadOnly] public NativeArray<SplineSegment> Segments;
     [ReadOnly] public int Size;
 
-    [WriteOnly] public NativeArray<float> Heights;
-    [WriteOnly] public NativeArray<float2> NearestPositions;
+    [WriteOnly] public NativeArray<float> Distances;
+    [WriteOnly] public NativeArray<float3> NearestPositions;
 
     public void Execute(int index)
     {
@@ -30,6 +31,7 @@ public struct SplineSdfJob : IJobParallelFor
 
         float minDistance2 = float.PositiveInfinity;
         float distanceSign = 0;
+        float height = 0;
         float2 nearestPosition = float2.zero;
 
         for (int i = 0; i < Segments.Length; i++)
@@ -56,12 +58,13 @@ public struct SplineSdfJob : IJobParallelFor
                 distanceSign = -math.sign(cross);
 
                 nearestPosition = q;
+                height = segment.height;
             }
         }
 
         float distance = math.sqrt(minDistance2);
 
-        Heights[index] = distance * distanceSign;
-        NearestPositions[index] = nearestPosition;
+        Distances[index] = distance * distanceSign;
+        NearestPositions[index] = new float3(nearestPosition.x, height, nearestPosition.y);
     }
 }

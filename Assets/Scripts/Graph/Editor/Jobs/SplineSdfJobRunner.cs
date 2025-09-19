@@ -7,22 +7,27 @@ using UnityEngine.Splines;
 
 public static class SplineSdfJobRunner
 {
-    public static bool TryCreateSdf(Spline spline, int samples, int size, out float[,] distances, out Vector2[,] nearestPositions)
+    public static bool TryCreateSdf(Spline spline, int samples, int size, out float[,] distances, out Vector3[,] nearestPositions)
     {
+        distances = null;
+        nearestPositions = null;
+
         NativeArray<SplineSegment> segmentsNative = default;
-        NativeArray<float> heightsNative = default;
-        NativeArray<float2> nearestPositionsNative = default;
+        NativeArray<float> distancesNative = default;
+        NativeArray<float3> nearestPositionsNative = default;
 
         try
         {
             // 1) Sample spline into a 2D polyline (XZ plane)
             int vertexCount = samples + 1;
             var vertices = new float2[vertexCount];
+            var heights = new float[vertexCount];
             for (int i = 0; i < vertexCount; i++)
             {
                 float t = (float)i / samples;
                 Vector3 positions = SplineUtility.EvaluatePosition(spline, t);
                 vertices[i] = new float2(positions.x, positions.z);
+                heights[i] = positions.y;
             }
 
             // 2) Build segments
@@ -38,24 +43,27 @@ public static class SplineSdfJobRunner
 
                 var ab = b - a;
 
+                var height = (heights[i0] + heights[i1]) / 2;
+
                 segmentsNative[i] = new SplineSegment
                 {
                     a = a,
                     b = b,
                     ab = ab,
-                    ab2 = math.dot(ab, ab)
+                    ab2 = math.dot(ab, ab),
+                    height = height,
                 };
             }
 
             // 3) Prepare job
-            heightsNative = new NativeArray<float>(size * size, Allocator.TempJob);
-            nearestPositionsNative = new NativeArray<float2>(size * size, Allocator.TempJob);
+            distancesNative = new NativeArray<float>(size * size, Allocator.TempJob);
+            nearestPositionsNative = new NativeArray<float3>(size * size, Allocator.TempJob);
             var job = new SplineSdfJob
             {
                 Segments = segmentsNative,
                 Size = size,
-                Heights = heightsNative,
-                NearestPositions = nearestPositionsNative
+                Distances = distancesNative,
+                NearestPositions = nearestPositionsNative,
             };
 
             // 4) Dispatch
@@ -64,12 +72,12 @@ public static class SplineSdfJobRunner
 
             // 5) Copy data
             distances = new float[size, size];
-            nearestPositions = new Vector2[size, size];
+            nearestPositions = new Vector3[size, size];
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    distances[x, y] = heightsNative[y * size + x];
+                    distances[x, y] = distancesNative[y * size + x];
                     nearestPositions[x, y] = nearestPositionsNative[y * size + x];
                 }
             }
@@ -80,14 +88,12 @@ public static class SplineSdfJobRunner
         {
             Debug.LogException(ex);
 
-            distances = null;
-            nearestPositions = null;
             return false;
         }
         finally
         {
             // 6) Cleanup
-            heightsNative.Dispose();
+            distancesNative.Dispose();
             nearestPositionsNative.Dispose();
             segmentsNative.Dispose();
         }

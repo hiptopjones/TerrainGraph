@@ -9,12 +9,13 @@ public class SplineHeightNode : ProviderNode<IProvider>
         public SplineWrapper SplineWrapper;
         public int Samples;
         public bool Center;
+        public bool IncludeEdgeHeight;
 
         public int VersionHash;
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(SplineWrapper?.VersionHash, Samples, Center);
+            return HashCode.Combine(SplineWrapper?.VersionHash, Samples, Center, IncludeEdgeHeight);
         }
     }
 
@@ -29,6 +30,9 @@ public class SplineHeightNode : ProviderNode<IProvider>
 
     private const string NODE_INPUT_CENTER_ID = "center_input";
     private const string NODE_INPUT_CENTER_TITLE = "Center";
+
+    private const string NODE_INPUT_EDGE_ID = "edge_input";
+    private const string NODE_INPUT_EDGE_TITLE = "Include Edge Height";
 
     // Outputs
     private const string NODE_OUTPUT_PROVIDER_ID = "provider_output";
@@ -54,6 +58,10 @@ public class SplineHeightNode : ProviderNode<IProvider>
         context.AddInputPort<bool>(NODE_INPUT_CENTER_ID)
             .WithDisplayName(NODE_INPUT_CENTER_TITLE)
             .WithDefaultValue(true)
+            .Build();
+        context.AddInputPort<bool>(NODE_INPUT_EDGE_ID)
+            .WithDisplayName(NODE_INPUT_EDGE_TITLE)
+            .WithDefaultValue(false)
             .Build();
 
         // Output
@@ -107,7 +115,8 @@ public class SplineHeightNode : ProviderNode<IProvider>
         var success =
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
             PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SAMPLES_ID, out temp.Samples) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_CENTER_ID, out temp.Center);
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_CENTER_ID, out temp.Center) &&
+            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_EDGE_ID, out temp.IncludeEdgeHeight);
 
         if (success)
         {
@@ -133,6 +142,7 @@ public class SplineHeightNode : ProviderNode<IProvider>
             Spline = inputValues.SplineWrapper.Spline,
             Samples = inputValues.Samples,
             Center = inputValues.Center,
+            IncludeEdgeHeight = inputValues.IncludeEdgeHeight,
 
             VersionHash = inputValues.VersionHash
         };

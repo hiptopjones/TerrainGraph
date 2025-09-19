@@ -216,7 +216,7 @@ public class FootprintNode : ExecutableNode<HeightGrid>
                     }
 
                     var position = new Vector2(x, y);
-                    var nearestPosition = nearestPositions[x, y];
+                    var nearestPosition = nearestPositions[x, y].SwizzleXZ();
 
                     var direction = (nearestPosition - position).normalized;
 
@@ -249,7 +249,7 @@ public class FootprintNode : ExecutableNode<HeightGrid>
         }
     }
 
-    public static bool TryCreateCenteredSdf(Spline spline, int samples, int size, out float[,] distances, out Vector2[,] nearestPositions)
+    public static bool TryCreateCenteredSdf(Spline spline, int samples, int size, out float[,] distances, out Vector3[,] nearestPositions)
     {
         var bounds = spline.GetBounds();
 
