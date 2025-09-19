@@ -78,6 +78,8 @@ internal static class TextureHelpers
             texture.wrapMode = TextureWrapMode.Clamp;
             texture.filterMode = FilterMode.Bilinear;
 
+            (var minHeight, var maxHeight) = GridHelpers.GetRange(grid);
+
             for (int y = 0; y < texture.height; y++)
             {
                 for (int x = 0; x < texture.width; x++)
@@ -87,11 +89,15 @@ internal static class TextureHelpers
                     Color color;
                     if (value > 1)
                     {
-                        color = new Color(0, value / texture.height + 0.1f, 0);
+                        var t = value / maxHeight;
+                        var green = Mathf.Lerp(0.2f, 1f, t);
+                        color = new Color(0, green, 0);
                     }
                     else if (value < 0)
                     {
-                        color = new Color(Mathf.Abs(value / texture.height) + 0.1f, 0, 0);
+                        var t = value / minHeight;
+                        var red = Mathf.Lerp(0.2f, 1f, t);
+                        color = new Color(red, 0, 0);
                     }
                     else
                     {
