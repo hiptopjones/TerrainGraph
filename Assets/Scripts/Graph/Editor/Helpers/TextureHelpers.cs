@@ -169,7 +169,7 @@ internal static class TextureHelpers
 
                 var p = spline.EvaluatePosition(t);
 
-                p = p - (float3)center + new float3(size, 0, size);
+                p = p - (float3)center + new float3(size / 2, 0, size / 2);
 
                 var currentPosition = new Vector2(p.x, p.z);
 
