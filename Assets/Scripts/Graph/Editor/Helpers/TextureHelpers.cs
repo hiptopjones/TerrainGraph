@@ -18,14 +18,14 @@ internal static class TextureHelpers
         texture.Apply(false, false);
     }
 
-    public static bool TryCreateHeightMapTexture(HeightGrid grid, out Texture2D texture)
+    public static bool TryCreateHeightMapTexture(HeightGrid grid, TextureFormat textureFormat, out Texture2D texture)
     {
         try
         {
             var width = grid.Size;
             var height = grid.Size;
 
-            texture = new Texture2D(width, height, TextureFormat.R16, mipChain: false, linear: true);
+            texture = new Texture2D(width, height, textureFormat, mipChain: false, linear: true);
             texture.wrapMode = TextureWrapMode.Clamp;
             texture.filterMode = FilterMode.Bilinear;
 
