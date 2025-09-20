@@ -1,0 +1,16 @@
+{
+    "name": "Indiecat.TerrainGraph.Editor",
+    "rootNamespace": "Indiecat.TerrainGraph.Editor",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        ""
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

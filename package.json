@@ -1,0 +1,16 @@
+{
+  "name": "ca.indiecat.terraingraph",
+  "version": "1.0.0",
+  "displayName": "Terrain Graph",
+  "description": "Node-based procedural terrain generator.",
+  "unity": "6000.3",
+  "dependencies": {
+    "com.unity.splines": "2.8.2",
+    "com.unity.graphtoolkit": "0.4.0-exp.2"
+ },
+  "author": {
+    "name": "Peter James",
+    "email": "support@indiecat.ca",
+    "url": "https://indiecat.ca"
+  }
+}
