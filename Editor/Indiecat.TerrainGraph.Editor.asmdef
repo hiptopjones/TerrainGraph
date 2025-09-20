@@ -1,7 +1,14 @@
 {
     "name": "Indiecat.TerrainGraph.Editor",
     "rootNamespace": "Indiecat.TerrainGraph.Editor",
-    "references": [],
+    "references": [
+        "GUID:70ef9a24f4cfc4aec911c1414e3f90ad",
+        "GUID:d1e08c06f8f9473888c892637c83c913",
+        "GUID:21d1eb854b91ade49bc69a263d12bee2",
+        "GUID:e43142fc3fec6554980dde6126631f1d",
+        "GUID:d8b63aba1907145bea998dd612889d6b",
+        "GUID:2665a8d13d1b3f18800f46e256720795"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
