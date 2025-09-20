@@ -98,7 +98,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             var temp = new InputValues();
             var success =
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TERRAIN_ID, out temp.TerrainDataWrapper);
 
             if (success)
