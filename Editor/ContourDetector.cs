@@ -67,12 +67,15 @@ namespace Indiecat.TerrainGraph.Editor
 
         private List<Vector2> GetLineSegments(byte[,] samples, float level)
         {
-            List<Vector2> segments = new List<Vector2>();
+            var segments = new List<Vector2>();
 
+            var width = samples.GetLength(0);
+            var height = samples.GetLength(1);
+            
             // March the squares
-            for (int y = 0; y < samples.GetLength(1) - 1; y++)
+            for (int y = 0; y < height - 1; y++)
             {
-                for (int x = 0; x < samples.GetLength(0) - 1; x++)
+                for (int x = 0; x < width - 1; x++)
                 {
                     // Known grid positions
                     // a b
@@ -299,6 +302,11 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var p1 = segments[i];
                 var p2 = segments[i + 1];
+
+                if (connectedPoints.TryGetValue(p1, out var p) && p2 == p)
+                {
+                    throw new Exception($"Duplicate entry - contour not valid");
+                }
 
                 AddConnection(connectedPoints, p1, p2);
             }
