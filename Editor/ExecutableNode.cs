@@ -104,10 +104,22 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 // TODO: Can we get the object once, instead of on every update?
                 var previewPort = GetInputPortByName(NODE_INPUT_PREVIEW_ID);
+                if (previewPort == null)
+                {
+                    Debug.Log("Unable to get the preview port");
+                    return false;
+                }
+
                 if (!previewPort.TryGetValue(out PreviewImage previewImage))
                 {
                     // Unable to get preview port value, so cannot display anything
-                    Debug.LogError("Unable to resolve preview port");
+                    Debug.LogError("Unable to get the preview image");
+                    return false;
+                }
+
+                if (previewImage == null)
+                {
+                    Debug.Log("Preview port image is null");
                     return false;
                 }
 
