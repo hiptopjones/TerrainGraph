@@ -23,6 +23,11 @@ namespace Indiecat.TerrainGraph.Editor
 
             private int GetHashCode(Gradient gradient)
             {
+                if (gradient == null)
+                {
+                    return 0;
+                }
+
                 // Gradient's hashcode doesn't seem to respond to value changes, and
                 // the colorKeys property's hashcode changes each time its retrieved.
                 // So we build our own hashcode to detect the changes we care about.
