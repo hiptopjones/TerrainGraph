@@ -242,7 +242,7 @@ public class RampNode : ExecutableNode<HeightGrid>
             {
                 for (int x = 0; x < size; x++)
                 {
-                    outputGrid[x, y] = rampFunction(inputGrid[x, y]);
+                    outputGrid[x, y] = rampFunction(Mathf.Clamp01(inputGrid[x, y]));
                 }
             }
 
