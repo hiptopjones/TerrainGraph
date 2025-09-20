@@ -1,22 +1,25 @@
 ﻿using UnityEngine;
 using UnityEngine.Splines;
 
-public class CircleSplineProvider : ISplineProvider
+namespace Indiecat.TerrainGraph.Editor
 {
-    public int Size { get; set; }
-    public float Angle { get; set; }
-
-    public bool IsValid => true;
-    public float ExecutionTime => 0;
-    public int VersionHash { get; set; }
-
-    public bool TryGetSpline(int vertexCount, out Spline spline)
+    public class CircleSplineProvider : ISplineProvider
     {
-        var radius = Size / 2f;
-        var center = Vector2.one * radius;
-        var interval = Angle / vertexCount;
+        public int Size { get; set; }
+        public float Angle { get; set; }
+
+        public bool IsValid => true;
+        public float ExecutionTime => 0;
+        public int VersionHash { get; set; }
+
+        public bool TryGetSpline(int vertexCount, out Spline spline)
+        {
+            var radius = Size / 2f;
+            var center = Vector2.one * radius;
+            var interval = Angle / vertexCount;
         
-        spline = SplineFunctions.Circle(radius, Angle, interval, center);
-        return true;
+            spline = SplineFunctions.Circle(radius, Angle, interval, center);
+            return true;
+        }
     }
 }

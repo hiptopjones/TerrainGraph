@@ -1,6 +1,9 @@
 ﻿using Unity.GraphToolkit.Editor;
 
-internal interface IValidatableNode
+namespace Indiecat.TerrainGraph.Editor
 {
-    bool TryValidateNode(GraphLogger graphLogger);
+    internal interface IValidatableNode
+    {
+        bool TryValidateNode(GraphLogger graphLogger);
+    }
 }

@@ -1,4 +1,7 @@
-﻿public interface IHeightProvider : IProvider
+﻿namespace Indiecat.TerrainGraph.Editor
 {
-    bool TryGetHeights(int size, out float[,] heights);
+    public interface IHeightProvider : IProvider
+    {
+        bool TryGetHeights(int size, out float[,] heights);
+    }
 }

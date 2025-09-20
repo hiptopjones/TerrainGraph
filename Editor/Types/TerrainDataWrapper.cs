@@ -1,12 +1,15 @@
 ﻿using System;
 using UnityEngine;
 
-[Serializable]
-public class TerrainDataWrapper : IVersionedObject
+namespace Indiecat.TerrainGraph.Editor
 {
-    public TerrainData TerrainData;
+    [Serializable]
+    public class TerrainDataWrapper : IVersionedObject
+    {
+        public TerrainData TerrainData;
 
-    public int VersionHash { get; set; }
-    public float ExecutionTime { get; set; }
-    public bool IsValid => TerrainData != null;
+        public int VersionHash { get; set; }
+        public float ExecutionTime { get; set; }
+        public bool IsValid => TerrainData != null;
+    }
 }

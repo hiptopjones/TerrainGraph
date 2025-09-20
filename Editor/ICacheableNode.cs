@@ -1,4 +1,7 @@
-﻿interface ICacheableNode<T> where T : IVersionedObject
+﻿namespace Indiecat.TerrainGraph.Editor
 {
-    CacheData<T> CacheData { get; set; }
+    interface ICacheableNode<T> where T : IVersionedObject
+    {
+        CacheData<T> CacheData { get; set; }
+    }
 }

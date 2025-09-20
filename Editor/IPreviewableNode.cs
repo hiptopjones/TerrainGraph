@@ -1,4 +1,7 @@
-﻿interface IPreviewableNode
+﻿namespace Indiecat.TerrainGraph.Editor
 {
-    bool TryUpdatePreview();
+    interface IPreviewableNode
+    {
+        bool TryUpdatePreview();
+    }
 }

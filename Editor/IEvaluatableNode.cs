@@ -1,6 +1,9 @@
 ﻿using Unity.GraphToolkit.Editor;
 
-interface IEvaluatableNode<T>
+namespace Indiecat.TerrainGraph.Editor
 {
-    bool TryGetOutputValue(IPort outputPort, out T value);
+    interface IEvaluatableNode<T>
+    {
+        bool TryGetOutputValue(IPort outputPort, out T value);
+    }
 }

@@ -1,37 +1,40 @@
 ﻿using UnityEngine;
 
-public class RadialShapeHeightProvider : IHeightProvider
+namespace Indiecat.TerrainGraph.Editor
 {
-    public RadialShapeFunctions.ShapeType ShapeType { get; set; }
-    public float Radius { get; set; }
-
-    public bool IsValid => true;
-    public float ExecutionTime => 0;
-    public int VersionHash { get; set; }
-
-    public bool TryGetHeights(int size, out float[,] heights)
+    public class RadialShapeHeightProvider : IHeightProvider
     {
-        heights = null;
+        public RadialShapeFunctions.ShapeType ShapeType { get; set; }
+        public float Radius { get; set; }
 
-        if (!RadialShapeFunctions.TryGetFunction(ShapeType, out var shapeFunction))
+        public bool IsValid => true;
+        public float ExecutionTime => 0;
+        public int VersionHash { get; set; }
+
+        public bool TryGetHeights(int size, out float[,] heights)
         {
-            return false;
-        }
+            heights = null;
 
-        var center = Vector2.one * size / 2f;
-
-        heights = new float[size, size];
-
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
+            if (!RadialShapeFunctions.TryGetFunction(ShapeType, out var shapeFunction))
             {
-                var position = new Vector2(x, y) - center;
-                heights[x, y] = shapeFunction(position, Radius);
+                return false;
             }
+
+            var center = Vector2.one * size / 2f;
+
+            heights = new float[size, size];
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    var position = new Vector2(x, y) - center;
+                    heights[x, y] = shapeFunction(position, Radius);
+                }
+            }
+
+            return true;
         }
 
-        return true;
     }
-
 }

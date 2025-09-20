@@ -1,69 +1,72 @@
 ﻿using UnityEngine;
 
-public class CellularNoiseProvider : IHeightProvider, INoiseProvider
+namespace Indiecat.TerrainGraph.Editor
 {
-    public Vector2 Offset { get; set; }
-    public int CellSize { get; set; }
-    public float RadiusPercent { get; set; } // TODO: This should be a bounds provider or something
-    public int Seed { get; set; }
-
-    public bool IsValid => true;
-    public float ExecutionTime => 0;
-    public int VersionHash { get; set; }
-
-    public bool TryGetHeights(int size, out float[,] heights)
+    public class CellularNoiseProvider : IHeightProvider, INoiseProvider
     {
-        heights = new float[size, size];
+        public Vector2 Offset { get; set; }
+        public int CellSize { get; set; }
+        public float RadiusPercent { get; set; } // TODO: This should be a bounds provider or something
+        public int Seed { get; set; }
 
-        var radius = RadiusPercent * size;
+        public bool IsValid => true;
+        public float ExecutionTime => 0;
+        public int VersionHash { get; set; }
 
-        for (int y = 0; y < size; y++)
+        public bool TryGetHeights(int size, out float[,] heights)
         {
-            for (int x = 0; x < size; x++)
+            heights = new float[size, size];
+
+            var radius = RadiusPercent * size;
+
+            for (int y = 0; y < size; y++)
             {
-                var position = new Vector2(x, y);
-
-                var offsetFraction = new Vector2(Offset.x % CellSize, Offset.y % CellSize);
-                var localCellIndex = GetCellIndex(position + offsetFraction);
-
-                var center = new Vector2(size / 2f, size / 2f);
-                var cellCenter = (localCellIndex + Vector2.one * 0.5f) * CellSize - offsetFraction;
-
-                if ((cellCenter - center).magnitude > radius)
+                for (int x = 0; x < size; x++)
                 {
-                    // Cell not included
-                    heights[x, y] = 0;
-                }
-                else
-                {
-                    var cellIndex = GetCellIndex(position + Offset);
-                    heights[x, y] = NoiseHelpers.GetCellHeight(cellIndex, Seed);
-                }
+                    var position = new Vector2(x, y);
 
-                // Debugging the radius
-                //if (Mathf.Abs((position - center).magnitude - radius) < 1)
-                //{
-                //    heights[x, y] = 1;
-                //}
+                    var offsetFraction = new Vector2(Offset.x % CellSize, Offset.y % CellSize);
+                    var localCellIndex = GetCellIndex(position + offsetFraction);
+
+                    var center = new Vector2(size / 2f, size / 2f);
+                    var cellCenter = (localCellIndex + Vector2.one * 0.5f) * CellSize - offsetFraction;
+
+                    if ((cellCenter - center).magnitude > radius)
+                    {
+                        // Cell not included
+                        heights[x, y] = 0;
+                    }
+                    else
+                    {
+                        var cellIndex = GetCellIndex(position + Offset);
+                        heights[x, y] = NoiseHelpers.GetCellHeight(cellIndex, Seed);
+                    }
+
+                    // Debugging the radius
+                    //if (Mathf.Abs((position - center).magnitude - radius) < 1)
+                    //{
+                    //    heights[x, y] = 1;
+                    //}
+                }
             }
+            return true;
         }
-        return true;
-    }
 
-    public bool TryGetNoise(Vector2 position, out float noise)
-    {
-        var cellIndex = GetCellIndex(position + Offset);
+        public bool TryGetNoise(Vector2 position, out float noise)
+        {
+            var cellIndex = GetCellIndex(position + Offset);
 
-        noise = NoiseHelpers.GetCellHeight(cellIndex, Seed);
-        return true;
-    }
+            noise = NoiseHelpers.GetCellHeight(cellIndex, Seed);
+            return true;
+        }
 
-    private Vector2Int GetCellIndex(Vector2 position)
-    {
-        // Which cell are we in?
-        int cellX = Mathf.FloorToInt(position.x / CellSize);
-        int cellY = Mathf.FloorToInt(position.y / CellSize);
+        private Vector2Int GetCellIndex(Vector2 position)
+        {
+            // Which cell are we in?
+            int cellX = Mathf.FloorToInt(position.x / CellSize);
+            int cellY = Mathf.FloorToInt(position.y / CellSize);
 
-        return new Vector2Int(cellX, cellY);
+            return new Vector2Int(cellX, cellY);
+        }
     }
 }

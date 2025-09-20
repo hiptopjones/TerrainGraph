@@ -3,23 +3,26 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-[Serializable]
-public class PreviewImage
+namespace Indiecat.TerrainGraph.Editor
 {
-    // NOTE: Do not write directly to this field, use UpdateTexture()
-    public Texture2D Texture;
-
-    public List<Image> Images = new();
-
-    public void UpdateTexture(Texture2D texture)
+    [Serializable]
+    public class PreviewImage
     {
-        Texture = texture;
+        // NOTE: Do not write directly to this field, use UpdateTexture()
+        public Texture2D Texture;
 
-        foreach (var image in Images)
+        public List<Image> Images = new();
+
+        public void UpdateTexture(Texture2D texture)
         {
-            if (image != null)
+            Texture = texture;
+
+            foreach (var image in Images)
             {
-                image.image = texture;
+                if (image != null)
+                {
+                    image.image = texture;
+                }
             }
         }
     }

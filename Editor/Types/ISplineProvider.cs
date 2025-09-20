@@ -1,6 +1,9 @@
-﻿using UnityEngine.Splines;
-
-public interface ISplineProvider : IProvider
+﻿namespace Indiecat.TerrainGraph.Editor
 {
-    bool TryGetSpline(int vertexCount, out Spline spline);
+    using UnityEngine.Splines;
+
+    public interface ISplineProvider : IProvider
+    {
+        bool TryGetSpline(int vertexCount, out Spline spline);
+    }
 }

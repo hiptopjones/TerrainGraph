@@ -3,45 +3,48 @@ using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 
-[Graph(ASSET_FILE_EXTENSION)]
-[Serializable]
-public class TerrainEditorGraph : Graph
+namespace Indiecat.TerrainGraph.Editor
 {
-    // This file extension is used by Unity to select the right importer, so it must be unique.
-    internal const string ASSET_FILE_EXTENSION = "trgraph";
-
-    internal const string DEFAULT_ASSET_NAME = "Terrain Graph";
-
-    [MenuItem("Assets/Create/Terrain Graph")]
-    static void CreateAssetFile()
+    [Graph(ASSET_FILE_EXTENSION)]
+    [Serializable]
+    public class TerrainEditorGraph : Graph
     {
-        GraphDatabase.PromptInProjectBrowserToCreateNewAsset<TerrainEditorGraph>(DEFAULT_ASSET_NAME);
-    }
+        // This file extension is used by Unity to select the right importer, so it must be unique.
+        internal const string ASSET_FILE_EXTENSION = "trgraph";
 
-    public override void OnGraphChanged(GraphLogger graphLogger)
-    {
-        ValidateNodes(graphLogger);
+        internal const string DEFAULT_ASSET_NAME = "Terrain Graph";
 
-        UpdatePreviews();
-    }
-
-    private void ValidateNodes(GraphLogger graphLogger)
-    {
-        var nodes = GetNodes().OfType<IValidatableNode>().ToList();
-     
-        foreach (var node in nodes)
+        [MenuItem("Assets/Create/Terrain Graph")]
+        static void CreateAssetFile()
         {
-            node.TryValidateNode(graphLogger);
+            GraphDatabase.PromptInProjectBrowserToCreateNewAsset<TerrainEditorGraph>(DEFAULT_ASSET_NAME);
         }
-    }
 
-    private void UpdatePreviews()
-    {
-        var nodes = GetNodes().OfType<IPreviewableNode>().ToList();
-
-        foreach (var node in nodes)
+        public override void OnGraphChanged(GraphLogger graphLogger)
         {
-            node.TryUpdatePreview();
+            ValidateNodes(graphLogger);
+
+            UpdatePreviews();
+        }
+
+        private void ValidateNodes(GraphLogger graphLogger)
+        {
+            var nodes = GetNodes().OfType<IValidatableNode>().ToList();
+     
+            foreach (var node in nodes)
+            {
+                node.TryValidateNode(graphLogger);
+            }
+        }
+
+        private void UpdatePreviews()
+        {
+            var nodes = GetNodes().OfType<IPreviewableNode>().ToList();
+
+            foreach (var node in nodes)
+            {
+                node.TryUpdatePreview();
+            }
         }
     }
 }

@@ -4,34 +4,37 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
 
-public class CurveSplineProvider : ISplineProvider
+namespace Indiecat.TerrainGraph.Editor
 {
-    public CurveFunctions.CurveType CurveType{ get; set; }
-    public float Size { get; set; }
-
-    public bool IsValid => true;
-    public float ExecutionTime => 0;
-    public int VersionHash { get; set; }
-
-    public bool TryGetSpline(int vertexCount, out Spline spline)
+    public class CurveSplineProvider : ISplineProvider
     {
-        spline = null;
+        public CurveFunctions.CurveType CurveType{ get; set; }
+        public float Size { get; set; }
 
-        if (!CurveFunctions.TryGetFunction(CurveType, out var curveFunction))
+        public bool IsValid => true;
+        public float ExecutionTime => 0;
+        public int VersionHash { get; set; }
+
+        public bool TryGetSpline(int vertexCount, out Spline spline)
         {
-            return false;
+            spline = null;
+
+            if (!CurveFunctions.TryGetFunction(CurveType, out var curveFunction))
+            {
+                return false;
+            }
+
+            var vertices = new List<Vector2>();
+
+            for (int i = 0; i < vertexCount; i++)
+            {
+                var t = i / (float)(vertexCount - 1);
+                var vertex = curveFunction(t) * Size;
+                vertices.Add(vertex);
+            }
+
+            spline = new Spline(vertices.Select(p => new float3(p.x, 0, p.y)));
+            return true;
         }
-
-        var vertices = new List<Vector2>();
-
-        for (int i = 0; i < vertexCount; i++)
-        {
-            var t = i / (float)(vertexCount - 1);
-            var vertex = curveFunction(t) * Size;
-            vertices.Add(vertex);
-        }
-
-        spline = new Spline(vertices.Select(p => new float3(p.x, 0, p.y)));
-        return true;
     }
 }

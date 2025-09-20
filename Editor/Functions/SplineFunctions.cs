@@ -2,24 +2,27 @@
 using UnityEngine;
 using UnityEngine.Splines;
 
-public static class SplineFunctions
+namespace Indiecat.TerrainGraph.Editor
 {
-    public static Spline Circle(float radius, float angle, float interval, Vector2 center)
+    public static class SplineFunctions
     {
-        var points = new List<Vector2>();
-
-        for (float theta = 0; theta < angle; theta += interval)
+        public static Spline Circle(float radius, float angle, float interval, Vector2 center)
         {
-            // Go clockwise from the top
-            var radians = (90 - theta) * Mathf.Deg2Rad;
+            var points = new List<Vector2>();
 
-            float x = center.x + radius * Mathf.Cos(radians);
-            float y = center.y + radius * Mathf.Sin(radians);
+            for (float theta = 0; theta < angle; theta += interval)
+            {
+                // Go clockwise from the top
+                var radians = (90 - theta) * Mathf.Deg2Rad;
 
-            points.Add(new Vector2(x, y));
+                float x = center.x + radius * Mathf.Cos(radians);
+                float y = center.y + radius * Mathf.Sin(radians);
+
+                points.Add(new Vector2(x, y));
+            }
+
+            var spline = SplineHelpers.CreateSpline(points, angle == 360);
+            return spline;
         }
-
-        var spline = SplineHelpers.CreateSpline(points, angle == 360);
-        return spline;
     }
 }

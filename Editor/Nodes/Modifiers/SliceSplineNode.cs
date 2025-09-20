@@ -5,240 +5,243 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
 
-[Serializable]
-public class SliceSplineNode : ExecutableNode<SplineWrapper>
+namespace Indiecat.TerrainGraph.Editor
 {
-    private class InputValues
+    [Serializable]
+    public class SliceSplineNode : ExecutableNode<SplineWrapper>
     {
-        public SplineWrapper SplineWrapper;
-        public float Start;
-        public float End;
-        public int VertexCount;
-
-        public int VersionHash;
-
-        public override int GetHashCode()
+        private class InputValues
         {
-            return HashCode.Combine(SplineWrapper?.VersionHash, Start, End, VertexCount);
+            public SplineWrapper SplineWrapper;
+            public float Start;
+            public float End;
+            public int VertexCount;
+
+            public int VersionHash;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(SplineWrapper?.VersionHash, Start, End, VertexCount);
+            }
         }
-    }
 
-    // Options
+        // Options
 
-    // Inputs
-    private const string NODE_INPUT_SPLINE_ID = "spline_input";
-    private const string NODE_INPUT_SPLINE_TITLE = "Spline";
+        // Inputs
+        private const string NODE_INPUT_SPLINE_ID = "spline_input";
+        private const string NODE_INPUT_SPLINE_TITLE = "Spline";
 
-    private const string NODE_INPUT_START_ID = "start_input";
-    private const string NODE_INPUT_START_TITLE = "Start";
+        private const string NODE_INPUT_START_ID = "start_input";
+        private const string NODE_INPUT_START_TITLE = "Start";
 
-    private const string NODE_INPUT_END_ID = "end_input";
-    private const string NODE_INPUT_END_TITLE = "End";
+        private const string NODE_INPUT_END_ID = "end_input";
+        private const string NODE_INPUT_END_TITLE = "End";
 
-    private const string NODE_INPUT_VERTICES_ID = "vertices_input";
-    private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
+        private const string NODE_INPUT_VERTICES_ID = "vertices_input";
+        private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
 
-    // Outputs
-    private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
-    private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
+        // Outputs
+        private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
+        private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
-    private const int MIN_VERTEX_COUNT = 4;
-    protected override void OnDefineOptions(IOptionDefinitionContext context)
-    {
-        context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-            .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
-            .WithDefaultValue(false)
-            .Build();
-    }
-
-    protected override void OnDefinePorts(IPortDefinitionContext context)
-    {
-        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-
-        // Input
-        context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
-            .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
-            .Build();
-        context.AddInputPort<float>(NODE_INPUT_START_ID)
-            .WithDisplayName(NODE_INPUT_START_TITLE)
-            .WithDefaultValue(0)
-            .Build();
-        context.AddInputPort<float>(NODE_INPUT_END_ID)
-            .WithDisplayName(NODE_INPUT_END_TITLE)
-            .WithDefaultValue(0.5f)
-            .Build();
-        context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
-            .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-            .WithDefaultValue(100)
-            .Build();
-
-        if (isPreviewEnabled)
+        private const int MIN_VERTEX_COUNT = 4;
+        protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
-            context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
+            context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
+                .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
+                .WithDefaultValue(false)
                 .Build();
         }
 
-        // Output
-        context.AddOutputPort<SplineWrapper>(NODE_OUTPUT_SPLINE_ID)
-            .WithDisplayName(NODE_OUTPUT_SPLINE_TITLE)
-            .Build();
-    }
-
-    public override bool TryValidateNode(GraphLogger graphLogger = null)
-    {
-        return TryGetValidatedInputValues(out _, graphLogger);
-    }
-
-    private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
-    {
-        validatedInput = null;
-
-        if (!TryGetInputValues(out var input))
+        protected override void OnDefinePorts(IPortDefinitionContext context)
         {
-            if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
-            return false;
-        }
+            GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
-        var isValid = true;
+            // Input
+            context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
+                .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
+                .Build();
+            context.AddInputPort<float>(NODE_INPUT_START_ID)
+                .WithDisplayName(NODE_INPUT_START_TITLE)
+                .WithDefaultValue(0)
+                .Build();
+            context.AddInputPort<float>(NODE_INPUT_END_ID)
+                .WithDisplayName(NODE_INPUT_END_TITLE)
+                .WithDefaultValue(0.5f)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
+                .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
+                .WithDefaultValue(100)
+                .Build();
 
-        if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
-            isValid = false;
-        }
-
-        if (input.Start < 0)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_START_TITLE} value invalid: {input.Start} (valid: 0 <= n)", this);
-            isValid = false;
-        }
-
-        if (input.End < 0)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_END_TITLE} value invalid: {input.End} (valid: 0 <= n)", this);
-            isValid = false;
-        }
-
-        if (input.Start >= input.End)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_END_TITLE} value invalid: {input.End} (valid: start > end)", this);
-            isValid = false;
-        }
-
-        if (input.VertexCount <= MIN_VERTEX_COUNT)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
-            isValid = false;
-        }
-
-        if (isValid)
-        {
-            validatedInput = input;
-        }
-
-        return isValid;
-    }
-
-    private bool TryGetInputValues(out InputValues input)
-    {
-        input = null;
-
-        var temp = new InputValues();
-        var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_START_ID, out temp.Start) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_END_ID, out temp.End) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount);
-
-        if (success)
-        {
-            temp.VersionHash = temp.GetHashCode();
-
-            input = temp;
-            return true;
-        }
-
-        return false;
-    }
-
-    public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
-    {
-        if (!TryExecuteNode())
-        {
-            value = null;
-            return false;
-        }
-
-        value = CacheData.Output;
-        return true;
-    }
-
-    public override bool TryExecuteNode()
-    {
-        if (!TryGetValidatedInputValues(out var inputValues))
-        {
-            // Not in valid state
-            CacheData.Output = null;
-            return false;
-        }
-
-        if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
-        {
-            // Node is already up-to-date
-            return true;
-        }
-
-        // Clear the cached values in case there's an early exit below
-        CacheData.Output = null;
-
-        var startTime = DateTime.Now;
-        if (TryExecuteNodeInternal(inputValues))
-        {
-            CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool TryExecuteNodeInternal(InputValues inputValues)
-    {
-        try
-        {
-            var inputSplineWrapper = inputValues.SplineWrapper;
-            var vertexCount = inputValues.VertexCount;
-            var start = inputValues.Start;
-            var end = inputValues.End;
-
-            var inputSpline = inputSplineWrapper.Spline;
-
-            var points = new List<float3>();
-
-            for (int i = 0; i < vertexCount; i++)
+            if (isPreviewEnabled)
             {
-                float t = Mathf.Lerp(start, end, i / (float)(vertexCount - 1));
-
-                var position = SplineUtility.EvaluatePosition(inputSpline, t);
-                points.Add(position);
+                context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
+                    .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
+                    .Build();
             }
 
-            var outputSpline = new Spline(points);
+            // Output
+            context.AddOutputPort<SplineWrapper>(NODE_OUTPUT_SPLINE_ID)
+                .WithDisplayName(NODE_OUTPUT_SPLINE_TITLE)
+                .Build();
+        }
 
-            var outputSplineWrapper = new SplineWrapper
+        public override bool TryValidateNode(GraphLogger graphLogger = null)
+        {
+            return TryGetValidatedInputValues(out _, graphLogger);
+        }
+
+        private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
+        {
+            validatedInput = null;
+
+            if (!TryGetInputValues(out var input))
             {
-                Spline = outputSpline,
-            };
+                if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
+                return false;
+            }
 
-            outputSplineWrapper.VersionHash = inputValues.VersionHash;
+            var isValid = true;
 
-            CacheData.Output = outputSplineWrapper;
+            if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
+                isValid = false;
+            }
+
+            if (input.Start < 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_START_TITLE} value invalid: {input.Start} (valid: 0 <= n)", this);
+                isValid = false;
+            }
+
+            if (input.End < 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_END_TITLE} value invalid: {input.End} (valid: 0 <= n)", this);
+                isValid = false;
+            }
+
+            if (input.Start >= input.End)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_END_TITLE} value invalid: {input.End} (valid: start > end)", this);
+                isValid = false;
+            }
+
+            if (input.VertexCount <= MIN_VERTEX_COUNT)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
+                isValid = false;
+            }
+
+            if (isValid)
+            {
+                validatedInput = input;
+            }
+
+            return isValid;
+        }
+
+        private bool TryGetInputValues(out InputValues input)
+        {
+            input = null;
+
+            var temp = new InputValues();
+            var success =
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_START_ID, out temp.Start) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_END_ID, out temp.End) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount);
+
+            if (success)
+            {
+                temp.VersionHash = temp.GetHashCode();
+
+                input = temp;
+                return true;
+            }
+
+            return false;
+        }
+
+        public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
+        {
+            if (!TryExecuteNode())
+            {
+                value = null;
+                return false;
+            }
+
+            value = CacheData.Output;
             return true;
         }
-        catch (Exception ex)
+
+        public override bool TryExecuteNode()
         {
-            Debug.LogException(ex);
+            if (!TryGetValidatedInputValues(out var inputValues))
+            {
+                // Not in valid state
+                CacheData.Output = null;
+                return false;
+            }
+
+            if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
+            {
+                // Node is already up-to-date
+                return true;
+            }
+
+            // Clear the cached values in case there's an early exit below
+            CacheData.Output = null;
+
+            var startTime = DateTime.Now;
+            if (TryExecuteNodeInternal(inputValues))
+            {
+                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
+                return true;
+            }
+
             return false;
+        }
+
+        private bool TryExecuteNodeInternal(InputValues inputValues)
+        {
+            try
+            {
+                var inputSplineWrapper = inputValues.SplineWrapper;
+                var vertexCount = inputValues.VertexCount;
+                var start = inputValues.Start;
+                var end = inputValues.End;
+
+                var inputSpline = inputSplineWrapper.Spline;
+
+                var points = new List<float3>();
+
+                for (int i = 0; i < vertexCount; i++)
+                {
+                    float t = Mathf.Lerp(start, end, i / (float)(vertexCount - 1));
+
+                    var position = SplineUtility.EvaluatePosition(inputSpline, t);
+                    points.Add(position);
+                }
+
+                var outputSpline = new Spline(points);
+
+                var outputSplineWrapper = new SplineWrapper
+                {
+                    Spline = outputSpline,
+                };
+
+                outputSplineWrapper.VersionHash = inputValues.VersionHash;
+
+                CacheData.Output = outputSplineWrapper;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
         }
     }
 }

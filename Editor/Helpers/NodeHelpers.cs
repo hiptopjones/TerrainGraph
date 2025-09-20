@@ -1,20 +1,23 @@
 ﻿using System.Linq;
 using Unity.GraphToolkit.Editor;
 
-public static class NodeHelpers
+namespace Indiecat.TerrainGraph.Editor
 {
-    public static bool TryGetInputPortByName(this INode node, string name, out IPort port)
+    public static class NodeHelpers
     {
-        port = node.GetInputPorts().Where(x => x.name == name).FirstOrDefault();
+        public static bool TryGetInputPortByName(this INode node, string name, out IPort port)
+        {
+            port = node.GetInputPorts().Where(x => x.name == name).FirstOrDefault();
 
-        return port != null;
+            return port != null;
+        }
+
+        public static bool TryGetOutputPortByName(this INode node, string name, out IPort port)
+        {
+            port = node.GetOutputPorts().Where(x => x.name == name).FirstOrDefault();
+
+            return port != null;
+        }
+
     }
-
-    public static bool TryGetOutputPortByName(this INode node, string name, out IPort port)
-    {
-        port = node.GetOutputPorts().Where(x => x.name == name).FirstOrDefault();
-
-        return port != null;
-    }
-
 }

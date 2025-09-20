@@ -3,101 +3,104 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-public static class CurveFunctions
+namespace Indiecat.TerrainGraph.Editor
 {
-    public enum CurveType
+    public static class CurveFunctions
     {
-        Line = 100,
-        SmoothStep = 200,
-        Parabolic,
-
-        // Easings
-        InQuad = 300,
-        OutQuad,
-        InOutQuad,
-
-        InCubic,
-        OutCubic,
-        InOutCubic,
-
-        InQuart,
-        OutQuart,
-        InOutQuart,
-
-        InQuint,
-        OutQuint,
-        InOutQuint,
-
-        InSine,
-        OutSine,
-        InOutSine,
-
-        InExpo,
-        OutExpo,
-        InOutExpo,
-
-        InCirc,
-        OutCirc,
-        InOutCirc,
-
-        InElastic,
-        OutElastic,
-        InOutElastic,
-
-        InBack,
-        OutBack,
-        InOutBack,
-
-        InBounce,
-        OutBounce,
-        InOutBounce,
-    }
-
-    private static Dictionary<CurveType, Func<float, Vector2>> _functionLookup = new();
-
-    public static bool TryGetFunction(CurveType curveType, out Func<float, Vector2> function)
-    {
-        function = null;
-
-        if (_functionLookup.TryGetValue(curveType, out function))
+        public enum CurveType
         {
-            return true;
+            Line = 100,
+            SmoothStep = 200,
+            Parabolic,
+
+            // Easings
+            InQuad = 300,
+            OutQuad,
+            InOutQuad,
+
+            InCubic,
+            OutCubic,
+            InOutCubic,
+
+            InQuart,
+            OutQuart,
+            InOutQuart,
+
+            InQuint,
+            OutQuint,
+            InOutQuint,
+
+            InSine,
+            OutSine,
+            InOutSine,
+
+            InExpo,
+            OutExpo,
+            InOutExpo,
+
+            InCirc,
+            OutCirc,
+            InOutCirc,
+
+            InElastic,
+            OutElastic,
+            InOutElastic,
+
+            InBack,
+            OutBack,
+            InOutBack,
+
+            InBounce,
+            OutBounce,
+            InOutBounce,
         }
 
-        // Include the easing functions as curves
-        var definingTypes = new[] { typeof(CurveFunctions), typeof(EasingFunctions) };
-        foreach (var definingType in definingTypes)
+        private static Dictionary<CurveType, Func<float, Vector2>> _functionLookup = new();
+
+        public static bool TryGetFunction(CurveType curveType, out Func<float, Vector2> function)
         {
-            var methodName = curveType.ToString();
-            var method = definingType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
-            if (method == null)
+            function = null;
+
+            if (_functionLookup.TryGetValue(curveType, out function))
             {
-                continue;
+                return true;
             }
 
-            function = (t) => new Vector2(t, (float)method.Invoke(null, new object[] { t }));
-            _functionLookup[curveType] = function;
+            // Include the easing functions as curves
+            var definingTypes = new[] { typeof(CurveFunctions), typeof(EasingFunctions) };
+            foreach (var definingType in definingTypes)
+            {
+                var methodName = curveType.ToString();
+                var method = definingType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
+                if (method == null)
+                {
+                    continue;
+                }
 
-            return true;
+                function = (t) => new Vector2(t, (float)method.Invoke(null, new object[] { t }));
+                _functionLookup[curveType] = function;
+
+                return true;
+            }
+
+            Debug.LogError($"Unsupported curve type: {curveType}");
+            return false;
         }
 
-        Debug.LogError($"Unsupported curve type: {curveType}");
-        return false;
-    }
+        public static float Line(float t)
+        {
+            return t;
+        }
 
-    public static float Line(float t)
-    {
-        return t;
-    }
+        public static float SmoothStep(float t)
+        {
+            return Mathf.SmoothStep(0, 1, t);
+        }
 
-    public static float SmoothStep(float t)
-    {
-        return Mathf.SmoothStep(0, 1, t);
-    }
-
-    public static float Parabolic(float t)
-    {
-        var x = 2 * (t - 0.5f);
-        return x * x;
+        public static float Parabolic(float t)
+        {
+            var x = 2 * (t - 0.5f);
+            return x * x;
+        }
     }
 }

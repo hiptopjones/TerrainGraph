@@ -3,89 +3,92 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-public static class RadialShapeFunctions
+namespace Indiecat.TerrainGraph.Editor
 {
-    public enum ShapeType
+    public static class RadialShapeFunctions
     {
-        Cone = 100,
-        Cylinder = 200,
-        Gaussian = 300,
-        SmoothStep = 400,
-    }
-
-    private static Dictionary<ShapeType, Func<Vector2, float, float>> _functionLookup = new();
-
-    public static bool TryGetFunction(ShapeType shapeType, out Func<Vector2, float, float> function)
-    {
-        function = null;
-
-        if (_functionLookup.TryGetValue(shapeType, out function))
+        public enum ShapeType
         {
+            Cone = 100,
+            Cylinder = 200,
+            Gaussian = 300,
+            SmoothStep = 400,
+        }
+
+        private static Dictionary<ShapeType, Func<Vector2, float, float>> _functionLookup = new();
+
+        public static bool TryGetFunction(ShapeType shapeType, out Func<Vector2, float, float> function)
+        {
+            function = null;
+
+            if (_functionLookup.TryGetValue(shapeType, out function))
+            {
+                return true;
+            }
+
+            var methodName = shapeType.ToString();
+            var method = typeof(RadialShapeFunctions).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
+            if (method == null)
+            {
+                Debug.LogError($"Unsupported shape type: {shapeType}");
+                return false;
+            }
+
+            function = (p, r) => (float)method.Invoke(null, new object[] { p, r });
+            _functionLookup[shapeType] = function;
+
             return true;
         }
 
-        var methodName = shapeType.ToString();
-        var method = typeof(RadialShapeFunctions).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
-        if (method == null)
+        public static float Cone(Vector2 position, float radius)
         {
-            Debug.LogError($"Unsupported shape type: {shapeType}");
-            return false;
+            var distance = position.magnitude;
+            if (distance > radius)
+            {
+                return 0;
+            }
+
+            return 1 - distance / radius;
         }
 
-        function = (p, r) => (float)method.Invoke(null, new object[] { p, r });
-        _functionLookup[shapeType] = function;
-
-        return true;
-    }
-
-    public static float Cone(Vector2 position, float radius)
-    {
-        var distance = position.magnitude;
-        if (distance > radius)
+        public static float Cylinder(Vector2 position, float radius)
         {
-            return 0;
+            var distance = position.magnitude;
+            return distance > radius ? 0 : 1;
         }
 
-        return 1 - distance / radius;
-    }
+        public static float Gaussian(Vector2 position, float radius)
+        {
+            // sigma chosen so that (3 * sigma) ~ distance to edge
+            float sigma = radius / 3f;
+            float twoSigmaSq = 2f * sigma * sigma;
 
-    public static float Cylinder(Vector2 position, float radius)
-    {
-        var distance = position.magnitude;
-        return distance > radius ? 0 : 1;
-    }
+            float dx = position.x;
+            float dy = position.y;
+            float distSq = dx * dx + dy * dy;
 
-    public static float Gaussian(Vector2 position, float radius)
-    {
-        // sigma chosen so that (3 * sigma) ~ distance to edge
-        float sigma = radius / 3f;
-        float twoSigmaSq = 2f * sigma * sigma;
+            float g = Mathf.Exp(-distSq / twoSigmaSq); // value in [0,1]
+            return Mathf.Clamp01(g);
+        }
 
-        float dx = position.x;
-        float dy = position.y;
-        float distSq = dx * dx + dy * dy;
+        public static float SmoothStep(Vector2 position, float radius)
+        {
+            return RadialFunction((t) => Mathf.SmoothStep(0f, 1f, t), position, radius);
+        }
 
-        float g = Mathf.Exp(-distSq / twoSigmaSq); // value in [0,1]
-        return Mathf.Clamp01(g);
-    }
+        // Rotate any easing-like function around the center to get a (rounded) bump
+        private static float RadialFunction(Func<float, float> function, Vector2 position, float radius)
+        {
+            // Distance from the center
+            float distance = position.magnitude;
 
-    public static float SmoothStep(Vector2 position, float radius)
-    {
-        return RadialFunction((t) => Mathf.SmoothStep(0f, 1f, t), position, radius);
-    }
+            // Normalize distance into [0,1] where 0 = center, 1 = edge of radius
+            float t = Mathf.Clamp01(distance / radius);
 
-    // Rotate any easing-like function around the center to get a (rounded) bump
-    private static float RadialFunction(Func<float, float> function, Vector2 position, float radius)
-    {
-        // Distance from the center
-        float distance = position.magnitude;
+            // Invert so that 0 = edge, 1 = center
+            t = 1f - t;
 
-        // Normalize distance into [0,1] where 0 = center, 1 = edge of radius
-        float t = Mathf.Clamp01(distance / radius);
-
-        // Invert so that 0 = edge, 1 = center
-        t = 1f - t;
-
-        return function(t);
+            return function(t);
+        }
     }
 }

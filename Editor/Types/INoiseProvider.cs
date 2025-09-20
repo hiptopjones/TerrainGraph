@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 
-public interface INoiseProvider : IProvider
+namespace Indiecat.TerrainGraph.Editor
 {
-    bool TryGetNoise(Vector2 position, out float noise);
+    public interface INoiseProvider : IProvider
+    {
+        bool TryGetNoise(Vector2 position, out float noise);
+    }
 }

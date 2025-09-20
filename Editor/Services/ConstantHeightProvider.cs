@@ -1,23 +1,26 @@
-﻿public class ConstantHeightProvider : IHeightProvider
+﻿namespace Indiecat.TerrainGraph.Editor
 {
-    public float Height { get; set; }
-
-    public bool IsValid => true;
-    public float ExecutionTime => 0;
-    public int VersionHash { get; set; }
-
-    public bool TryGetHeights(int size, out float[,] heights)
+    public class ConstantHeightProvider : IHeightProvider
     {
-        heights = new float[size, size];
+        public float Height { get; set; }
 
-        for (int y = 0; y < size; y++)
+        public bool IsValid => true;
+        public float ExecutionTime => 0;
+        public int VersionHash { get; set; }
+
+        public bool TryGetHeights(int size, out float[,] heights)
         {
-            for (int x = 0; x < size; x++)
-            {
-                heights[x, y] = Height;
-            }
-        }
+            heights = new float[size, size];
 
-        return true;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    heights[x, y] = Height;
+                }
+            }
+
+            return true;
+        }
     }
 }

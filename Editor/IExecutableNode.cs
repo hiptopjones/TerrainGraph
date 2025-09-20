@@ -1,4 +1,7 @@
-﻿internal interface IExecutableNode
+﻿namespace Indiecat.TerrainGraph.Editor
 {
-    bool TryExecuteNode();
+    internal interface IExecutableNode
+    {
+        bool TryExecuteNode();
+    }
 }

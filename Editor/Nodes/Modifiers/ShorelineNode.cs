@@ -5,372 +5,375 @@ using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using UnityEngine.Splines;
 
-[Serializable]
-public class ShorelineNode : ExecutableNode<HeightGrid>
+namespace Indiecat.TerrainGraph.Editor
 {
-    private class InputValues
+    [Serializable]
+    public class ShorelineNode : ExecutableNode<HeightGrid>
     {
-        public SplineWrapper SplineWrapper;
-        public int Size;
-        public int SampleCount;
-        public float StraightThreshold;
-
-        public int VersionHash;
-
-        public override int GetHashCode()
+        private class InputValues
         {
-            return HashCode.Combine(SplineWrapper?.VersionHash, Size, SampleCount, StraightThreshold);
+            public SplineWrapper SplineWrapper;
+            public int Size;
+            public int SampleCount;
+            public float StraightThreshold;
+
+            public int VersionHash;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(SplineWrapper?.VersionHash, Size, SampleCount, StraightThreshold);
+            }
         }
-    }
 
-    // Options
+        // Options
 
-    // Inputs
-    private const string NODE_INPUT_SPLINE_ID = "spline_input";
-    private const string NODE_INPUT_SPLINE_TITLE = "Spline";
+        // Inputs
+        private const string NODE_INPUT_SPLINE_ID = "spline_input";
+        private const string NODE_INPUT_SPLINE_TITLE = "Spline";
 
-    private const string NODE_INPUT_SIZE_ID = "size_input";
-    private const string NODE_INPUT_SIZE_TITLE = "Size";
+        private const string NODE_INPUT_SIZE_ID = "size_input";
+        private const string NODE_INPUT_SIZE_TITLE = "Size";
 
-    private const string NODE_INPUT_SAMPLES_ID = "samples_input";
-    private const string NODE_INPUT_SAMPLES_TITLE = "Samples";
+        private const string NODE_INPUT_SAMPLES_ID = "samples_input";
+        private const string NODE_INPUT_SAMPLES_TITLE = "Samples";
 
-    private const string NODE_INPUT_THRESHOLD_ID = "threshold_input";
-    private const string NODE_INPUT_THRESHOLD_TITLE = "Threshold";
+        private const string NODE_INPUT_THRESHOLD_ID = "threshold_input";
+        private const string NODE_INPUT_THRESHOLD_TITLE = "Threshold";
 
-    // Outputs
-    private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
-    private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
+        // Outputs
+        private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
+        private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
-    protected override void OnDefineOptions(IOptionDefinitionContext context)
-    {
-        context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-            .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
-            .WithDefaultValue(false)
-            .Build();
-    }
-
-    protected override void OnDefinePorts(IPortDefinitionContext context)
-    {
-        GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-
-        // Input
-        context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
-            .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
-            .Build();
-        context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
-            .WithDisplayName(NODE_INPUT_SIZE_TITLE)
-            .WithDefaultValue(256)
-            .Build();
-        context.AddInputPort<int>(NODE_INPUT_SAMPLES_ID)
-            .WithDisplayName(NODE_INPUT_SAMPLES_TITLE)
-            .WithDefaultValue(100)
-            .Build();
-        context.AddInputPort<float>(NODE_INPUT_THRESHOLD_ID)
-            .WithDisplayName(NODE_INPUT_THRESHOLD_TITLE)
-            .WithDefaultValue(0.1f)
-            .Build();
-
-        if (isPreviewEnabled)
+        protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
-            context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
+            context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
+                .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
+                .WithDefaultValue(false)
                 .Build();
         }
 
-        // Output
-        context.AddOutputPort<SplineWrapper>(NODE_OUTPUT_SPLINE_ID)
-            .WithDisplayName(NODE_OUTPUT_SPLINE_TITLE)
-            .Build();
-    }
-
-    public override bool TryValidateNode(GraphLogger graphLogger = null)
-    {
-        return TryGetValidatedInputValues(out _, graphLogger);
-    }
-
-    private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
-    {
-        validatedInput = null;
-
-        if (!TryGetInputValues(out var input))
+        protected override void OnDefinePorts(IPortDefinitionContext context)
         {
-            if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
-            return false;
-        }
+            GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
-        var isValid = true;
+            // Input
+            context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
+                .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
+                .WithDisplayName(NODE_INPUT_SIZE_TITLE)
+                .WithDefaultValue(256)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_SAMPLES_ID)
+                .WithDisplayName(NODE_INPUT_SAMPLES_TITLE)
+                .WithDefaultValue(100)
+                .Build();
+            context.AddInputPort<float>(NODE_INPUT_THRESHOLD_ID)
+                .WithDisplayName(NODE_INPUT_THRESHOLD_TITLE)
+                .WithDefaultValue(0.1f)
+                .Build();
 
-        if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
-            isValid = false;
-        }
-
-        if (input.Size <= 0)
-        {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
-            isValid = false;
-        }
-
-        if (isValid)
-        {
-            validatedInput = input;
-        }
-
-        return isValid;
-    }
-
-    private bool TryGetInputValues(out InputValues input)
-    {
-        input = null;
-
-        var temp = new InputValues();
-        var success =
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SAMPLES_ID, out temp.SampleCount) &&
-            PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_THRESHOLD_ID, out temp.StraightThreshold);
-
-        if (success)
-        {
-            temp.VersionHash = temp.GetHashCode();
-
-            input = temp;
-            return true;
-        }
-
-        return false;
-    }
-
-    public override bool TryGetOutputValue(IPort _, out HeightGrid value)
-    {
-        if (!TryExecuteNode())
-        {
-            value = null;
-            return false;
-        }
-
-        value = CacheData.Output;
-        return true;
-    }
-
-    public override bool TryExecuteNode()
-    {
-        if (!TryGetValidatedInputValues(out var inputValues))
-        {
-            // Not in valid state
-            CacheData.Output = null;
-            return false;
-        }
-
-        if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
-        {
-            // Node is already up-to-date
-            return true;
-        }
-
-        // Clear the cached values in case there's an early exit below
-        CacheData.Output = null;
-
-        var startTime = DateTime.Now;
-        if (TryExecuteNodeInternal(inputValues))
-        {
-            CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool TryExecuteNodeInternal(InputValues inputValues)
-    {
-        try
-        {
-            var inputSplineWrapper = inputValues.SplineWrapper;
-            var size = inputValues.Size;
-            var sampleCount = inputValues.SampleCount;
-            var straightThreshold = inputValues.StraightThreshold;
-
-            var inputSpline = inputSplineWrapper.Spline;
-            var sampleDistance = inputSpline.GetLength() / sampleCount;
-
-            if (!TryGetCurvatureSegments(inputSpline, sampleCount, straightThreshold, out var segments))
+            if (isPreviewEnabled)
             {
+                context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
+                    .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
+                    .Build();
+            }
+
+            // Output
+            context.AddOutputPort<SplineWrapper>(NODE_OUTPUT_SPLINE_ID)
+                .WithDisplayName(NODE_OUTPUT_SPLINE_TITLE)
+                .Build();
+        }
+
+        public override bool TryValidateNode(GraphLogger graphLogger = null)
+        {
+            return TryGetValidatedInputValues(out _, graphLogger);
+        }
+
+        private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
+        {
+            validatedInput = null;
+
+            if (!TryGetInputValues(out var input))
+            {
+                if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
                 return false;
             }
 
-            var outputGrid = new HeightGrid(size);
+            var isValid = true;
 
-            for (int y = 0; y < size; y++)
+            if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
             {
-                for (int x = 0; x < size; x++)
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
+                isValid = false;
+            }
+
+            if (input.Size <= 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
+                isValid = false;
+            }
+
+            if (isValid)
+            {
+                validatedInput = input;
+            }
+
+            return isValid;
+        }
+
+        private bool TryGetInputValues(out InputValues input)
+        {
+            input = null;
+
+            var temp = new InputValues();
+            var success =
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SAMPLES_ID, out temp.SampleCount) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_THRESHOLD_ID, out temp.StraightThreshold);
+
+            if (success)
+            {
+                temp.VersionHash = temp.GetHashCode();
+
+                input = temp;
+                return true;
+            }
+
+            return false;
+        }
+
+        public override bool TryGetOutputValue(IPort _, out HeightGrid value)
+        {
+            if (!TryExecuteNode())
+            {
+                value = null;
+                return false;
+            }
+
+            value = CacheData.Output;
+            return true;
+        }
+
+        public override bool TryExecuteNode()
+        {
+            if (!TryGetValidatedInputValues(out var inputValues))
+            {
+                // Not in valid state
+                CacheData.Output = null;
+                return false;
+            }
+
+            if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
+            {
+                // Node is already up-to-date
+                return true;
+            }
+
+            // Clear the cached values in case there's an early exit below
+            CacheData.Output = null;
+
+            var startTime = DateTime.Now;
+            if (TryExecuteNodeInternal(inputValues))
+            {
+                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryExecuteNodeInternal(InputValues inputValues)
+        {
+            try
+            {
+                var inputSplineWrapper = inputValues.SplineWrapper;
+                var size = inputValues.Size;
+                var sampleCount = inputValues.SampleCount;
+                var straightThreshold = inputValues.StraightThreshold;
+
+                var inputSpline = inputSplineWrapper.Spline;
+                var sampleDistance = inputSpline.GetLength() / sampleCount;
+
+                if (!TryGetCurvatureSegments(inputSpline, sampleCount, straightThreshold, out var segments))
                 {
-                    var position = new Vector2(x, y);
+                    return false;
+                }
 
-                    outputGrid[x, y] = 0;
+                var outputGrid = new HeightGrid(size);
 
-                    foreach (var segment in segments)
+                for (int y = 0; y < size; y++)
+                {
+                    for (int x = 0; x < size; x++)
                     {
-                        foreach (var segmentPosition in segment.Positions)
+                        var position = new Vector2(x, y);
+
+                        outputGrid[x, y] = 0;
+
+                        foreach (var segment in segments)
                         {
-                            var radius = sampleDistance / 2;
-
-                            var distance = (position - segmentPosition).magnitude;
-                            if (distance <= radius)
+                            foreach (var segmentPosition in segment.Positions)
                             {
-                                switch (segment.Curvature)
-                                {
-                                    case CurvatureType.Concave:
-                                        outputGrid[x, y] = 100 * Mathf.Abs(segment.AverageCross);
-                                        break;
-                                    case CurvatureType.Convex:
-                                        outputGrid[x, y] = -100 * Mathf.Abs(segment.AverageCross);
-                                        break;
-                                    case CurvatureType.Straight:
-                                        outputGrid[x, y] = 1;
-                                        break;
-                                    case CurvatureType.Unknown:
-                                        outputGrid[x, y] = 0.5f;
-                                        break;
-                                }
+                                var radius = sampleDistance / 2;
 
-                                break;
+                                var distance = (position - segmentPosition).magnitude;
+                                if (distance <= radius)
+                                {
+                                    switch (segment.Curvature)
+                                    {
+                                        case CurvatureType.Concave:
+                                            outputGrid[x, y] = 100 * Mathf.Abs(segment.AverageCross);
+                                            break;
+                                        case CurvatureType.Convex:
+                                            outputGrid[x, y] = -100 * Mathf.Abs(segment.AverageCross);
+                                            break;
+                                        case CurvatureType.Straight:
+                                            outputGrid[x, y] = 1;
+                                            break;
+                                        case CurvatureType.Unknown:
+                                            outputGrid[x, y] = 0.5f;
+                                            break;
+                                    }
+
+                                    break;
+                                }
                             }
                         }
                     }
                 }
+
+                outputGrid.VersionHash = inputValues.VersionHash;
+
+                CacheData.Output = outputGrid;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+
+        private enum CurvatureType
+        {
+            Unknown,
+            Straight,
+            Convex,
+            Concave
+        }
+
+        private class CurvatureSegment
+        {
+            public CurvatureType Curvature;
+            public float ArcLength;
+            public int StartIndex;
+            public int Count;
+            public List<Vector2> Positions;
+            public float AverageCross;
+        }
+
+        private static bool TryGetCurvatureSegments(Spline inputSpline, int sampleCount, float straightThreshold, out List<CurvatureSegment> segments)
+        {
+            segments = new List<CurvatureSegment>();
+
+            if (!TryGetCurvatures(inputSpline, sampleCount, straightThreshold, out var curvatures, out var crosses, out var positions))
+            {
+                Debug.Log("Failed to get curvatures");
+                return false;
             }
 
-            outputGrid.VersionHash = inputValues.VersionHash;
+            var distances = new List<float>();
 
-            CacheData.Output = outputGrid;
+            distances.Add(0);
+
+            for (int i = 1; i < positions.Count; i++)
+            {
+                var p1 = positions[i - 1];
+                var p2 = positions[i];
+
+                var distance = (p2 - p1).magnitude;
+
+                distances.Add(distance);
+            }
+
+            var startIndex = 0;
+
+            while (startIndex < sampleCount - 1)
+            {
+                var curvature = curvatures.Skip(startIndex).First();
+                var count = curvatures.Skip(startIndex).TakeWhile(x => x == curvature).Count();
+
+                var segment = new CurvatureSegment
+                {
+                    Curvature = curvature,
+                    ArcLength = distances.Skip(startIndex).Take(count + 1).Sum(),
+                    StartIndex = startIndex,
+                    Count = count + 1,
+                    Positions = positions.Skip(startIndex).Take(count + 1).ToList(),
+                    AverageCross = crosses.Skip(startIndex).Take(count + 1).Average(),
+                };
+
+                segments.Add(segment);
+
+                startIndex += count + 1;
+            }
+
             return true;
         }
-        catch (Exception ex)
+
+        private static bool TryGetCurvatures(Spline inputSpline, int sampleCount, float straightThreshold, out List<CurvatureType> curvatures, out List<float> crosses, out List<Vector2> positions)
         {
-            Debug.LogException(ex);
-            return false;
-        }
-    }
+            curvatures = new List<CurvatureType>();
+            crosses = new List<float>();
+            positions = new List<Vector2>();
 
-    private enum CurvatureType
-    {
-        Unknown,
-        Straight,
-        Convex,
-        Concave
-    }
-
-    private class CurvatureSegment
-    {
-        public CurvatureType Curvature;
-        public float ArcLength;
-        public int StartIndex;
-        public int Count;
-        public List<Vector2> Positions;
-        public float AverageCross;
-    }
-
-    private static bool TryGetCurvatureSegments(Spline inputSpline, int sampleCount, float straightThreshold, out List<CurvatureSegment> segments)
-    {
-        segments = new List<CurvatureSegment>();
-
-        if (!TryGetCurvatures(inputSpline, sampleCount, straightThreshold, out var curvatures, out var crosses, out var positions))
-        {
-            Debug.Log("Failed to get curvatures");
-            return false;
-        }
-
-        var distances = new List<float>();
-
-        distances.Add(0);
-
-        for (int i = 1; i < positions.Count; i++)
-        {
-            var p1 = positions[i - 1];
-            var p2 = positions[i];
-
-            var distance = (p2 - p1).magnitude;
-
-            distances.Add(distance);
-        }
-
-        var startIndex = 0;
-
-        while (startIndex < sampleCount - 1)
-        {
-            var curvature = curvatures.Skip(startIndex).First();
-            var count = curvatures.Skip(startIndex).TakeWhile(x => x == curvature).Count();
-
-            var segment = new CurvatureSegment
+            for (int i = 0; i < sampleCount; i++)
             {
-                Curvature = curvature,
-                ArcLength = distances.Skip(startIndex).Take(count + 1).Sum(),
-                StartIndex = startIndex,
-                Count = count + 1,
-                Positions = positions.Skip(startIndex).Take(count + 1).ToList(),
-                AverageCross = crosses.Skip(startIndex).Take(count + 1).Average(),
-            };
+                var t = i / (float)(sampleCount - 1);
 
-            segments.Add(segment);
+                Vector3 position = inputSpline.EvaluatePosition(t);
+                positions.Add(new Vector2(position.x, position.z));
+            }
 
-            startIndex += count + 1;
+            curvatures.Add(CurvatureType.Unknown);
+            crosses.Add(0);
+
+            // Cut off the ends
+            for (int i = 1; i < sampleCount - 1; i++)
+            {
+                var p1 = positions[i - 1];
+                var p2 = positions[i];
+                var p3 = positions[i + 1];
+
+                var cross = GeometryHelpers.Cross(p2 - p1, p3 - p2);
+                crosses.Add(cross);
+
+                var curvature = GetCurvature(cross, straightThreshold);
+                curvatures.Add(curvature);
+            }
+
+            curvatures.Add(CurvatureType.Unknown);
+            crosses.Add(0);
+
+            return true;
         }
 
-        return true;
-    }
-
-    private static bool TryGetCurvatures(Spline inputSpline, int sampleCount, float straightThreshold, out List<CurvatureType> curvatures, out List<float> crosses, out List<Vector2> positions)
-    {
-        curvatures = new List<CurvatureType>();
-        crosses = new List<float>();
-        positions = new List<Vector2>();
-
-        for (int i = 0; i < sampleCount; i++)
+        private static CurvatureType GetCurvature(float cross, float straightThreshold)
         {
-            var t = i / (float)(sampleCount - 1);
-
-            Vector3 position = inputSpline.EvaluatePosition(t);
-            positions.Add(new Vector2(position.x, position.z));
-        }
-
-        curvatures.Add(CurvatureType.Unknown);
-        crosses.Add(0);
-
-        // Cut off the ends
-        for (int i = 1; i < sampleCount - 1; i++)
-        {
-            var p1 = positions[i - 1];
-            var p2 = positions[i];
-            var p3 = positions[i + 1];
-
-            var cross = GeometryHelpers.Cross(p2 - p1, p3 - p2);
-            crosses.Add(cross);
-
-            var curvature = GetCurvature(cross, straightThreshold);
-            curvatures.Add(curvature);
-        }
-
-        curvatures.Add(CurvatureType.Unknown);
-        crosses.Add(0);
-
-        return true;
-    }
-
-    private static CurvatureType GetCurvature(float cross, float straightThreshold)
-    {
-        if (Mathf.Abs(cross) < straightThreshold)
-        {
-            return CurvatureType.Straight;
-        }
-        else if (cross > 0)
-        {
-            return CurvatureType.Convex;
-        }
-        else
-        {
-            return CurvatureType.Concave;
+            if (Mathf.Abs(cross) < straightThreshold)
+            {
+                return CurvatureType.Straight;
+            }
+            else if (cross > 0)
+            {
+                return CurvatureType.Convex;
+            }
+            else
+            {
+                return CurvatureType.Concave;
+            }
         }
     }
 }

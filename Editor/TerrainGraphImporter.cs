@@ -3,30 +3,33 @@ using Unity.GraphToolkit.Editor;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 
-[ScriptedImporter(1, TerrainEditorGraph.ASSET_FILE_EXTENSION)]
-internal class TerrainGraphImporter : ScriptedImporter
+namespace Indiecat.TerrainGraph.Editor
 {
-    public override void OnImportAsset(AssetImportContext context)
+    [ScriptedImporter(1, TerrainEditorGraph.ASSET_FILE_EXTENSION)]
+    internal class TerrainGraphImporter : ScriptedImporter
     {
-        var graph = GraphDatabase.LoadGraphForImporter<TerrainEditorGraph>(context.assetPath);
-        if (graph == null)
+        public override void OnImportAsset(AssetImportContext context)
         {
-            Debug.LogError($"Failed to load graph object: {context.assetPath}");
-            return;
+            var graph = GraphDatabase.LoadGraphForImporter<TerrainEditorGraph>(context.assetPath);
+            if (graph == null)
+            {
+                Debug.LogError($"Failed to load graph object: {context.assetPath}");
+                return;
+            }
+
+            TryExecuteGraph(graph);
         }
 
-        TryExecuteGraph(graph);
-    }
-
-    private bool TryExecuteGraph(TerrainEditorGraph graph)
-    {
-        var nonPreviewableNodes = graph.GetNodes().OfType<IExecutableNode>().Where(x => x is not IPreviewableNode);
+        private bool TryExecuteGraph(TerrainEditorGraph graph)
+        {
+            var nonPreviewableNodes = graph.GetNodes().OfType<IExecutableNode>().Where(x => x is not IPreviewableNode);
         
-        foreach (var node in nonPreviewableNodes)
-        {
-            node.TryExecuteNode();
-        }
+            foreach (var node in nonPreviewableNodes)
+            {
+                node.TryExecuteNode();
+            }
 
-        return true;
+            return true;
+        }
     }
 }

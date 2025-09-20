@@ -1,45 +1,47 @@
-﻿using System;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-[CustomPropertyDrawer(typeof(PreviewImage))]
-public class PreviewImageDrawer : PropertyDrawer
+namespace Indiecat.TerrainGraph.Editor
 {
-    public override VisualElement CreatePropertyGUI(SerializedProperty property)
+    [CustomPropertyDrawer(typeof(PreviewImage))]
+    public class PreviewImageDrawer : PropertyDrawer
     {
-        var image = new Image
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            scaleMode = ScaleMode.ScaleToFit,
-            style =
-            {   
-                flexGrow = 1,
-                width = 200,
-                height = 200,
-                borderTopWidth = 1,
-                borderBottomWidth = 1,
-                borderLeftWidth = 1,
-                borderRightWidth = 1,
-                borderTopColor = new Color(0,0,0,0.25f),
-                borderBottomColor = new Color(0,0,0,0.25f),
-                borderLeftColor = new Color(0,0,0,0.25f),
-                borderRightColor = new Color(0,0,0,0.25f),
-                marginBottom = 6
-            }
-        };
+            var image = new Image
+            {
+                scaleMode = ScaleMode.ScaleToFit,
+                style =
+                {   
+                    flexGrow = 1,
+                    width = 200,
+                    height = 200,
+                    borderTopWidth = 1,
+                    borderBottomWidth = 1,
+                    borderLeftWidth = 1,
+                    borderRightWidth = 1,
+                    borderTopColor = new Color(0,0,0,0.25f),
+                    borderBottomColor = new Color(0,0,0,0.25f),
+                    borderLeftColor = new Color(0,0,0,0.25f),
+                    borderRightColor = new Color(0,0,0,0.25f),
+                    marginBottom = 6
+                }
+            };
 
-        var target = fieldInfo.GetValue(property.serializedObject.targetObject) as PreviewImage;
+            var target = fieldInfo.GetValue(property.serializedObject.targetObject) as PreviewImage;
 
-        target.Images.Add(image);
-        target.UpdateTexture(target.Texture);
-
-        // Ensures that previews are populated when the graph is loaded into the editor
-        image.schedule.Execute(() =>
-        {
+            target.Images.Add(image);
             target.UpdateTexture(target.Texture);
-        }
-        ).StartingIn(100);
 
-        return image;
+            // Ensures that previews are populated when the graph is loaded into the editor
+            image.schedule.Execute(() =>
+            {
+                target.UpdateTexture(target.Texture);
+            }
+            ).StartingIn(100);
+
+            return image;
+        }
     }
 }

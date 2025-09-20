@@ -1,6 +1,9 @@
-﻿public interface IVersionedObject
+﻿namespace Indiecat.TerrainGraph.Editor
 {
-    bool IsValid { get; }
-    float ExecutionTime { get; }
-    int VersionHash { get; }
+    public interface IVersionedObject
+    {
+        bool IsValid { get; }
+        float ExecutionTime { get; }
+        int VersionHash { get; }
+    }
 }
