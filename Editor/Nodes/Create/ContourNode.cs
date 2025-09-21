@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Splines;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -12,12 +15,13 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public HeightGrid Grid;
             public float ContourHeight;
+            public int VertexCount;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, ContourHeight);
+                return HashCode.Combine(Grid?.VersionHash, ContourHeight, VertexCount);
             }
         }
 
@@ -29,6 +33,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         private const string NODE_INPUT_HEIGHT_ID = "height_input";
         private const string NODE_INPUT_HEIGHT_TITLE = "Height";
+
+        private const string NODE_INPUT_VERTICES_ID = "vertices_input";
+        private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
 
         // Output
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
@@ -53,6 +60,10 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<float>(NODE_INPUT_HEIGHT_ID)
                 .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
                 .WithDefaultValue(0.3f)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
+                .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
+                .WithDefaultValue(100)
                 .Build();
 
             if (isPreviewEnabled)
@@ -91,6 +102,12 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
+            if (input.VertexCount <= 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: 0 < n)", this);
+                isValid = false;
+            }
+
             if (isValid)
             {
                 validatedInput = input;
@@ -106,7 +123,8 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.ContourHeight);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.ContourHeight) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount);
 
             if (success)
             {
@@ -165,6 +183,7 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputGrid = inputValues.Grid;
                 var contourHeight = inputValues.ContourHeight;
+                var vertexCount = inputValues.VertexCount;
 
                 var detector = new ContourDetector(inputGrid);
 
@@ -177,8 +196,20 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var contour = contours.OrderByDescending(x => x.Count).First();
 
-                // TODO: Should apply some Douglas-Peucker smoothing to reduce points
-                var outputSpline = SplineHelpers.CreateSpline(contour, closed: true);
+                var contourSpline = SplineHelpers.CreateSpline(contour, closed: true);
+                
+                var vertices = new List<float3>();
+
+                for (int i = 0; i < vertexCount; i++)
+                {
+                    var t = i / (float)(vertexCount - 1);
+                    var vertex = contourSpline.EvaluatePosition(t);
+
+                    vertices.Add(vertex);
+                }
+
+                var outputSpline = new Spline(vertices);
+                outputSpline.Closed = contourSpline.Closed;
 
                 var outputSplineWrapper = new SplineWrapper
                 {

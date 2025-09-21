@@ -55,11 +55,11 @@ namespace Indiecat.TerrainGraph.Editor
 
             return pathVertices.ToArray();
         }
-     
-        public static Spline CreateSpline(List<Vector2> points, bool closed = false)
+
+        public static Spline CreateSpline(List<Vector2> vertices, bool closed = false)
         {
-            var spline = new Spline(points.Select(p => new float3(p.x, 0, p.y)), closed: closed);
-        
+            var spline = new Spline(vertices.Select(p => new float3(p.x, 0, p.y)), closed: closed);
+
             // NOTE: A closed spline doesn't seem to always smooth correctly between the last and first
             spline.SetTangentMode(TangentMode.AutoSmooth);
 
