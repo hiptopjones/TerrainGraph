@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
@@ -74,6 +75,70 @@ namespace Indiecat.TerrainGraph.Editor
             spline.SetTangentMode(TangentMode.AutoSmooth);
 
             return spline;
+        }
+
+        public static Spline ResampleSpline(Spline spline, int vertexCount)
+        {
+            var vertices = new List<float3>();
+
+            for (int i = 0; i < vertexCount; i++)
+            {
+                var t = i / (float)(vertexCount - 1);
+                var vertex = spline.EvaluatePosition(t);
+
+                vertices.Add(vertex);
+            }
+
+            var outputSpline = CreateSpline(vertices, spline.Closed);
+            return outputSpline;
+        }
+
+
+        public static Vector3 GetMinimumCenter(Spline spline, int margin = 0)
+        {
+            var size = GetMinimumBoundingSquareSize(spline, margin);
+
+            var bounds = spline.GetBounds();
+            var center = new Vector3(size / 2f, bounds.center.y, size / 2f);
+
+            return center;
+        }
+
+        public static Spline GetCenteredSpline(Spline spline, Vector3 targetCenter)
+        {
+            var bounds = spline.GetBounds();
+            var sourceCenter = bounds.center;
+
+            var vertices = new List<Vector3>();
+
+            foreach (var knot in spline)
+            {
+                var vertex = targetCenter + knot.Position - sourceCenter;
+                vertices.Add(vertex);
+            }
+
+            return CreateSpline(vertices, spline.Closed);
+        }
+
+        public static int GetMinimumBoundingSquareSize(Spline spline, int margin = 0)
+        {
+            var bounds = spline.GetBounds();
+
+            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+            size += margin * 2;
+
+            return size;
+        }
+
+        public static int GetOriginBoundingSquareSize(Spline spline, int margin = 0)
+        {
+            var bounds = spline.GetBounds();
+            bounds.Encapsulate(Vector3.zero);
+
+            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+            size += margin * 2;
+
+            return size;
         }
     }
 }

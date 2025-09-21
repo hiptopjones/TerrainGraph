@@ -7,11 +7,16 @@ namespace Indiecat.TerrainGraph.Editor
 {
     public class ContourDetector
     {
-        private HeightGrid _grid;
+        private float[,] _values;
 
         public ContourDetector(HeightGrid grid)
         {
-            _grid = grid;
+            _values = grid.GetHeights();
+        }
+
+        public ContourDetector(float[,] values)
+        {
+            _values = values;
         }
 
         public Dictionary<float, List<List<Vector2>>> DetectContours(float start, float step, int count)
@@ -35,11 +40,11 @@ namespace Indiecat.TerrainGraph.Editor
             return contours;
         }
 
-        public List<List<Vector2>> DetectContours(float height)
+        public List<List<Vector2>> DetectContours(float level)
         {
-            var samples = GetSampleGrid(height);
-            var segments = GetLineSegments(samples, height);
-            var contours = GetContours(segments, height);
+            var samples = GetSampleGrid(level);
+            var segments = GetLineSegments(samples, level);
+            var contours = GetContours(segments, level);
 
             return contours;
         }
@@ -47,16 +52,17 @@ namespace Indiecat.TerrainGraph.Editor
         // Returns a grid that indicates if each cell is above or below the threshold level
         private byte[,] GetSampleGrid(float level)
         {
-            var size = _grid.Size;
+            var width = _values.GetLength(0);
+            var height = _values.GetLength(1);
 
-            byte[,] samples = new byte[size, size];
+            byte[,] samples = new byte[width, height];
 
-            for (int y = 0; y < size; y++)
+            for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < width; x++)
                 {
-                    var height = _grid[x, y];
-                    if (level > height)
+                    var value = _values[x, y];
+                    if (level > value)
                     {
                         samples[x, y] = 1;
                     }
@@ -90,18 +96,21 @@ namespace Indiecat.TerrainGraph.Editor
                     var dx = x + 1;
                     var dy = y + 1;
 
-                    // Heights at grid positions
-                    var ha = _grid[ax, ay];
-                    var hb = _grid[bx, by];
-                    var hc = _grid[cx, cy];
-                    var hd = _grid[dx, dy];
+                    // Values at grid positions
+                    var va = _values[ax, ay];
+                    var vb = _values[bx, by];
+                    var vc = _values[cx, cy];
+                    var vd = _values[dx, dy];
 
                     // Interpolated positions along grid lines
                     // https://jamie-wong.com/2014/08/19/metaballs-and-marching-squares/
-                    var abx = ax + (level - ha) / (hb - ha);
-                    var cdx = cx + (level - hc) / (hd - hc);
-                    var acy = ay + (level - ha) / (hc - ha);
-                    var bdy = by + (level - hb) / (hd - hb);
+                    // NOTE: The above suggests: bdy = by + (dy - by) * (1 - vb) / (vd - vb)
+                    //  * (dy - by) is always 1 for our scenario, so it can be removed
+                    //  * (1 - vb) is (level - vb) for us, because the 1 is the value for the contour
+                    var abx = ax + (level - va) / (vb - va);
+                    var cdx = cx + (level - vc) / (vd - vc);
+                    var acy = ay + (level - va) / (vc - va);
+                    var bdy = by + (level - vb) / (vd - vb);
 
                     // Endpoint positions
                     var px = 0f;
@@ -294,12 +303,12 @@ namespace Indiecat.TerrainGraph.Editor
             return segments;
         }
 
-        private List<List<Vector2>> GetContours(List<Vector2> segments, float height)
+        private List<List<Vector2>> GetContours(List<Vector2> segments, float value)
         {
             var connectedPoints = GetConnectedPoints(segments);
 
             // Turn the point connections into ordered lists of points
-            var contours = AssembleContours(connectedPoints, height);
+            var contours = AssembleContours(connectedPoints, value);
 
             return contours;
         }
@@ -349,7 +358,7 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private List<List<Vector2>> AssembleContours(Dictionary<Vector2, Vector2> connections, float height)
+        private List<List<Vector2>> AssembleContours(Dictionary<Vector2, Vector2> connections, float value)
         {
             var contours = new List<List<Vector2>>();
 
@@ -386,9 +395,9 @@ namespace Indiecat.TerrainGraph.Editor
                     p1 = p2;
                 }
 
-                // Ensure contours are always returned with a deterministic ordering where lower heights
+                // Ensure contours are always returned with a deterministic ordering where lower values
                 // are to the left of the vector formed by any two subsequent points in the contour
-                if (IsLowerOnLeft(contour, height))
+                if (IsLowerOnLeft(contour, value))
                 {
                     contour = ((IEnumerable<Vector2>)contour).Reverse().ToList();
                 }
@@ -399,7 +408,7 @@ namespace Indiecat.TerrainGraph.Editor
             return contours;
         }
 
-        private bool IsLowerOnLeft(List<Vector2> contour, float height)
+        private bool IsLowerOnLeft(List<Vector2> contour, float value)
         {
             var p1 = contour[0];
             var p2 = contour[1];
@@ -415,13 +424,13 @@ namespace Indiecat.TerrainGraph.Editor
             while (true)
             {
                 var sampleLeft = midpoint + (perpendicular * i);
-                if (_grid[(int)sampleLeft.x, (int)sampleLeft.y] <= height)
+                if (_values[(int)sampleLeft.x, (int)sampleLeft.y] <= value)
                 {
                     return true;
                 }
 
                 var sampleRight = midpoint - (perpendicular * i);
-                if (_grid[(int)sampleRight.x, (int)sampleRight.y] <= height)
+                if (_values[(int)sampleRight.x, (int)sampleRight.y] <= value)
                 {
                     return false;
                 }

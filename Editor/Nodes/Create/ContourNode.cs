@@ -195,21 +195,9 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 var contour = contours.OrderByDescending(x => x.Count).First();
-
                 var contourSpline = SplineHelpers.CreateSpline(contour, closed: true);
-                
-                var vertices = new List<float3>();
 
-                for (int i = 0; i < vertexCount; i++)
-                {
-                    var t = i / (float)(vertexCount - 1);
-                    var vertex = contourSpline.EvaluatePosition(t);
-
-                    vertices.Add(vertex);
-                }
-
-                var outputSpline = new Spline(vertices);
-                outputSpline.Closed = contourSpline.Closed;
+                var outputSpline = SplineHelpers.ResampleSpline(contourSpline, vertexCount);
 
                 var outputSplineWrapper = new SplineWrapper
                 {

@@ -30,5 +30,20 @@ namespace Indiecat.TerrainGraph.Editor
             Size = size;
             Values = new float[size * size];
         }
+
+        public float[,] GetHeights()
+        {
+            var heights = new float[Size, Size];
+
+            for (int y = 0; y < Size; y++)
+            {
+                for (int x = 0; x < Size; x++)
+                {
+                    heights[x, y] = Values[x + y * Size];
+                }
+            }
+
+            return heights;
+        }
     }
 }

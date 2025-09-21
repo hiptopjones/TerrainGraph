@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
@@ -186,28 +187,30 @@ namespace Indiecat.TerrainGraph.Editor
                 var vertexCount = inputValues.VertexCount;
                 var offset = inputValues.Offset;
 
+                const int GUTTER_SIZE = 10;
+                
                 var inputSpline = inputSplineWrapper.Spline;
 
-                var vertices = new List<Vector3>();
+                var margin = GUTTER_SIZE + Mathf.RoundToInt(offset > 0 ? offset : 0);
 
-                for (int i = 0; i < vertexCount; i++)
+                var workingCenter = SplineHelpers.GetMinimumCenter(inputSpline, margin);
+                var workingSpline = SplineHelpers.GetCenteredSpline(inputSpline, workingCenter);
+
+                var workingBounds = workingSpline.GetBounds();
+                var workingSize = Mathf.CeilToInt(Mathf.Max(workingBounds.size.x, workingBounds.size.z));
+
+                if (!SplineSdfJobRunner.TryCreateSdf(inputSpline, vertexCount, workingSize, out var distances, out _))
                 {
-                    var t = i / (float)(vertexCount - 1);
-
-                    if (!inputSpline.Evaluate(t, out var vertex, out var tangent, out var _))
-                    {
-                        Debug.Log($"Failed to evaluate spline at {t}");
-                        return false;
-                    }
-
-                    var binormal = Vector3.Cross(tangent, Vector3.up).normalized;
-
-                    var offsetVertex = vertex + binormal * offset;
-
-                    vertices.Add(offsetVertex);
+                    return false;
                 }
 
-                var outputSpline = SplineHelpers.CreateSpline(vertices, closed: inputSpline.Closed);
+                var contourDetector = new ContourDetector(distances);
+                var contours = contourDetector.DetectContours(offset);
+
+                var contour = contours.OrderByDescending(x => x.Count).First();
+                var contourSpline = SplineHelpers.CreateSpline(contour, closed: true);
+
+                Spline outputSpline = SplineHelpers.ResampleSpline(contourSpline, vertexCount);
 
                 var outputSplineWrapper = new SplineWrapper
                 {
@@ -225,6 +228,5 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
         }
-
     }
 }

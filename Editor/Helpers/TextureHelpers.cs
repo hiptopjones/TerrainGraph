@@ -126,8 +126,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public static bool TryCreatePreviewTexture(SplineWrapper splineWrapper, out Texture2D texture)
         {
-            // Bigger numbers result in nicer previews, but cost performance
-            const float SEGMENT_LENGTH_FACTOR = 100;
+            const int MARGIN_WIDTH = 5;
 
             texture = null;
 
@@ -138,7 +137,8 @@ namespace Indiecat.TerrainGraph.Editor
                 var bounds = spline.GetBounds();
                 var center = bounds.center;
 
-                var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+                var size = SplineHelpers.GetMinimumBoundingSquareSize(spline, MARGIN_WIDTH);
+                var halfSize = new float3(size / 2, 0, size / 2);
 
                 if (size <= 0 || size > Mathf.Pow(2, 14))
                 {
@@ -162,22 +162,17 @@ namespace Indiecat.TerrainGraph.Editor
                     }
                 }
 
-                // This is a preview texture, and is used to get a sense of shape
-                // Scale the vertex count based on the bounds of the spline
-                // This ensures big splines and small splines are represented reasonably well
-                var vertexCount = length / (size / SEGMENT_LENGTH_FACTOR);
-
                 var firstPosition = Vector3.zero;
                 var previousPosition = Vector3.zero;
 
                 // Draw the spline outline
-                for (int i = 0; i < vertexCount; i++)
+                for (int i = 0; i < length; i++)
                 {
-                    var t = i / (vertexCount - 1);
+                    var t = i / (length - 1);
 
                     var p = spline.EvaluatePosition(t);
 
-                    p = p - (float3)center + new float3(size / 2, 0, size / 2);
+                    p = p - (float3)center + halfSize;
 
                     var currentPosition = new Vector2(p.x, p.z);
 
