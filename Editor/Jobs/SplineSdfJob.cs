@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -14,11 +15,20 @@ namespace Indiecat.TerrainGraph.Editor
         public float height;
     }
 
+    public struct MinimumDistanceInfo
+    {
+        public SplineSegment segment;
+        public float2 position;
+        public float2 direction;
+        public float distance2;
+    }
+
     [BurstCompile(FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low)]
     public struct SplineSdfJob : IJobParallelFor
     {
         [ReadOnly] public NativeArray<SplineSegment> Segments;
         [ReadOnly] public int Size;
+        [ReadOnly] public bool IsClosed;
 
         [WriteOnly] public NativeArray<float> Distances;
         [WriteOnly] public NativeArray<float3> NearestPositions;
@@ -31,10 +41,8 @@ namespace Indiecat.TerrainGraph.Editor
             // Use pixel center
             float2 position = new float2(x + 0.5f, y + 0.5f);
 
-            float minDistance2 = float.PositiveInfinity;
-            float distanceSign = 0;
-            float height = 0;
-            float2 nearestPosition = float2.zero;
+            var info = new MinimumDistanceInfo();
+            info.distance2 = float.PositiveInfinity;
 
             for (int i = 0; i < Segments.Length; i++)
             {
@@ -50,24 +58,65 @@ namespace Indiecat.TerrainGraph.Editor
                 float2 d = position - q;
                 float distance2 = math.dot(d, d);
 
-                if (distance2 < minDistance2)
+                if (distance2 < info.distance2)
                 {
-                    minDistance2 = distance2;
-
-                    // 2D cross product to get side of line
-                    // Left is -ve, right is +ve
-                    float cross = segment.ab.x * d.y - segment.ab.y * d.x;
-                    distanceSign = -math.sign(cross);
-
-                    nearestPosition = q;
-                    height = segment.height;
+                    info.distance2 = distance2;
+                    info.segment = segment;
+                    info.position = q;
+                    info.direction = math.normalize(d);
                 }
             }
 
-            float distance = math.sqrt(minDistance2);
+            float distanceSign = 0;
+
+            if (!IsClosed)
+            {
+                // 2D cross product to get side of line
+                // Left is -ve, right is +ve
+                float cross = info.segment.ab.x * info.direction.y - info.segment.ab.y * info.direction.x;
+                distanceSign = -math.sign(cross);
+            }
+            else
+            {
+                distanceSign = IsInsideSegments(position) ? 1 : -1;
+            }
+
+            float distance = math.sqrt(info.distance2);
 
             Distances[index] = distance * distanceSign;
-            NearestPositions[index] = new float3(nearestPosition.x, height, nearestPosition.y);
+            NearestPositions[index] = new float3(info.position.x, info.segment.height, info.position.y);
+        }
+
+        bool IsInsideSegments(float2 position)
+        {
+            bool inside = false;
+
+            for (int i = 0; i < Segments.Length; i++)
+            {
+                float2 a = Segments[i].a;
+                float2 b = Segments[i].a + Segments[i].ab; // segment endpoint
+
+                // Ensure a.y <= b.y for consistency
+                if (a.y > b.y)
+                {
+                    var temp = a;
+                    a = b;
+                    b = temp;
+                }
+
+                // Does ray from p cross edge [a, b]?
+                if (position.y > a.y && position.y <= b.y) // ray intersects y-range
+                {
+                    float crossX = a.x + (position.y - a.y) * (b.x - a.x) / (b.y - a.y);
+
+                    if (crossX > position.x) // intersection is to the right of p
+                    {
+                        inside = !inside;
+                    }
+                }
+            }
+
+            return inside;
         }
     }
 }

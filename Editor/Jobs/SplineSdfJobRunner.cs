@@ -64,6 +64,7 @@ namespace Indiecat.TerrainGraph.Editor
                 {
                     Segments = segmentsNative,
                     Size = size,
+                    IsClosed = spline.Closed,
                     Distances = distancesNative,
                     NearestPositions = nearestPositionsNative,
                 };
