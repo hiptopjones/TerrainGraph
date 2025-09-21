@@ -410,33 +410,52 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool IsLowerOnLeft(List<Vector2> contour, float value)
         {
-            var p1 = contour[0];
-            var p2 = contour[1];
+            var size = Mathf.Max(_values.GetLength(0), _values.GetLength(1));
 
-            var direction = p2 - p1;
-
-            var perpendicular = new Vector2(direction.y, -direction.x);
-            perpendicular = perpendicular.normalized;
-
-            var midpoint = (p1 + p2) / 2;
-
-            int i = 1;
-            while (true)
+            for (int i = 0; i < contour.Count - 1; i++)
             {
-                var sampleLeft = midpoint + (perpendicular * i);
-                if (_values[(int)sampleLeft.x, (int)sampleLeft.y] <= value)
+                var p1 = contour[i];
+                var p2 = contour[i + 1];
+
+                var direction = p2 - p1;
+                if (direction == Vector2.zero)
                 {
-                    return true;
+                    continue;
                 }
 
-                var sampleRight = midpoint - (perpendicular * i);
-                if (_values[(int)sampleRight.x, (int)sampleRight.y] <= value)
-                {
-                    return false;
-                }
+                var perpendicular = new Vector2(direction.y, -direction.x).normalized;
+                var midpoint = (p1 + p2) / 2f;
 
-                i++;
+                for (int j = 1; j < size; j++)
+                {
+                    var left = midpoint + perpendicular * j;
+                    var right = midpoint - perpendicular * j;
+
+                    var isLeftInBounds = InsideArray(left);
+                    var isRightInBounds = InsideArray(right);
+
+                    if (!isLeftInBounds && !isRightInBounds)
+                    {
+                        break;
+                    }
+
+                    if (isLeftInBounds && _values[(int)left.x, (int)left.y] < value)
+                    {
+                        return true;
+                    }
+                }
             }
+
+            // Nothing could be determined
+            return false;
+        }
+
+        private bool InsideArray(Vector2 position)
+        {
+            int x = (int)position.x;
+            int y = (int)position.y;
+            return x >= 0 && x < _values.GetLength(0) &&
+                   y >= 0 && y < _values.GetLength(1);
         }
     }
 }
