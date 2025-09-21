@@ -55,7 +55,8 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 for (int x = 0; x < size; x++)
                 {
-                    if (_grid[x, y] > level)
+                    var height = _grid[x, y];
+                    if (level > height)
                     {
                         samples[x, y] = 1;
                     }
@@ -71,7 +72,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             var width = samples.GetLength(0);
             var height = samples.GetLength(1);
-            
+
             // March the squares
             for (int y = 0; y < height - 1; y++)
             {
@@ -108,8 +109,16 @@ namespace Indiecat.TerrainGraph.Editor
                     var qx = 0f;
                     var qy = 0f;
 
+                    // Samples
+                    var sa = samples[ax, ay];
+                    var sb = samples[bx, by];
+                    var sc = samples[cx, cy];
+                    var sd = samples[dx, dy];
+
                     // Build key used for lookup table
-                    int configuration = samples[x, y] + 2 * samples[x + 1, y] + 4 * samples[x + 1, y + 1] + 8 * samples[x, y + 1];
+                    int configuration =
+                        (sa * 1) + (sb * 2) +
+                        (sc * 8) + (sd * 4);
 
                     // Configuration mappings
                     // 0    1    2    3    4    5    6    7 
@@ -272,9 +281,13 @@ namespace Indiecat.TerrainGraph.Editor
                     // If endpoints were calculated, add the segment
                     if (px != qx || py != qy)
                     {
-                        segments.Add(new Vector2(px, py));
-                        segments.Add(new Vector2(qx, qy));
+                        var p1 = new Vector2(px, py);
+                        var p2 = new Vector2(qx, qy);
+
+                        segments.Add(p1);
+                        segments.Add(p2);
                     }
+
                 }
             }
 
