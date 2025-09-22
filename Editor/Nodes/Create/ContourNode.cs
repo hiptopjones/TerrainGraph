@@ -2,7 +2,6 @@
 using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -24,7 +23,7 @@ namespace Indiecat.TerrainGraph.Editor
         }
 
         // Options
-    
+
         // Input
         private const string NODE_INPUT_GRID_ID = "grid_input";
         private const string NODE_INPUT_GRID_TITLE = "Grid";
@@ -184,9 +183,6 @@ namespace Indiecat.TerrainGraph.Editor
                 var vertexCount = inputValues.VertexCount;
 
                 var detector = new ContourDetector(inputGrid);
-
-                var visualizer = Object.FindFirstObjectByType<ContourVisualization>();
-                visualizer.InstallHandlers(detector);
 
                 var contours = detector.DetectContours(contourHeight);
                 if (contours == null || !contours.Any())

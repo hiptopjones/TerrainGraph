@@ -9,11 +9,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         private float[,] _values;
 
-        public Action<float[,], float> DetectionStart;
-        public Action<int, int, float, byte> SampleResult;
-        public Action<int, int, Vector2, Vector2> SegmentResult;
-        public Action<int, int> IgnoredResult;
-
         public ContourDetector(HeightGrid grid)
         {
             _values = grid.GetHeights();
@@ -47,8 +42,6 @@ namespace Indiecat.TerrainGraph.Editor
 
         public List<List<Vector2>> DetectContours(float level)
         {
-            DetectionStart?.Invoke(_values, level);
-
             var samples = GetSampleGrid(level);
             var segments = GetCellSegments(samples, level);
             var contours = GetContours(segments, level);
@@ -73,8 +66,6 @@ namespace Indiecat.TerrainGraph.Editor
                     {
                         samples[x, y] = 1;
                     }
-
-                    SampleResult?.Invoke(x, y, value, samples[x, y]);
                 }
             }
 
@@ -304,12 +295,6 @@ namespace Indiecat.TerrainGraph.Editor
 
                         var cellSegment = new KeyValuePair<Vector2, Vector2>(p1, p2);
                         cellSegments.Add(cellSegment);
-
-                        SegmentResult?.Invoke(x, y, p1, p2);
-                    }
-                    else
-                    {
-                        IgnoredResult?.Invoke(x, y);
                     }
                 }
             }
@@ -324,27 +309,17 @@ namespace Indiecat.TerrainGraph.Editor
             // to collate, group and orient them first into larger connected segments and then
             // into complete contours.
 
-            Debug.Log($"cell segments: {cellSegments.Count}");
-
             // Store connecteness for each point
             var adjacencyMap = CreateAdjacencyMap(cellSegments);
-
-            Debug.Log($"adjaceny: {adjacencyMap.Count}");
 
             // Turn the adjacency map into (incomplete) ordered lists of points
             var contourSegments = GetContourSegments(adjacencyMap);
 
-            Debug.Log($"contour segments: {contourSegments.Count}");
-
             // Joins related segments together to complete the contours
             var contours = GetContours(contourSegments);
 
-            Debug.Log($"contours: {contours.Count}");
-
             // Ensures contours always transit a consistent direction
             var orientedContours = GetOrientedContours(contours, value);
-
-            Debug.Log($"oriented contours: {orientedContours.Count}");
 
             return orientedContours;
         }
