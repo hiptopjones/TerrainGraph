@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
@@ -6,35 +7,31 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class ContourNode : ExecutableNode<SplineWrapper>
+    public class ResampleSplineNode : ExecutableNode<SplineWrapper>
     {
         private class InputValues
         {
-            public HeightGrid Grid;
-            public float ContourHeight;
+            public SplineWrapper SplineWrapper;
             public int VertexCount;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, ContourHeight, VertexCount);
+                return HashCode.Combine(SplineWrapper?.VersionHash, VertexCount);
             }
         }
 
         // Options
 
-        // Input
-        private const string NODE_INPUT_GRID_ID = "grid_input";
-        private const string NODE_INPUT_GRID_TITLE = "Grid";
-
-        private const string NODE_INPUT_HEIGHT_ID = "height_input";
-        private const string NODE_INPUT_HEIGHT_TITLE = "Height";
+        // Inputs
+        private const string NODE_INPUT_SPLINE_ID = "spline_input";
+        private const string NODE_INPUT_SPLINE_TITLE = "Spline";
 
         private const string NODE_INPUT_VERTICES_ID = "vertices_input";
         private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
 
-        // Output
+        // Outputs
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
         private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
@@ -48,17 +45,20 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
         }
 
+        private enum DisplacementAxis
+        {
+            Horizontal,
+            Vertical,
+            Both
+        }
+
         protected override void OnDefinePorts(IPortDefinitionContext context)
         {
             GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
             // Input
-            context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
-                .WithDisplayName(NODE_INPUT_GRID_TITLE)
-                .Build();
-            context.AddInputPort<float>(NODE_INPUT_HEIGHT_ID)
-                .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
-                .WithDefaultValue(0.3f)
+            context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
+                .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
                 .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
@@ -95,9 +95,9 @@ namespace Indiecat.TerrainGraph.Editor
 
             var isValid = true;
 
-            if (input.Grid == null || !input.Grid.IsValid)
+            if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
                 isValid = false;
             }
 
@@ -121,8 +121,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             var temp = new InputValues();
             var success =
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.ContourHeight) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount);
 
             if (success)
@@ -180,27 +179,16 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var inputGrid = inputValues.Grid;
-                var contourHeight = inputValues.ContourHeight;
+                var inputSplineWrapper = inputValues.SplineWrapper;
                 var vertexCount = inputValues.VertexCount;
 
-                var detector = new ContourDetector(inputGrid);
-
-                var contours = detector.DetectContours(contourHeight);
-                if (contours == null || !contours.Any())
-                {
-                    Debug.LogError("Contours not detected");
-                    return false;
-                }
-
-                var contour = contours.OrderByDescending(x => x.Count).First();
-                var contourSpline = SplineHelpers.CreateSpline(contour, closed: true);
-
-                var outputSpline = SplineHelpers.ResampleSpline(contourSpline, vertexCount);
+                var inputSpline = inputSplineWrapper.Spline;
+                
+                var outputSpline = SplineHelpers.ResampleSpline(inputSpline, vertexCount);
 
                 var outputSplineWrapper = new SplineWrapper
                 {
-                    Spline = outputSpline,
+                    Spline = outputSpline
                 };
 
                 outputSplineWrapper.VersionHash = inputValues.VersionHash;
@@ -214,5 +202,6 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
         }
+
     }
 }
