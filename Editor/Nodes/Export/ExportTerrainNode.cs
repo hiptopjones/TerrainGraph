@@ -13,12 +13,14 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public HeightGrid Grid;
             public TerrainDataWrapper TerrainDataWrapper;
+            public int TerrainHeight;
+            public int TerrainSize;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, TerrainDataWrapper?.TerrainData);
+                return HashCode.Combine(Grid?.VersionHash, TerrainDataWrapper?.TerrainData, TerrainHeight, TerrainSize);
             }
         }
 
@@ -31,6 +33,12 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_TERRAIN_ID = "terrain_input";
         private const string NODE_INPUT_TERRAIN_TITLE = "Terrain";
 
+        private const string NODE_INPUT_HEIGHT_ID = "height_input";
+        private const string NODE_INPUT_HEIGHT_TITLE = "Height";
+
+        private const string NODE_INPUT_SIZE_ID = "size_input";
+        private const string NODE_INPUT_SIZE_TITLE = "Size";
+
         // Outputs
 
         protected override void OnDefinePorts(IPortDefinitionContext context)
@@ -41,6 +49,12 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<TerrainDataWrapper>(NODE_INPUT_TERRAIN_ID)
                 .WithDisplayName(NODE_INPUT_TERRAIN_TITLE)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_HEIGHT_ID)
+                .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
+                .WithDisplayName(NODE_INPUT_SIZE_TITLE)
                 .Build();
         }
 
@@ -84,6 +98,18 @@ namespace Indiecat.TerrainGraph.Editor
                 }
             }
 
+            if (input.TerrainHeight <= 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_HEIGHT_TITLE} value invalid: {input.TerrainHeight} (valid: 0 < n)", this);
+                isValid = false;
+            }
+
+            if (input.TerrainSize <= 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.TerrainSize} (valid: 0 < n)", this);
+                isValid = false;
+            }
+
             if (isValid)
             {
                 validatedInput = input;
@@ -99,7 +125,9 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TERRAIN_ID, out temp.TerrainDataWrapper);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TERRAIN_ID, out temp.TerrainDataWrapper) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.TerrainHeight) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.TerrainSize);
 
             if (success)
             {
@@ -124,6 +152,8 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputGrid = inputValues.Grid;
                 var inputTerrainWrapper = inputValues.TerrainDataWrapper;
+                var inputTerrainHeight = inputValues.TerrainHeight;
+                var inputTerrainSize = inputValues.TerrainSize;
 
                 var terrainData = inputTerrainWrapper.TerrainData;
 
@@ -141,6 +171,7 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 terrainData.SetHeights(0, 0, heights);
+                terrainData.size = new Vector3(inputTerrainSize, inputTerrainHeight, inputTerrainSize);
 
                 return true;
             }
