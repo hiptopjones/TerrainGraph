@@ -117,6 +117,12 @@ namespace Indiecat.TerrainGraph.Editor
 
             var isValid = true;
 
+            if (!Enum.IsDefined(typeof(OpenCloseOperation), input.Operation))
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_OPERATION_ID} option invalid", this);
+                isValid = false;
+            }
+
             if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);

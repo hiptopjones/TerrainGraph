@@ -47,13 +47,13 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_PATH_TITLE = "Path";
 
         // Outputs
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<FileFormat>(NODE_OPTION_FILE_FORMAT_ID)
                 .WithDisplayName(NODE_OPTION_FILE_FORMAT_TITLE)
                 .WithDefaultValue(FileFormat.PNG)
                 .Build();
-
         }
 
         protected override void OnDefinePorts(IPortDefinitionContext context)
@@ -77,7 +77,6 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDefaultValue("Assets/Textures/ExportedTexture.png")
                 .Build();
         }
-
 
         public bool TryValidateNode(GraphLogger graphLogger = null)
         {
