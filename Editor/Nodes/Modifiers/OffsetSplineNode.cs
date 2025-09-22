@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
+using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -181,36 +180,48 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool TryExecuteNodeInternal(InputValues inputValues)
         {
+            // Additional margin around the edges of the spline for robust contour detection
+            const int GUTTER_SIZE = 10;
+
             try
             {
                 var inputSplineWrapper = inputValues.SplineWrapper;
                 var vertexCount = inputValues.VertexCount;
                 var offset = inputValues.Offset;
-
-                const int GUTTER_SIZE = 10;
                 
                 var inputSpline = inputSplineWrapper.Spline;
 
-                var margin = GUTTER_SIZE + Mathf.RoundToInt(offset > 0 ? offset : 0);
+                var center = SplineHelpers.GetCenter(inputSpline);
+
+                // Add the offset whether we are embiggening or not.
+                var margin = GUTTER_SIZE + Mathf.CeilToInt(Mathf.Abs(offset));
 
                 var workingCenter = SplineHelpers.GetMinimumCenter(inputSpline, margin);
                 var workingSpline = SplineHelpers.GetCenteredSpline(inputSpline, workingCenter);
 
-                var workingBounds = workingSpline.GetBounds();
-                var workingSize = Mathf.CeilToInt(Mathf.Max(workingBounds.size.x, workingBounds.size.z));
-
-                if (!SplineSdfJobRunner.TryCreateSdf(inputSpline, vertexCount, workingSize, out var distances, out _))
+                var workingSize = SplineHelpers.GetMinimumBoundingSquareSize(inputSpline, margin);
+ 
+                if (!SplineSdfJobRunner.TryCreateSdf(workingSpline, vertexCount, workingSize, out var distances, out _))
                 {
                     return false;
                 }
 
                 var contourDetector = new ContourDetector(distances);
+
                 var contours = contourDetector.DetectContours(offset);
+                if (contours == null || !contours.Any())
+                {
+                    Debug.LogError("Contours not detected");
+                    return false;
+                }
 
                 var contour = contours.OrderByDescending(x => x.Count).First();
                 var contourSpline = SplineHelpers.CreateSpline(contour, closed: true);
 
-                Spline outputSpline = SplineHelpers.ResampleSpline(contourSpline, vertexCount);
+                var simplifiedSpline = SplineHelpers.ResampleSpline(contourSpline, vertexCount);
+
+                var repositionTranslation = center - workingCenter;
+                var outputSpline = SplineHelpers.TranslateSpline(simplifiedSpline, repositionTranslation);
 
                 var outputSplineWrapper = new SplineWrapper
                 {

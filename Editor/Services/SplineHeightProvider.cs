@@ -23,18 +23,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (Center)
             {
-                var bounds = spline.GetBounds();
-
-                var inputCenter = bounds.center.WithY(0);
-                var outputCenter = new Vector3(size / 2f, 0, size / 2f);
-
-                spline = new Spline(Spline);
-                for (int i = 0; i < spline.Count; i++)
-                {
-                    var knot = spline[i];
-                    knot.Position += (float3)(outputCenter - inputCenter);
-                    spline[i] = knot;
-                }
+                spline = SplineHelpers.GetCenteredSpline(spline, size / 2);
             }
 
             if (!SplineSdfJobRunner.TryCreateSdf(spline, Samples, size, out var distances, out var nearestPositions))

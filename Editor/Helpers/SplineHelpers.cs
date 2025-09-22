@@ -94,20 +94,31 @@ namespace Indiecat.TerrainGraph.Editor
         }
 
 
-        public static Vector3 GetMinimumCenter(Spline spline, int margin = 0)
+        public static Vector2 GetMinimumCenter(Spline spline, int margin = 0)
         {
             var size = GetMinimumBoundingSquareSize(spline, margin);
-
-            var bounds = spline.GetBounds();
-            var center = new Vector3(size / 2f, bounds.center.y, size / 2f);
+            var center = new Vector2(size / 2f, size / 2f);
 
             return center;
+        }
+
+        public static Spline GetCenteredSpline(Spline spline, int center)
+        {
+            return GetCenteredSpline(spline, new Vector3(center, 0, center));
+        }
+
+        public static Spline GetCenteredSpline(Spline spline, Vector2 center)
+        {
+            return GetCenteredSpline(spline, new Vector3(center.x, 0, center.y));
         }
 
         public static Spline GetCenteredSpline(Spline spline, Vector3 targetCenter)
         {
             var bounds = spline.GetBounds();
-            var sourceCenter = bounds.center;
+
+            // Ensure no Y component in either of the centers
+            var sourceCenter = bounds.center.WithY(0);
+            targetCenter = targetCenter.WithY(0);
 
             var vertices = new List<Vector3>();
 
@@ -118,6 +129,14 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             return CreateSpline(vertices, spline.Closed);
+        }
+
+        public static Vector2 GetCenter(Spline spline)
+        {
+            var bounds = spline.GetBounds();
+            var center = bounds.center.SwizzleXZ();
+
+            return center;
         }
 
         public static int GetMinimumBoundingSquareSize(Spline spline, int margin = 0)
@@ -139,6 +158,22 @@ namespace Indiecat.TerrainGraph.Editor
             size += margin * 2;
 
             return size;
+        }
+
+        public static Spline TranslateSpline(Spline spline, Vector2 translation)
+        {
+            var vertices = new List<Vector2>();
+
+            foreach (var knot in spline)
+            {
+                var position = (Vector3)knot.Position;
+                var vertex = position.SwizzleXZ() + translation;
+
+                vertices.Add(vertex);
+            }
+
+            var translatedSpline = CreateSpline(vertices, spline.Closed);
+            return translatedSpline;
         }
     }
 }
