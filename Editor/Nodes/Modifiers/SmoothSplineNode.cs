@@ -2,29 +2,24 @@
 using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Splines;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
+    public class SmoothSplineNode : ExecutableNode<SplineWrapper>
     {
         private class InputValues
         {
             public SplineWrapper SplineWrapper;
-            public IProvider Provider;
-            public int VertexCount;
-            public DisplacementAxis DisplacementAxis;
-            public float Amplitude;
             public int IterationCount;
+            public float MinAngleDegrees;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(SplineWrapper?.VersionHash, Provider?.VersionHash, VertexCount, DisplacementAxis, Amplitude, IterationCount);
+                return HashCode.Combine(SplineWrapper?.VersionHash, IterationCount, MinAngleDegrees);
             }
         }
 
@@ -34,20 +29,11 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_SPLINE_ID = "spline_input";
         private const string NODE_INPUT_SPLINE_TITLE = "Spline";
 
-        private const string NODE_INPUT_PROVIDER_ID = "provider_input";
-        private const string NODE_INPUT_PROVIDER_TITLE = "Provider";
-
-        private const string NODE_INPUT_VERTICES_ID = "vertices_input";
-        private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
-
-        private const string NODE_INPUT_AXIS_ID = "axis_input";
-        private const string NODE_INPUT_AXIS_TITLE = "Axis";
-
-        private const string NODE_INPUT_AMPLITUDE_ID = "amplitude_input";
-        private const string NODE_INPUT_AMPLITUDE_TITLE = "Amplitude";
-
         private const string NODE_INPUT_ITERATIONS_ID = "iterations_input";
         private const string NODE_INPUT_ITERATIONS_TITLE = "Iterations";
+
+        private const string NODE_INPUT_ANGLE_ID = "angle_input";
+        private const string NODE_INPUT_ANGLE_TITLE = "Min Angle";
 
         // Outputs
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
@@ -78,24 +64,13 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
                 .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
                 .Build();
-            context.AddInputPort<IProvider>(NODE_INPUT_PROVIDER_ID)
-                .WithDisplayName(NODE_INPUT_PROVIDER_TITLE)
-                .Build();
-            context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
-                .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-                .WithDefaultValue(100)
-                .Build();
-            context.AddInputPort<DisplacementAxis>(NODE_INPUT_AXIS_ID)
-                .WithDisplayName(NODE_INPUT_AXIS_TITLE)
-                .WithDefaultValue(DisplacementAxis.Horizontal)
-                .Build();
-            context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
-                .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
-                .WithDefaultValue(30)
-                .Build();
             context.AddInputPort<int>(NODE_INPUT_ITERATIONS_ID)
                 .WithDisplayName(NODE_INPUT_ITERATIONS_TITLE)
                 .WithDefaultValue(1)
+                .Build();
+            context.AddInputPort<float>(NODE_INPUT_ANGLE_ID)
+                .WithDisplayName(NODE_INPUT_ANGLE_TITLE)
+                .WithDefaultValue(45)
                 .Build();
 
             if (isPreviewEnabled)
@@ -134,29 +109,6 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Provider == null || !input.Provider.IsValid)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value missing", this);
-                isValid = false;
-            }
-            else if (input.Provider is not INoiseProvider)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value incorrect", this);
-                isValid = false;
-            }
-
-            if (input.VertexCount < MIN_VERTEX_COUNT)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
-                isValid = false;
-            }
-
-            if (!Enum.IsDefined(typeof(DisplacementAxis), input.DisplacementAxis))
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_AXIS_TITLE} option invalid", this);
-                isValid = false;
-            }
-
             if (input.IterationCount <= 0)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: 0 < n)", this);
@@ -178,11 +130,10 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PROVIDER_ID, out temp.Provider) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AXIS_ID, out temp.DisplacementAxis) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.IterationCount);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.IterationCount) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ANGLE_ID, out temp.MinAngleDegrees);
+
+            temp.MinAngleDegrees = Mathf.Clamp(temp.MinAngleDegrees, 0, 180);
 
             if (success)
             {
@@ -239,12 +190,9 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var noiseProvider = inputValues.Provider as INoiseProvider;
                 var inputSplineWrapper = inputValues.SplineWrapper;
-                var vertexCount = inputValues.VertexCount;
-                var displacementAxis = inputValues.DisplacementAxis;
-                var amplitude = inputValues.Amplitude;
                 var iterationCount = inputValues.IterationCount;
+                var minAngleDegrees = inputValues.MinAngleDegrees;
 
                 var currentSpline = inputSplineWrapper.Spline;
 
@@ -252,42 +200,47 @@ namespace Indiecat.TerrainGraph.Editor
                 {
                     var vertices = new List<Vector3>();
 
-                    // TODO: Consider controlling whether the first and last vertex are displaced
-                    for (int j = 0; j < vertexCount; j++)
+                    int startIndex = 0;
+                    int endIndex = currentSpline.Count - 1;
+
+                    if (!currentSpline.Closed)
                     {
-                        float t = j / (float)(vertexCount - 1);
+                        startIndex++;
+                        endIndex--;
 
-                        Vector3 position = currentSpline.EvaluatePosition(t);
-                        Vector3 tangent = ((Vector3)currentSpline.EvaluateTangent(t)).normalized;
-
-                        Vector3 up = Vector3.up;
-                        Vector3 binormal = Vector3.Cross(up, tangent).normalized;
-
-                        Vector3 displacement = Vector3.zero;
-
-                        if (displacementAxis == DisplacementAxis.Horizontal || displacementAxis == DisplacementAxis.Both)
-                        {
-                            const float HORIZONTAL_NOISE_RADIUS = 1.0f;
-                            NoiseHelpers.TryGetSeamlessNoise(noiseProvider, HORIZONTAL_NOISE_RADIUS, t, out var noise);
-                            displacement += binormal * (noise - 0.5f) * amplitude;
-                        }
-                 
-                        if (displacementAxis == DisplacementAxis.Vertical || displacementAxis == DisplacementAxis.Both)
-                        {
-                            const float VERTICAL_NOISE_RADIUS = 1.1f;
-                            NoiseHelpers.TryGetSeamlessNoise(noiseProvider, VERTICAL_NOISE_RADIUS, t, out var noise);
-
-                            // Unlike horizontal, this limits vertical displacement to half the noise range and only in the positive direction
-                            displacement += up * Mathf.Clamp01(noise - 0.5f) * amplitude;
-                        }
-
-                        Vector3 displacedPosition = position + displacement;
-                        vertices.Add(displacedPosition);
+                        vertices.Add(currentSpline.First().Position);
                     }
 
-                    var displacedSpline = SplineHelpers.CreateSpline(vertices, currentSpline.Closed);
+                    for (int j = startIndex; j <= endIndex; j++)
+                    {
+                        var j1 = (j - 1 + currentSpline.Count) % currentSpline.Count;
+                        var j2 = j;
+                        var j3 = (j + 1) % currentSpline.Count;
 
-                    currentSpline = displacedSpline;
+                        var p1 = currentSpline[j1].Position;
+                        var p2 = currentSpline[j2].Position;
+                        var p3 = currentSpline[j3].Position;
+
+                        var angleDegrees = Vector3.Angle(p1 - p2, p3 - p2);
+                        if (angleDegrees < minAngleDegrees)
+                        {
+                            var midpoint = (p1 + p3) / 2;
+                            var t = Mathf.InverseLerp(minAngleDegrees, 0, angleDegrees);
+                            p2 = Vector3.Lerp(p2, midpoint, t);
+                        }
+
+                        vertices.Add(p2);
+                    }
+
+                    if (!currentSpline.Closed)
+                    {
+                        vertices.Add(currentSpline.Last().Position);
+                    }
+
+                    var smoothedSpline = SplineHelpers.CreateSpline(vertices, currentSpline.Closed);
+                    var resampledSpline = SplineHelpers.ResampleSpline(smoothedSpline, currentSpline.Count);
+
+                    currentSpline = resampledSpline;
                 }
 
                 var outputSpline = currentSpline;
