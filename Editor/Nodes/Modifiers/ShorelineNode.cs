@@ -331,6 +331,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             for (int i = 0; i < sampleCount; i++)
             {
+                // TODO: Should we treat closed and open differently here?
                 var t = i / (float)(sampleCount - 1);
 
                 Vector3 position = inputSpline.EvaluatePosition(t);

@@ -255,7 +255,12 @@ namespace Indiecat.TerrainGraph.Editor
                     // TODO: Consider controlling whether the first and last vertex are displaced
                     for (int j = 0; j < vertexCount; j++)
                     {
-                        float t = j / (float)(vertexCount - 1);
+                        var t = j / (float)(vertexCount - 1);
+                        if (currentSpline.Closed)
+                        {
+                            // DO NOT add a vertex at t = 1 if it's closed
+                            t = j / (float)vertexCount;
+                        }
 
                         Vector3 position = currentSpline.EvaluatePosition(t);
                         Vector3 tangent = ((Vector3)currentSpline.EvaluateTangent(t)).normalized;

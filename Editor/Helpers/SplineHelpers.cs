@@ -51,8 +51,11 @@ namespace Indiecat.TerrainGraph.Editor
                 SplineUtility.GetPointAtLinearDistance(spline, t, distanceStep, out t);
             }
 
-            // Add the last position, as we didn't evaluate it above
-            pathVertices.Add(spline.EvaluatePosition(1));
+            if (!spline.Closed)
+            {
+                // Add the last position, as we didn't evaluate it above
+                pathVertices.Add(spline.EvaluatePosition(1));
+            }
 
             return pathVertices.ToArray();
         }
@@ -84,6 +87,12 @@ namespace Indiecat.TerrainGraph.Editor
             for (int i = 0; i < vertexCount; i++)
             {
                 var t = i / (float)(vertexCount - 1);
+                if (spline.Closed)
+                {
+                    // DO NOT add a vertex at t = 1 if it's closed
+                    t = i / (float)vertexCount;
+                }
+
                 var vertex = spline.EvaluatePosition(t);
 
                 vertices.Add(vertex);

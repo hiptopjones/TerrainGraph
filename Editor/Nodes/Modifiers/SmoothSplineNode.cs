@@ -68,7 +68,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_ANGLE_ID)
                 .WithDisplayName(NODE_INPUT_ANGLE_TITLE)
-                .WithDefaultValue(45)
+                .WithDefaultValue(150)
                 .Build();
 
             if (isPreviewEnabled)

@@ -169,6 +169,10 @@ namespace Indiecat.TerrainGraph.Editor
                 for (int i = 0; i < length; i++)
                 {
                     var t = i / (length - 1);
+                    if (spline.Closed)
+                    {
+                        t = i / length;
+                    }
 
                     var p = spline.EvaluatePosition(t);
 

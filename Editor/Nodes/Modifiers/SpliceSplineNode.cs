@@ -257,8 +257,11 @@ namespace Indiecat.TerrainGraph.Editor
                     points.Add(position);
                 }
 
-                var lastPosition = SplineUtility.EvaluatePosition(inputSpline1, 1);
-                points.Add(lastPosition);
+                if (!inputSpline1.Closed)
+                {
+                    var lastPosition = SplineUtility.EvaluatePosition(inputSpline1, 1);
+                    points.Add(lastPosition);
+                }
 
                 var outputSpline = new Spline(points);
                 outputSpline.Closed = inputSpline1.Closed;
