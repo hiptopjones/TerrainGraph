@@ -43,7 +43,7 @@ namespace Indiecat.TerrainGraph.Editor
         public List<List<Vector2>> DetectContours(float level)
         {
             var samples = GetSampleGrid(level);
-            var segments = GetLineSegments(samples, level);
+            var segments = GetCellSegments(samples, level);
             var contours = GetContours(segments, level);
 
             return contours;
@@ -72,9 +72,9 @@ namespace Indiecat.TerrainGraph.Editor
             return samples;
         }
 
-        private List<Vector2> GetLineSegments(byte[,] samples, float level)
+        private List<KeyValuePair<Vector2, Vector2>> GetCellSegments(byte[,] samples, float level)
         {
-            var segments = new List<Vector2>();
+            var cellSegments = new List<KeyValuePair<Vector2, Vector2>>();
 
             var width = samples.GetLength(0);
             var height = samples.GetLength(1);
@@ -293,119 +293,198 @@ namespace Indiecat.TerrainGraph.Editor
                         var p1 = new Vector2(px, py);
                         var p2 = new Vector2(qx, qy);
 
-                        segments.Add(p1);
-                        segments.Add(p2);
+                        var cellSegment = new KeyValuePair<Vector2, Vector2>(p1, p2);
+                        cellSegments.Add(cellSegment);
                     }
-
                 }
             }
 
-            return segments;
+            return cellSegments;
         }
 
-        private List<List<Vector2>> GetContours(List<Vector2> segments, float value)
+        private List<List<Vector2>> GetContours(List<KeyValuePair<Vector2, Vector2>> cellSegments, float value)
         {
-            var connectedPoints = GetConnectedPoints(segments);
+            // The contours are currently a set of tiny unordered line segments from each grid cell.
+            // It would draw fine, but not be useful for much else. So we go through a few steps
+            // to collate, group and orient them first into larger connected segments and then
+            // into complete contours.
 
-            // Turn the point connections into ordered lists of points
-            var contours = AssembleContours(connectedPoints, value);
+            // Store connecteness for each point
+            var adjacencyMap = CreateAdjacencyMap(cellSegments);
+
+            // Turn the adjacency map into (incomplete) ordered lists of points
+            var contourSegments = GetContourSegments(adjacencyMap);
+
+            // Joins related segments together to complete the contours
+            var contours = GetContours(contourSegments);
+
+            // Ensures contours always transit a consistent direction
+            var orientedContours = GetOrientedContours(contours, value);
+
+            return orientedContours;
+        }
+
+        private Dictionary<Vector2, List<Vector2>> CreateAdjacencyMap(List<KeyValuePair<Vector2, Vector2>> segments)
+        {
+            var adjacencyMap = new Dictionary<Vector2, List<Vector2>>();
+
+            foreach (var segment in segments)
+            {
+                var p1 = segment.Key;
+                var p2 = segment.Value;
+
+                if (!adjacencyMap.TryGetValue(p1, out var connections1))
+                {
+                    connections1 = new List<Vector2>();
+                    adjacencyMap[p1] = connections1;
+                }
+
+                if (!adjacencyMap.TryGetValue(p2, out var connections2))
+                {
+                    connections2 = new List<Vector2>();
+                    adjacencyMap[p2] = connections2;
+                }
+
+                connections1.Add(p2);
+                connections2.Add(p1);
+            }
+
+            return adjacencyMap;
+        }
+
+        private List<List<Vector2>> GetContourSegments(Dictionary<Vector2, List<Vector2>> adjacencyMap)
+        {
+            var visited = new HashSet<Vector2>();
+            var contourSegments = new List<List<Vector2>>();
+
+            while (adjacencyMap.Count > 0)
+            {
+                var contourSegment = GetSingleContourSegment(adjacencyMap, visited);
+                contourSegments.Add(contourSegment);
+            }
+
+            return contourSegments;
+        }
+
+        private static List<Vector2> GetSingleContourSegment(Dictionary<Vector2, List<Vector2>> adjacencyMap, HashSet<Vector2> visited)
+        {
+            var contourSegment = new List<Vector2>();
+
+            var first = adjacencyMap.First().Key;
+            var p1 = first;
+
+            while (true)
+            {
+                contourSegment.Add(p1);
+                visited.Add(p1);
+
+                if (!adjacencyMap.ContainsKey(p1))
+                {
+                    // This is an endpoint
+                    break;
+                }
+
+                var p2 = PopConnectedPoint(adjacencyMap, p1);
+
+                // Would this take us back the way we came?
+                if (visited.Contains(p2))
+                {
+                    if (!adjacencyMap.ContainsKey(p1))
+                    {
+                        // This is an endpoint
+                        break;
+                    }
+
+                    p2 = PopConnectedPoint(adjacencyMap, p1);
+                }
+
+                p1 = p2;
+            }
+
+            return contourSegment;
+        }
+
+        private static Vector2 PopConnectedPoint(Dictionary<Vector2, List<Vector2>> adjacencyMap, Vector2 p1)
+        {
+            var connections1 = adjacencyMap[p1];
+            var p2 = connections1.First();
+
+            var connections2 = adjacencyMap[p2];
+
+            // Remove relevant connections
+            connections1.Remove(p2);
+            connections2.Remove(p1);
+
+            if (connections1.Count == 0) adjacencyMap.Remove(p1);
+            if (connections2.Count == 0) adjacencyMap.Remove(p2);
+
+            return p2;
+        }
+
+        private List<List<Vector2>> GetContours(List<List<Vector2>> contourSegments)
+        {
+            var contours = new List<List<Vector2>>();
+
+            while (contourSegments.Count > 0)
+            {
+                var segment1 = contourSegments.First();
+                contourSegments.Remove(segment1);
+
+                var segmentIndex = 0;
+                while (segmentIndex < contourSegments.Count)
+                {
+                    var segment2 = contourSegments[segmentIndex];
+
+                    if (segment1.First() == segment2.First() ||
+                        segment1.Last() == segment2.Last())
+                    {
+                        // Flip either one to make it right
+                        segment2.Reverse();
+
+                        segment1 = segment2.Concat(segment1.Skip(1)).ToList();
+                        contourSegments.Remove(segment2);
+                    }
+                    else if (segment1.First() == segment2.Last())
+                    {
+                        segment1 = segment2.Concat(segment1.Skip(1)).ToList();
+                        contourSegments.Remove(segment2);
+                    }
+                    else if (segment1.Last() == segment2.First())
+                    {
+                        segment1 = segment1.Concat(segment2.Skip(1)).ToList();
+                        contourSegments.Remove(segment2);
+                    }
+                    else
+                    {
+                        segmentIndex++;
+                    }
+                }
+
+                contours.Add(segment1);
+            }
 
             return contours;
         }
 
-        private Dictionary<Vector2, Vector2> GetConnectedPoints(List<Vector2> segments)
+        private List<List<Vector2>> GetOrientedContours(List<List<Vector2>> contours, float value)
         {
-            // The contours are currently a set of unordered line segments.  It would draw fine,
-            // but not be useful for much else. So we orient those segments and make a sparse
-            // linked list (using a dictionary) of points.
-            var connectedPoints = new Dictionary<Vector2, Vector2>();
+            var orientedContours = new List<List<Vector2>>();
 
-            for (int i = 0; i < segments.Count; i += 2)
+            foreach (var contour in contours)
             {
-                var p1 = segments[i];
-                var p2 = segments[i + 1];
-
-                if (connectedPoints.TryGetValue(p1, out var p) && p2 == p)
-                {
-                    throw new Exception($"Duplicate entry - contour not valid");
-                }
-
-                AddConnection(connectedPoints, p1, p2);
-            }
-
-            return connectedPoints;
-        }
-
-        private void AddConnection(Dictionary<Vector2, Vector2> connections, Vector2 p1, Vector2 p2)
-        {
-            Vector2 p3;
-
-            while (true)
-            {
-                // Check if p1 already has a mapping
-                bool collision = connections.TryGetValue(p1, out p3);
-                connections[p1] = p2;
-
-                // If no collision, we're good
-                if (!collision)
-                {
-                    return;
-                }
-
-                // If there was a collision, we cascade to make room
-                p2 = p1;
-                p1 = p3;
-            }
-        }
-
-        private List<List<Vector2>> AssembleContours(Dictionary<Vector2, Vector2> connections, float value)
-        {
-            var contours = new List<List<Vector2>>();
-
-            // Loop until we have enumerated all contours
-            while (connections.Any())
-            {
-                var visited = new HashSet<Vector2>();
-                var contour = new List<Vector2>();
-
-                var p1 = connections.Keys.First();
-
-                while (true)
-                {
-                    contour.Add(p1);
-                    visited.Add(p1);
-
-                    if (!connections.TryGetValue(p1, out Vector2 p2))
-                    {
-                        // Reached the end of a non-closed contour
-                        break;
-                    }
-
-                    // Pare down the dictionary as we go
-                    connections.Remove(p1);
-
-                    if (visited.Contains(p2))
-                    {
-                        // We're back at the beginning of the sequence
-                        contour.Add(p2);
-                        break;
-                    }
-
-                    // Setup for next iteration
-                    p1 = p2;
-                }
+                var orientedContour = contour;
 
                 // Ensure contours are always returned with a deterministic ordering where lower values
                 // are to the left of the vector formed by any two subsequent points in the contour
                 if (IsLowerOnLeft(contour, value))
                 {
-                    contour = ((IEnumerable<Vector2>)contour).Reverse().ToList();
+                    orientedContour = ((IEnumerable<Vector2>)contour).Reverse().ToList();
                 }
 
-                contours.Add(contour);
+                orientedContours.Add(orientedContour);
             }
 
-            return contours;
+            return orientedContours;
         }
 
         private bool IsLowerOnLeft(List<Vector2> contour, float value)
