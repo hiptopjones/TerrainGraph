@@ -2,6 +2,7 @@
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -115,13 +116,26 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
 
+            Texture2D workingTexture = null;
+
             try
             {
                 var inputGrid = inputValues.Grid;
                 var heightScale = inputValues.HeightScale;
                 var exportPath = inputValues.ExportPath;
 
-                MeshHelpers.ExportMesh(inputGrid, heightScale, exportPath);
+                var renderTexture = inputGrid.RenderTexture;
+
+                if (!TextureHelpers.TryCopyRenderTextureToTexture2D(renderTexture, TextureFormat.RFloat, out workingTexture))
+                {
+                    return false;
+                }
+
+                var workingGrid = new HeightGrid(renderTexture.width);
+                var rawTextureData = workingTexture.GetRawTextureData<float>();
+                rawTextureData.CopyTo(workingGrid.Values);
+
+                MeshHelpers.ExportMesh(workingGrid, heightScale, exportPath);
 
                 // Ensure the editor picks up any changes
                 // NOTE: Unable to invoke a refresh directly during graph asset import
@@ -133,6 +147,14 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
+            }
+            finally
+            {
+                if (workingTexture != null)
+                {
+                    Object.DestroyImmediate(workingTexture);
+                    workingTexture = null;
+                }
             }
         }
     }

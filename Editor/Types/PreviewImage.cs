@@ -9,11 +9,11 @@ namespace Indiecat.TerrainGraph.Editor
     public class PreviewImage
     {
         // NOTE: Do not write directly to this field, use UpdateTexture()
-        public Texture2D Texture;
+        public Texture Texture;
 
         public List<Image> Images = new();
 
-        public void UpdateTexture(Texture2D texture)
+        public void UpdateTexture(Texture texture)
         {
             Texture = texture;
 

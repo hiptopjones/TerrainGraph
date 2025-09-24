@@ -1,0 +1,26 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+float2 _Start;
+float _CellSize;
+
+RWTexture2D<float> _OutTexture;
+
+// Simple hash function for pseudo-random values
+float hash(int2 p)
+{
+    // large primes to scramble the coordinates
+    p = 1103515245 * ((p.x ^ p.y) + p);
+    return frac((p.x ^ p.y) * 0.0000001);
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint2 uv = id.xy;
+    
+    // Find which cell this uv is in
+    int2 cell = int2(floor(_Start + uv / _CellSize));
+    
+    _OutTexture[uv].r = saturate(hash(cell));
+}

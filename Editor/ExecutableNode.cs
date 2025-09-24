@@ -52,6 +52,9 @@ namespace Indiecat.TerrainGraph.Editor
                         CacheData.PreviewHash = CacheData.Output.VersionHash;
                         CacheData.PreviewTexture = texture;
 
+                        // Ensure the texture gets cleaned up when the output object goes away
+                        TextureMemoryManager.Register(CacheData.Output, texture);
+
                         // Preview was successfully updated
                         return true;
                     }
@@ -61,7 +64,7 @@ namespace Indiecat.TerrainGraph.Editor
             if (isPreviewEnabled)
             {
                 // Make it very clear there is a problem
-                var warningTexture = (Texture2D)EditorGUIUtility.IconContent("console.warnicon.sml").image;
+                var warningTexture = EditorGUIUtility.IconContent("console.warnicon.sml").image;
 
                 // Best effort, not checking the return
                 TrySetPreviewTexture(warningTexture);
@@ -71,7 +74,7 @@ namespace Indiecat.TerrainGraph.Editor
             return false;
         }
 
-        private bool TryCreatePreviewTexture(T value, out Texture2D texture)
+        private bool TryCreatePreviewTexture(T value, out Texture texture)
         {
             texture = null;
 
@@ -98,7 +101,7 @@ namespace Indiecat.TerrainGraph.Editor
             return false;
         }
 
-        private bool TrySetPreviewTexture(Texture2D texture)
+        private bool TrySetPreviewTexture(Texture texture)
         {
             try
             {
@@ -132,6 +135,23 @@ namespace Indiecat.TerrainGraph.Editor
                 Debug.LogException(ex);
                 return false;
             }
+        }
+
+        public RenderTexture GetOrCreateNodeRenderTexture(int size)
+        {
+            var texture = CacheData.RenderTexture;
+
+            if (texture == null || texture.width != size)
+            {
+                if (texture != null) TextureMemoryManager.Unregister(texture);
+
+                texture = TextureHelpers.CreateRenderTexture(size, RenderTextureFormat.RFloat);
+                TextureMemoryManager.Register(this, texture);
+            }
+
+            CacheData.RenderTexture = texture;
+
+            return texture;
         }
     }
 }

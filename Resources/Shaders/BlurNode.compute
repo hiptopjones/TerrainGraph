@@ -1,0 +1,53 @@
+#pragma kernel CSMain_Horizontal
+#pragma kernel CSMain_Vertical
+
+Texture2D<float> _InTexture;
+StructuredBuffer<float> _Weights;
+float _Radius;
+uint _Size;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain_Horizontal(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+
+    float sum = 0.0;
+
+    for (int i = -_Radius; i <= _Radius; i++)
+    {
+        int x = clamp(int(id.x) + i, 0, _Size - 1);
+        int y = id.y;
+        int2 uv = int2(x, y);
+        
+        sum += _InTexture[uv] * _Weights[i + _Radius];
+    }
+
+    _OutTexture[id.xy] = sum;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_Vertical(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+
+    float sum = 0.0;
+
+    for (int i = -_Radius; i <= _Radius; i++)
+    {
+        int x = id.x;
+        int y = clamp(int(id.y) + i, 0, _Size - 1);
+        int2 uv = int2(x, y);
+        
+        sum += _InTexture[uv] * _Weights[i + _Radius];
+    }
+
+    _OutTexture[id.xy] = saturate(sum);
+}

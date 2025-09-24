@@ -1,6 +1,7 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -148,6 +149,8 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
 
+            Texture2D workingTexture = null;
+
             try
             {
                 var inputGrid = inputValues.Grid;
@@ -159,6 +162,17 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var size = inputGrid.Size;
 
+                var renderTexture = inputGrid.RenderTexture;
+
+                if (!TextureHelpers.TryCopyRenderTextureToTexture2D(renderTexture, TextureFormat.RFloat, out workingTexture))
+                {
+                    return false;
+                }
+
+                var workingGrid = new HeightGrid(renderTexture.width);
+                var rawTextureData = workingTexture.GetRawTextureData<float>();
+                rawTextureData.CopyTo(workingGrid.Values);
+
                 var heights = new float[size, size];
 
                 for (int y = 0; y < size; y++)
@@ -166,7 +180,7 @@ namespace Indiecat.TerrainGraph.Editor
                     for (int x = 0; x < size; x++)
                     {
                         // NOTE: Unity's heightmap is indexed in reverse
-                        heights[y, x] = inputGrid[x, y];
+                        heights[y, x] = workingGrid[x, y];
                     }
                 }
 
@@ -179,6 +193,14 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
+            }
+            finally
+            {
+                if (workingTexture != null)
+                {
+                    Object.DestroyImmediate(workingTexture);
+                    workingTexture = null;
+                }
             }
         }
     }

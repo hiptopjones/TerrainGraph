@@ -17,6 +17,7 @@ namespace Indiecat.TerrainGraph.Editor
             Divide = 400,
             Minimum = 500,
             Maximum = 600,
+            Average = 700,
             Compare = 1000,
         }
 
@@ -195,14 +196,23 @@ namespace Indiecat.TerrainGraph.Editor
             // Clear the cached values in case there's an early exit below
             CacheData.Output = null;
 
-            var startTime = DateTime.Now;
-            if (TryExecuteNodeInternal(inputValues))
+            try
             {
-                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
-                return true;
-            }
+                var startTime = DateTime.Now;
+                if (TryExecuteNodeInternal(inputValues))
+                {
+                    CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
+                    //Debug.Log($"{GetType().Name} {inputValues.ArithmeticOperator} {inputValues.Grid.Size} {CacheData.Output.ExecutionTime*1000f:F3}ms");
+                    return true;
+                }
 
-            return false;
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
         }
 
         private bool TryExecuteNodeInternal(InputValues inputValues)
@@ -216,45 +226,32 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var size = inputGrid.Size;
 
-                var outputGrid = new HeightGrid(size);
+                var keywordBuilder = new KeywordBuilder();
+                keywordBuilder.AddKeyword($"OP_{arithmeticOperator.ToString().ToUpper()}");
+                keywordBuilder.AddKeyword(isFlipped ? "ARGS_FLIPPED" : "ARGS_NORMAL");
 
-                for (int y = 0; y < size; y++)
+                var inputTexture = inputGrid.RenderTexture;
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
+
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/ArithmeticNode", out var shader))
                 {
-                    for (int x = 0; x < size; x++)
-                    {
-                        var a = inputGrid[x, y];
-                        var b = value;
-
-                        switch (arithmeticOperator)
-                        {
-                            case ArithmeticOperator.Add:
-                                outputGrid[x, y] = isFlipped ? b + a : a + b;
-                                break;
-                            case ArithmeticOperator.Subtract:
-                                outputGrid[x, y] = isFlipped ? b - a : a - b;
-                                break;
-                            case ArithmeticOperator.Multiply:
-                                outputGrid[x, y] = isFlipped ? b * a : a * b;
-                                break;
-                            case ArithmeticOperator.Divide:
-                                outputGrid[x, y] = isFlipped ? b / a : a / b;
-                                break;
-                            case ArithmeticOperator.Minimum:
-                                outputGrid[x, y] = isFlipped ? Mathf.Min(b, a) : Mathf.Min(a, b);
-                                break;
-                            case ArithmeticOperator.Maximum:
-                                outputGrid[x, y] = isFlipped ? Mathf.Max(b, a) : Mathf.Max(a, b);
-                                break;
-                            case ArithmeticOperator.Compare:
-                                outputGrid[x, y] = isFlipped ? Compare(b, a) : Compare(a, b);
-                                break;
-                            default:
-                                // Validation ensures we don't get here
-                                break;
-                        }
-                    }
+                    return false;
                 }
 
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetFloat("_Value", value);
+
+                shader.shaderKeywords = keywordBuilder.GetKeywords();
+
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
+
+                var outputGrid = new HeightGrid(size);
+
+                outputGrid.RenderTexture = outputTexture;
                 outputGrid.VersionHash = inputValues.VersionHash;
 
                 CacheData.Output = outputGrid;
@@ -265,16 +262,6 @@ namespace Indiecat.TerrainGraph.Editor
                 Debug.LogException(ex);
                 return false;
             }
-        }
-
-        private static float Compare(float a, float b)
-        {
-            if (a == b)
-            {
-                return 0;
-            }
-
-            return a > b ? -1 : 1.1f; // over 1 so it's green in the preview
         }
     }
 }

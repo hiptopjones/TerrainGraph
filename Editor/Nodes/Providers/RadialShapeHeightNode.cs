@@ -1,24 +1,31 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
+using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
 {
-    using ShapeType = RadialShapeFunctions.ShapeType;
-
     [Serializable]
-    public class RadialShapeHeightNode : ProviderNode<IProvider>
+    public class RadialShapeHeightNode : ExecutableNode<HeightGrid>
     {
+        public enum ShapeType
+        {
+            Cone = 100,
+            Cylinder = 200,
+            Gaussian = 300,
+            SmoothStep = 400,
+        }
+
         private class InputValues
         {
             public ShapeType ShapeType;
-            public float Radius;
+            public float RadiusPercent;
             public int Size;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(ShapeType, Radius, Size);
+                return HashCode.Combine(ShapeType, RadiusPercent, Size);
             }
         }
 
@@ -31,11 +38,11 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_SIZE_TITLE = "Size";
 
         private const string NODE_INPUT_RADIUS_ID = "radius_input";
-        private const string NODE_INPUT_RADIUS_TITLE = "Radius";
+        private const string NODE_INPUT_RADIUS_TITLE = "Radius Percent";
 
         // Outputs
-        private const string NODE_OUTPUT_PROVIDER_ID = "provider_output";
-        private const string NODE_OUTPUT_PROVIDER_TITLE = "Provider";
+        private const string NODE_OUTPUT_GRID_ID = "grid_output";
+        private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -43,10 +50,16 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDisplayName(NODE_OPTION_TYPE_TITLE)
                 .WithDefaultValue(ShapeType.Cone)
                 .Build();
+            context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
+                .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
+                .WithDefaultValue(false)
+                .Build();
         }
 
         protected override void OnDefinePorts(IPortDefinitionContext context)
         {
+            GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+
             // Input
             context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
                 .WithDisplayName(NODE_INPUT_SIZE_TITLE)
@@ -57,9 +70,16 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDefaultValue(0.5f)
                 .Build();
 
+            if (isPreviewEnabled)
+            {
+                context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
+                    .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
+                    .Build();
+            }
+
             // Output
-            context.AddOutputPort<IProvider>(NODE_OUTPUT_PROVIDER_ID)
-                .WithDisplayName(NODE_OUTPUT_PROVIDER_TITLE)
+            context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
+                .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
                 .Build();
         }
 
@@ -86,15 +106,15 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Size <= 0)
+            if (input.RadiusPercent <= 0)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.RadiusPercent} (valid: 0 < n)", this);
                 isValid = false;
             }
 
-            if (input.Radius <= 0)
+            if (input.Size <= 0)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_RADIUS_TITLE} value invalid: {input.Radius} (valid: 0 < n)", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
                 isValid = false;
             }
 
@@ -113,8 +133,8 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 GetNodeOptionByName(NODE_OPTION_TYPE_ID).TryGetValue(out temp.ShapeType) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.Radius);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.RadiusPercent) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
 
             if (success)
             {
@@ -127,23 +147,91 @@ namespace Indiecat.TerrainGraph.Editor
             return false;
         }
 
-        public override bool TryGetOutputValue(IPort _, out IProvider value)
+        public override bool TryGetOutputValue(IPort _, out HeightGrid value)
         {
-            if (!TryGetValidatedInputValues(out var inputValues))
+            if (!TryExecuteNode())
             {
                 value = null;
                 return false;
             }
 
-            value = new RadialShapeHeightProvider()
-            {
-                ShapeType = inputValues.ShapeType,
-                Radius = inputValues.Radius * inputValues.Size,
-
-                VersionHash = inputValues.VersionHash
-            };
-
+            value = CacheData.Output;
             return true;
+        }
+
+        public override bool TryExecuteNode()
+        {
+            if (!TryGetValidatedInputValues(out var inputValues))
+            {
+                // Not in valid state
+                CacheData.Output = null;
+                return false;
+            }
+
+            if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
+            {
+                // Node is already up-to-date
+                return true;
+            }
+
+            // Clear the cached values in case there's an early exit below
+            CacheData.Output = null;
+
+            var startTime = DateTime.Now;
+            if (TryExecuteNodeInternal(inputValues))
+            {
+                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryExecuteNodeInternal(InputValues inputValues)
+        {
+            try
+            {
+                var shapeType = inputValues.ShapeType;
+                var radiusPercent = inputValues.RadiusPercent / 100f;
+                var size = inputValues.Size;
+
+                var radius = radiusPercent * size / 2;
+                var center = new Vector2(size, size) / 2f;
+
+                var keywordBuilder = new KeywordBuilder();
+                keywordBuilder.AddKeyword($"OP_{shapeType.ToString().ToUpper()}");
+
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
+
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/RadialShapeNode", out var shader))
+                {
+                    return false;
+                }
+
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetFloat("_Radius", radius);
+                shader.SetVector("_Center", center);
+
+                shader.shaderKeywords = keywordBuilder.GetKeywords();
+
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
+
+                var outputGrid = new HeightGrid(size);
+
+                outputGrid.RenderTexture = outputTexture;
+                outputGrid.VersionHash = inputValues.VersionHash;
+
+                CacheData.Output = outputGrid;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
         }
     }
 }

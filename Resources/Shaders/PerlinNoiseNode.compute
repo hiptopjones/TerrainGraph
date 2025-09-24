@@ -1,0 +1,19 @@
+#pragma kernel CSMain
+
+#include "Noise.cginc"
+
+float2 _Start;
+float _Frequency;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint2 uv = id.xy;
+
+    float2 position = (_Start + uv) * _Frequency;
+
+    float noise = FBM2D(position);
+    _OutTexture[uv].r = saturate((noise + 1) / 2);
+}

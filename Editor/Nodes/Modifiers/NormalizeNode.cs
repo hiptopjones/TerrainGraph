@@ -157,20 +157,33 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var size = inputGrid.Size;
 
-                (var min, var max) = GridHelpers.GetRange(inputGrid);
+                var inputTexture = inputGrid.RenderTexture;
+
+                if (!TryGetMinMax(inputTexture, out var minValue, out var maxValue))
+                {
+                    return false;
+                }
+
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
+
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/NormalizeNode", out var shader))
+                {
+                    return false;
+                }
+
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetFloat("_MinValue", minValue);
+                shader.SetFloat("_MaxValue", maxValue);
+
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
 
                 var outputGrid = new HeightGrid(size);
 
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        var value = inputGrid[x, y];
-
-                        outputGrid[x, y] = Mathf.InverseLerp(min, max, value);
-                    }
-                }
-
+                outputGrid.RenderTexture = outputTexture;
                 outputGrid.VersionHash = inputValues.VersionHash;
 
                 CacheData.Output = outputGrid;
@@ -179,6 +192,88 @@ namespace Indiecat.TerrainGraph.Editor
             catch (Exception ex)
             {
                 Debug.LogException(ex);
+                return false;
+            }
+        }
+
+        public static bool TryGetMinMax(Texture texture, out float min, out float max)
+        {
+            try
+            {
+                const int THREADS_PER_GROUP = 128; // must match shader
+
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/MinMaxReduction", out var shader))
+                {
+                    min = 0;
+                    max = 0;
+                    return false;
+                }
+
+                var kernelTexture = shader.FindKernel("ReduceTexture");
+                var kernelBuffer = shader.FindKernel("ReduceBuffer");
+
+                var totalPixels = texture.width * texture.height;
+                var groups = Mathf.CeilToInt((float)totalPixels / THREADS_PER_GROUP);
+
+                // Buffers to hold intermediate results
+                var minBuffer = new ComputeBuffer(groups, sizeof(float));
+                var maxBuffer = new ComputeBuffer(groups, sizeof(float));
+
+                // First pass: from texture
+                shader.SetTexture(kernelTexture, "_InputTexture", texture);
+                shader.SetBuffer(kernelTexture, "_OutputMinValues", minBuffer);
+                shader.SetBuffer(kernelTexture, "_OutputMaxValues", maxBuffer);
+                shader.Dispatch(kernelTexture, groups, 1, 1);
+
+                // Iterative passes: reduce until down to 1 group
+                while (groups > 1)
+                {
+                    groups = Mathf.CeilToInt((float)groups / THREADS_PER_GROUP);
+
+                    var newMinBuffer = new ComputeBuffer(groups, sizeof(float));
+                    var newMaxBuffer = new ComputeBuffer(groups, sizeof(float));
+
+                    var ignoredMinBuffer = new ComputeBuffer(groups, sizeof(float));
+                    var ignoredMaxBuffer = new ComputeBuffer(groups, sizeof(float));
+
+                    shader.SetBuffer(kernelBuffer, "_InputValues", minBuffer);
+                    shader.SetBuffer(kernelBuffer, "_OutputMinValues", newMinBuffer);
+                    shader.SetBuffer(kernelBuffer, "_OutputMaxValues", ignoredMaxBuffer);
+                    shader.Dispatch(kernelBuffer, groups, 1, 1);
+
+                    shader.SetBuffer(kernelBuffer, "_InputValues", maxBuffer);
+                    shader.SetBuffer(kernelBuffer, "_OutputMinValues", ignoredMinBuffer);
+                    shader.SetBuffer(kernelBuffer, "_OutputMaxValues", newMaxBuffer);
+                    shader.Dispatch(kernelBuffer, groups, 1, 1);
+
+                    ignoredMinBuffer.Release();
+                    ignoredMaxBuffer.Release();
+
+                    minBuffer.Release();
+                    maxBuffer.Release();
+                    minBuffer = newMinBuffer;
+                    maxBuffer = newMaxBuffer;
+
+                }
+
+                // Read back result
+                var minArray = new float[1];
+                var maxArray = new float[1];
+                minBuffer.GetData(minArray); // This blocks on the above having completed
+                maxBuffer.GetData(maxArray); // This blocks on the above having completed
+                minBuffer.Release();
+                maxBuffer.Release();
+
+                min = minArray[0];
+                max = maxArray[0];
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+
+                min = 0;
+                max = 0;
                 return false;
             }
         }

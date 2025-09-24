@@ -9,7 +9,7 @@ namespace Indiecat.TerrainGraph.Editor
     [Serializable]
     public class BlendNode : ExecutableNode<HeightGrid>
     {
-        public enum BlendMethod
+        public enum BlendOperator
         {
             Add = 100,
             Subtract = 200,
@@ -23,7 +23,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         private class InputValues
         {
-            public BlendMethod BlendMethod;
+            public BlendOperator BlendOperator;
             public bool IsFlipped;
             public HeightGrid Grid1;
             public HeightGrid Grid2;
@@ -32,13 +32,13 @@ namespace Indiecat.TerrainGraph.Editor
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(BlendMethod, IsFlipped, Grid1?.VersionHash, Grid2?.VersionHash);
+                return HashCode.Combine(BlendOperator, IsFlipped, Grid1?.VersionHash, Grid2?.VersionHash);
             }
         }
 
         // Options
-        private const string NODE_OPTION_METHOD_ID = "method_option";
-        private const string NODE_OPTION_METHOD_TITLE = "Operation";
+        private const string NODE_OPTION_OPERATOR_ID = "operator_option";
+        private const string NODE_OPTION_OPERATOR_TITLE = "Operation";
 
         private const string NODE_OPTION_FLIP_ID = "flipped_option";
         private const string NODE_OPTION_FLIP_TITLE = "Flip Inputs";
@@ -56,9 +56,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
-            context.AddOption<BlendMethod>(NODE_OPTION_METHOD_ID)
-                .WithDisplayName(NODE_OPTION_METHOD_TITLE)
-                .WithDefaultValue(BlendMethod.Maximum)
+            context.AddOption<BlendOperator>(NODE_OPTION_OPERATOR_ID)
+                .WithDisplayName(NODE_OPTION_OPERATOR_TITLE)
+                .WithDefaultValue(BlendOperator.Maximum)
                 .Build();
             context.AddOption<bool>(NODE_OPTION_FLIP_ID)
                 .WithDisplayName(NODE_OPTION_FLIP_TITLE)
@@ -123,9 +123,9 @@ namespace Indiecat.TerrainGraph.Editor
 
             var isValid = true;
 
-            if (!Enum.IsDefined(typeof(BlendMethod), input.BlendMethod))
+            if (!Enum.IsDefined(typeof(BlendOperator), input.BlendOperator))
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_METHOD_TITLE} option invalid", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_OPERATOR_TITLE} option invalid", this);
                 isValid = false;
             }
 
@@ -161,7 +161,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             var temp = new InputValues();
             var success =
-                GetNodeOptionByName(NODE_OPTION_METHOD_ID).TryGetValue(out temp.BlendMethod) &&
+                GetNodeOptionByName(NODE_OPTION_OPERATOR_ID).TryGetValue(out temp.BlendOperator) &&
                 GetNodeOptionByName(NODE_OPTION_FLIP_ID).TryGetValue(out temp.IsFlipped) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID1_ID, out temp.Grid1) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID2_ID, out temp.Grid2);
@@ -221,55 +221,40 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var blendMethod = inputValues.BlendMethod;
+                var blendOperator = inputValues.BlendOperator;
                 var isFlipped = inputValues.IsFlipped;
                 var inputGrid1 = inputValues.Grid1;
                 var inputGrid2 = inputValues.Grid2;
 
                 var size = inputGrid1.Size;
 
-                var outputGrid = new HeightGrid(size);
+                var keywordBuilder = new KeywordBuilder();
+                keywordBuilder.AddKeyword($"OP_{blendOperator.ToString().ToUpper()}");
+                keywordBuilder.AddKeyword(isFlipped ? "ARGS_FLIPPED" : "ARGS_NORMAL");
 
-                for (int y = 0; y < size; y++)
+                Texture inputTexture1 = inputGrid1.RenderTexture;
+                Texture inputTexture2 = inputGrid2.RenderTexture;
+                RenderTexture outputTexture = GetOrCreateNodeRenderTexture(size);
+
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/BlendNode", out var shader))
                 {
-                    for (int x = 0; x < size; x++)
-                    {
-                        var a = inputGrid1[x, y];
-                        var b = inputGrid2[x, y];
-
-                        switch (blendMethod)
-                        {
-                            case BlendMethod.Add:
-                                outputGrid[x, y] = isFlipped ? b + a : a + b;
-                                break;
-                            case BlendMethod.Subtract:
-                                outputGrid[x, y] = isFlipped ? b - a : a - b;
-                                break;
-                            case BlendMethod.Multiply:
-                                outputGrid[x, y] = isFlipped ? b * a : a * b;
-                                break;
-                            case BlendMethod.Divide:
-                                outputGrid[x, y] = isFlipped ? b / a : a / b;
-                                break;
-                            case BlendMethod.Minimum:
-                                outputGrid[x, y] = isFlipped ? Mathf.Min(b, a) : Mathf.Min(a, b);
-                                break;
-                            case BlendMethod.Maximum:
-                                outputGrid[x, y] = isFlipped ? Mathf.Max(b, a) : Mathf.Max(a, b);
-                                break;
-                            case BlendMethod.Average:
-                                outputGrid[x, y] = isFlipped ? (b + a) / 2f : (a + b) / 2f;
-                                break;
-                            case BlendMethod.Compare:
-                                outputGrid[x, y] = isFlipped ? Compare(b, a) : Compare(a, b);
-                                break;
-                            default:
-                                // Validation ensures we don't get here
-                                break;
-                        }
-                    }
+                    return false;
                 }
 
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_InTexture1", inputTexture1);
+                shader.SetTexture(kernel, "_InTexture2", inputTexture2);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+
+                shader.shaderKeywords = keywordBuilder.GetKeywords();
+
+                int groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
+
+                var outputGrid = new HeightGrid(size);
+
+                outputGrid.RenderTexture = outputTexture;
                 outputGrid.VersionHash = inputValues.VersionHash;
 
                 CacheData.Output = outputGrid;
@@ -280,16 +265,6 @@ namespace Indiecat.TerrainGraph.Editor
                 Debug.LogException(ex);
                 return false;
             }
-        }
-
-        private static float Compare(float a, float b)
-        {
-            if (a == b)
-            {
-                return 0;
-            }
-
-            return a > b ? -1 : 1.1f; // over 1 so it's green in the preview
         }
     }
 }

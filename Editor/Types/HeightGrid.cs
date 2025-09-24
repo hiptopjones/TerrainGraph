@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -6,6 +7,7 @@ namespace Indiecat.TerrainGraph.Editor
     public class HeightGrid : IVersionedObject
     {
         public int Size;
+        public RenderTexture RenderTexture;
 
         public float[] Values { get; set; }
         public float ExecutionTime { get; set; }

@@ -5,6 +5,7 @@ using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -21,8 +22,6 @@ namespace Indiecat.TerrainGraph.Editor
 
         private class InputValues
         {
-            public FileFormat FileFormat;
-            public TextureFormat TextureFormat;
             public HeightGrid Grid;
             public string StampName;
 
@@ -30,7 +29,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(TextureFormat, FileFormat, Grid?.VersionHash, StampName);
+                return HashCode.Combine(Grid?.VersionHash, StampName);
             }
         }
 
@@ -118,12 +117,16 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
 
+            Texture2D workingTexture = null;
+
             try
             {
                 var inputGrid = inputValues.Grid;
                 var stampName = inputValues.StampName;
 
-                if (!TextureHelpers.TryCreateHeightMapTexture(inputGrid, TextureFormat.R16, out var texture))
+                var renderTexture = inputGrid.RenderTexture;
+
+                if (!TextureHelpers.TryCopyRenderTextureToTexture2D(renderTexture, TextureFormat.R16, out workingTexture))
                 {
                     return false;
                 }
@@ -132,7 +135,7 @@ namespace Indiecat.TerrainGraph.Editor
                 if (microverse == null)
                 {
                     // NOTE: The user must create MicroVerse themselves to avoid complexity here
-                    throw new System.Exception("Missing MicroVerse scene object");
+                    throw new Exception("Missing MicroVerse scene object");
                 }
 
                 microverse.enabled = false;
@@ -156,7 +159,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 heightStamp.transform.localScale = terrain.terrainData.size;
                 heightStamp.transform.position = new Vector3(terrain.terrainData.size.x, 0, terrain.terrainData.size.z) / 2;
-                heightStamp.stamp = texture;
+                heightStamp.stamp = workingTexture;
 
                 microverse.enabled = true;
                 microverse.Invalidate();
@@ -167,6 +170,14 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
+            }
+            finally
+            {
+                if (workingTexture != null)
+                {
+                    Object.DestroyImmediate(workingTexture);
+                    workingTexture = null;
+                }
             }
         }
 

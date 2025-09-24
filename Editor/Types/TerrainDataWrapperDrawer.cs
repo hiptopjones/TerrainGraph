@@ -87,6 +87,11 @@ namespace Indiecat.TerrainGraph.Editor
             foreach (var guid in guids)
             {
                 string assetFilePath = AssetDatabase.GUIDToAssetPath(guid);
+                if (!assetFilePath.StartsWith("Assets"))
+                {
+                    continue;
+
+                }
                 TerrainData terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(assetFilePath);
 
                 _terrainDatas.Add(terrainData);

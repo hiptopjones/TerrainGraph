@@ -3,6 +3,7 @@ using System.IO;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -184,27 +185,39 @@ namespace Indiecat.TerrainGraph.Editor
 
         private static bool TryExportPng(HeightGrid inputGrid, TextureFormat textureFormat, string exportFilePath)
         {
-            if (!TextureHelpers.TryCreateHeightMapTexture(inputGrid, textureFormat, out var texture))
-            {
-                return false;
-            }
+            Texture2D exportTexture = null;
 
             try
             {
-                var bytes = texture.EncodeToPNG();
+                var renderTexture = inputGrid.RenderTexture;
+
+                if (!TextureHelpers.TryCopyRenderTextureToTexture2D(renderTexture, textureFormat, out exportTexture))
+                {
+                    return false;
+                }
+
+                var bytes = exportTexture.EncodeToPNG();
 
                 Directory.CreateDirectory(Path.GetDirectoryName(exportFilePath));
 
                 exportFilePath = Path.ChangeExtension(exportFilePath, "png");
                 File.WriteAllBytes(exportFilePath, bytes);
+
+                return true;
             }
             catch (Exception ex)
             {
                 Debug.LogException(ex);
                 return false;
             }
-
-            return true;
+            finally
+            {
+                if (exportTexture != null)
+                {
+                    Object.DestroyImmediate(exportTexture);
+                    exportTexture = null;
+                }
+            }
         }
 
         private static bool TryExportRaw(HeightGrid inputGrid, string exportFilePath)
