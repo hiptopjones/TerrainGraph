@@ -10,13 +10,13 @@ namespace Indiecat.TerrainGraph.Editor
         private class InputValues
         {
             public HeightGrid Grid;
-            public float Value;
+            public float Height;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, Value);
+                return HashCode.Combine(Grid?.VersionHash, Height);
             }
         }
 
@@ -26,8 +26,8 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_GRID_ID = "grid_input";
         private const string NODE_INPUT_GRID_TITLE = "Grid";
 
-        private const string NODE_INPUT_VALUE_ID = "value_input";
-        private const string NODE_INPUT_VALUE_TITLE = "Value";
+        private const string NODE_INPUT_HEIGHT_ID = "height_input";
+        private const string NODE_INPUT_HEIGHT_TITLE = "Height";
 
         // Outputs
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -49,8 +49,8 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
                 .WithDisplayName(NODE_INPUT_GRID_TITLE)
                 .Build();
-            context.AddInputPort<float>(NODE_INPUT_VALUE_ID)
-                .WithDisplayName(NODE_INPUT_VALUE_TITLE)
+            context.AddInputPort<float>(NODE_INPUT_HEIGHT_ID)
+                .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
                 .WithDefaultValue(0)
                 .Build();
 
@@ -105,7 +105,7 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VALUE_ID, out temp.Value);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.Height);
 
             if (success)
             {
@@ -163,22 +163,30 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var inputGrid = inputValues.Grid;
-                var value = inputValues.Value;
+                var height = inputValues.Height;
 
                 var size = inputGrid.Size;
 
-                var outputGrid = new HeightGrid(size);
+                var inputTexture = inputGrid.RenderTexture;
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                for (int y = 0; y < size; y++)
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/RemoveNode", out var shader))
                 {
-                    for (int x = 0; x < size; x++)
-                    {
-                        var height = inputGrid[x, y];
-
-                        outputGrid[x, y] = height == value ? 0 : height;
-                    }
+                    return false;
                 }
 
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetFloat("_Height", height);
+
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
+
+                var outputGrid = new HeightGrid(size);
+
+                outputGrid.RenderTexture = outputTexture;
                 outputGrid.VersionHash = inputValues.VersionHash;
 
                 CacheData.Output = outputGrid;
