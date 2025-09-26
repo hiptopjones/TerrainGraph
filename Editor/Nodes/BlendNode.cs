@@ -232,9 +232,9 @@ namespace Indiecat.TerrainGraph.Editor
                 keywordBuilder.AddKeyword($"OP_{blendOperator.ToString().ToUpper()}");
                 keywordBuilder.AddKeyword(isFlipped ? "ARGS_FLIPPED" : "ARGS_NORMAL");
 
-                Texture inputTexture1 = inputGrid1.RenderTexture;
-                Texture inputTexture2 = inputGrid2.RenderTexture;
-                RenderTexture outputTexture = GetOrCreateNodeRenderTexture(size);
+                var inputTexture1 = inputGrid1.RenderTexture;
+                var inputTexture2 = inputGrid2.RenderTexture;
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
 
                 if (!ComputeHelpers.TryLoadComputeShader("Shaders/BlendNode", out var shader))
                 {
@@ -249,7 +249,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 shader.shaderKeywords = keywordBuilder.GetKeywords();
 
-                int groups = Mathf.CeilToInt(size / 8.0f);
+                var groups = Mathf.CeilToInt(size / 8.0f);
                 shader.Dispatch(kernel, groups, groups, 1);
 
                 var outputGrid = new HeightGrid(size);

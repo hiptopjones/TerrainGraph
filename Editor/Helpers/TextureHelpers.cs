@@ -74,6 +74,12 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
+        public static Texture2D CreateTexture(int width, int height, TextureFormat format)
+        {
+            var texture = new Texture2D(width, height, format, mipChain: false, linear: true);
+            return texture;
+        }
+
         public static RenderTexture CreateRenderTexture(int size, RenderTextureFormat format)
         {
             var renderTexture = new RenderTexture(size, size, 0, format);

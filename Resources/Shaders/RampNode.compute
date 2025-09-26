@@ -1,0 +1,20 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+Texture2D<float> _RampTexture;
+SamplerState sampler_RampTexture;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint2 uv = id.xy;
+    
+    float t = _InTexture[uv].r;
+    
+    float2 position = float2(t, 0);
+    float lod = 0;
+    
+    _OutTexture[uv].r = _RampTexture.SampleLevel(sampler_RampTexture, position, lod);
+}

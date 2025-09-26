@@ -235,24 +235,37 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool TryExecuteNodeInternal(InputValues inputValues)
         {
+            Texture2D rampTexture = null;
+
             try
             {
                 var inputGrid = inputValues.Grid;
 
-                var rampFunction = GetRampFunction(inputValues);
-
                 var size = inputGrid.Size;
+
+                var rampFunction = GetRampFunction(inputValues);
+                rampTexture = GetRampTexture(rampFunction);
+
+                var inputTexture = inputGrid.RenderTexture;
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
+
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/RampNode", out var shader))
+                {
+                    return false;
+                }
+
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetTexture(kernel, "_RampTexture", rampTexture);
+
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
 
                 var outputGrid = new HeightGrid(size);
 
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        outputGrid[x, y] = rampFunction(Mathf.Clamp01(inputGrid[x, y]));
-                    }
-                }
-
+                outputGrid.RenderTexture = outputTexture;
                 outputGrid.VersionHash = inputValues.VersionHash;
 
                 CacheData.Output = outputGrid;
@@ -263,6 +276,25 @@ namespace Indiecat.TerrainGraph.Editor
                 Debug.LogException(ex);
                 return false;
             }
+        }
+        private Texture2D GetRampTexture(Func<float, float> rampFunction)
+        {
+            var width = 256;
+            var height = 1;
+
+            var colors = new Color[width];
+
+            for (int x = 0; x < width; x++)
+            {
+                var t = x / (float)(width - 1);
+                colors[x] = new Color(rampFunction(t), 0, 0, 0);
+            }
+
+            var texture = TextureHelpers.CreateTexture(width, height, TextureFormat.RFloat);
+            texture.SetPixels(colors);
+            texture.Apply();
+
+            return texture;
         }
 
         private Func<float, float> GetRampFunction(InputValues inputValues)
