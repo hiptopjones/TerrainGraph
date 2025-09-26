@@ -5,18 +5,20 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class RotateNode : ExecutableNode<HeightGrid>
+    public class TransformNode : ExecutableNode<HeightGrid>
     {
         private class InputValues
         {
             public HeightGrid Grid;
+            public Vector2 TranslationPercent;
             public float RotationDegrees;
+            public Vector2 Scale;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, RotationDegrees);
+                return HashCode.Combine(Grid?.VersionHash, TranslationPercent, RotationDegrees, Scale);
             }
         }
 
@@ -27,7 +29,13 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_GRID_TITLE = "Grid";
 
         private const string NODE_INPUT_ROTATION_ID = "degrees_input";
-        private const string NODE_INPUT_ROTATION_TITLE = "Degrees";
+        private const string NODE_INPUT_ROTATION_TITLE = "Rotation (Degrees)";
+        
+        private const string NODE_INPUT_SCALE_ID = "scale_input";
+        private const string NODE_INPUT_SCALE_TITLE = "Scale";
+
+        private const string NODE_INPUT_TRANSLATION_ID = "translation_input";
+        private const string NODE_INPUT_TRANSLATION_TITLE = "Translation (Percent)";
 
         // Outputs
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -49,9 +57,17 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
                 .WithDisplayName(NODE_INPUT_GRID_TITLE)
                 .Build();
+            context.AddInputPort<Vector2>(NODE_INPUT_TRANSLATION_ID)
+                .WithDisplayName(NODE_INPUT_TRANSLATION_TITLE)
+                .WithDefaultValue(Vector2.zero)
+                .Build();
             context.AddInputPort<float>(NODE_INPUT_ROTATION_ID)
                 .WithDisplayName(NODE_INPUT_ROTATION_TITLE)
                 .WithDefaultValue(0)
+                .Build();
+            context.AddInputPort<Vector2>(NODE_INPUT_SCALE_ID)
+                .WithDisplayName(NODE_INPUT_SCALE_TITLE)
+                .WithDefaultValue(Vector2.one)
                 .Build();
 
             if (isPreviewEnabled)
@@ -105,7 +121,9 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ROTATION_ID, out temp.RotationDegrees);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TRANSLATION_ID, out temp.TranslationPercent) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ROTATION_ID, out temp.RotationDegrees) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SCALE_ID, out temp.Scale);
 
             if (success)
             {
@@ -163,42 +181,41 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var inputGrid = inputValues.Grid;
+                var translationPercent = inputValues.TranslationPercent;
                 var rotationDegrees = inputValues.RotationDegrees;
+                var scale = inputValues.Scale;
 
                 var size = inputGrid.Size;
+                var translation = translationPercent * size;
+                var center = Vector2.one * size / 2f;
+
+                var trs = Matrix4x4.TRS(
+                    new Vector3(translation.x, translation.y, 0),
+                    Quaternion.Euler(0, 0, rotationDegrees),
+                    new Vector3(1 / scale.x, 1 / scale.y, 1));
+
+                var inputTexture = inputGrid.RenderTexture;
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
+
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/TransformNode", out var shader))
+                {
+                    return false;
+                }
+
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetFloat("_Size", size);
+                shader.SetVector("_Center", center);
+                shader.SetMatrix("_Transform", trs);
+
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
 
                 var outputGrid = new HeightGrid(size);
 
-                var center = Vector2.one * size / 2;
-
-                float radians = rotationDegrees * Mathf.Deg2Rad;
-                float sin = Mathf.Sin(radians);
-                float cos = Mathf.Cos(radians);
-
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        var position = new Vector2(x, y) - center;
-
-                        var sourceX = position.x * cos - position.y * sin;
-                        var sourceY = position.x * sin + position.y * cos;
-
-                        sourceX += center.x;
-                        sourceY += center.y;
-
-                        if (sourceX < 0 || sourceX > size - 1 ||
-                            sourceY < 0 || sourceY > size - 1)
-                        {
-                            outputGrid[x, y] = 0;
-                        }
-                        else
-                        {
-                            outputGrid[x, y] = GridHelpers.SafeIndex(inputGrid, sourceX, sourceY);
-                        }
-                    }
-                }
-
+                outputGrid.RenderTexture = outputTexture;
                 outputGrid.VersionHash = inputValues.VersionHash;
 
                 CacheData.Output = outputGrid;

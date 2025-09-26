@@ -192,7 +192,7 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var shapeType = inputValues.ShapeType;
-                var radiusPercent = inputValues.RadiusPercent / 100f;
+                var radiusPercent = inputValues.RadiusPercent;
                 var size = inputValues.Size;
 
                 var radius = radiusPercent * size / 2;

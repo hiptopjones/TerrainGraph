@@ -202,7 +202,6 @@ namespace Indiecat.TerrainGraph.Editor
                 if (TryExecuteNodeInternal(inputValues))
                 {
                     CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
-                    //Debug.Log($"{GetType().Name} {inputValues.ArithmeticOperator} {inputValues.Grid.Size} {CacheData.Output.ExecutionTime*1000f:F3}ms");
                     return true;
                 }
 

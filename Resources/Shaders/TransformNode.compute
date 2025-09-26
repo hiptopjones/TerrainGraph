@@ -1,0 +1,36 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+SamplerState sampler_InTexture;
+float _Size;
+float4x4 _Transform;
+
+RWTexture2D<float> _OutTexture;
+
+float2 ApplyTransform(float2 position)
+{
+    float4 transformedPosition = float4(position.xy, 0.0, 1.0);
+    transformedPosition = mul(_Transform, transformedPosition);
+    return transformedPosition.xy;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint2 uv = id.xy;
+    
+    float2 center = float2(_Size / 2, _Size / 2) + 0.5f;
+    float2 transformedUV = (ApplyTransform(uv - center) + center) / _Size;
+    float lod = 1;
+    
+    float height = 0;
+    
+    // Sampler will clamp out-of-range coordinates, but we want them to be zero
+    if (transformedUV.x > 0 && transformedUV.x < 1 &&
+        transformedUV.y > 0 && transformedUV.y < 1)
+    {
+        height = _InTexture.SampleLevel(sampler_InTexture, transformedUV, lod).r;
+    }
+    
+    _OutTexture[uv].r = height;
+}
