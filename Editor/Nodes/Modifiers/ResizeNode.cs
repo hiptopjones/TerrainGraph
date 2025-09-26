@@ -11,13 +11,13 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public HeightGrid Grid;
             public int Size;
-            public bool Zoom;
+            public bool PreserveScale;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, Size, Zoom);
+                return HashCode.Combine(Grid?.VersionHash, Size, PreserveScale);
             }
         }
 
@@ -30,8 +30,8 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_SIZE_ID = "size_input";
         private const string NODE_INPUT_SIZE_TITLE = "Size";
 
-        private const string NODE_INPUT_ZOOM_ID = "zoom_input";
-        private const string NODE_INPUT_ZOOM_TITLE = "Zoom";
+        private const string NODE_INPUT_PRESERVE_ID = "preserve_input";
+        private const string NODE_INPUT_PRESERVE_TITLE = "Preserve Scale";
 
         // Outputs
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -57,8 +57,8 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDisplayName(NODE_INPUT_SIZE_TITLE)
                 .WithDefaultValue(256)
                 .Build();
-            context.AddInputPort<bool>(NODE_INPUT_ZOOM_ID)
-                .WithDisplayName(NODE_INPUT_ZOOM_TITLE)
+            context.AddInputPort<bool>(NODE_INPUT_PRESERVE_ID)
+                .WithDisplayName(NODE_INPUT_PRESERVE_TITLE)
                 .WithDefaultValue(true)
                 .Build();
 
@@ -120,7 +120,7 @@ namespace Indiecat.TerrainGraph.Editor
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ZOOM_ID, out temp.Zoom);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PRESERVE_ID, out temp.PreserveScale);
 
             if (success)
             {
@@ -178,22 +178,32 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var inputGrid = inputValues.Grid;
-                var inputSize = inputGrid.Size;
-                var outputSize = inputValues.Size;
-                var zoom = inputValues.Zoom;
+                var targetSize = inputValues.Size;
+                var preserveScale = inputValues.PreserveScale;
 
-                HeightGrid outputGrid = null;
+                var sourceSize = inputGrid.Size;
+                var scale = preserveScale ? sourceSize / (float)targetSize : 1;
 
-                if (zoom)
+                var inputTexture = inputGrid.RenderTexture;
+                var outputTexture = GetOrCreateNodeRenderTexture(targetSize);
+
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/ResizeNode", out var shader))
                 {
-                    outputGrid = Zoom(inputGrid, outputSize);
-                }
-                else
-                {
-                    var scalePercent = outputSize / (float)inputSize;
-                    outputGrid = Resample(inputGrid, outputSize, scalePercent);
+                    return false;
                 }
 
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetFloat("_Scale", scale);
+
+                var groups = Mathf.CeilToInt(targetSize / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
+
+                var outputGrid = new HeightGrid(targetSize);
+
+                outputGrid.RenderTexture = outputTexture;
                 outputGrid.VersionHash = inputValues.VersionHash;
 
                 CacheData.Output = outputGrid;
@@ -204,68 +214,6 @@ namespace Indiecat.TerrainGraph.Editor
                 Debug.LogException(ex);
                 return false;
             }
-        }
-
-        public static HeightGrid Zoom(HeightGrid inputGrid, int outputSize)
-        {
-            var inputSize = inputGrid.Size;
-        
-            var outputCenter = Vector2Int.one * outputSize / 2;
-            var inputCenter = Vector2Int.one * inputSize / 2;
-
-            var outputGrid = new HeightGrid(outputSize);
-
-            for (int y = 0; y < outputSize; y++)
-            {
-                for (int x = 0; x < outputSize; x++)
-                {
-                    var target = new Vector2Int(x, y);
-                    var source = target - outputCenter + inputCenter;
-
-                    if (source.x < 0 || source.x > inputSize - 1 ||
-                        source.y < 0 || source.y > inputSize - 1)
-                    {
-                        outputGrid[x, y] = 0;
-                    }
-                    else
-                    {
-                        outputGrid[x, y] = inputGrid[source.x, source.y];
-                    }
-                }
-            }
-
-            return outputGrid;
-        }
-
-        public static HeightGrid Resample(HeightGrid inputGrid, int outputSize, float scalePercent)
-        {
-            var inputSize = inputGrid.Size;
-
-            var outputCenter = Vector2Int.one * outputSize / 2;
-            var inputCenter = Vector2Int.one * inputSize / 2;
-
-            var outputGrid = new HeightGrid(outputSize);
-
-            for (int y = 0; y < outputSize; y++)
-            {
-                for (int x = 0; x < outputSize; x++)
-                {
-                    var target = new Vector2(x, y);
-                    var source = (target - outputCenter) / scalePercent + inputCenter;
-
-                    if (source.x < 0 || source.x > inputSize - 1 ||
-                        source.y < 0 || source.y > inputSize - 1)
-                    {
-                        outputGrid[x, y] = 0;
-                    }
-                    else
-                    {
-                        outputGrid[x, y] = GridHelpers.SafeIndex(inputGrid, source.x, source.y);
-                    }
-                }
-            }
-
-            return outputGrid;
         }
     }
 }
