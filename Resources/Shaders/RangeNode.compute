@@ -1,0 +1,23 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+float _FromLow;
+float _FromHigh;
+float _ToLow;
+float _ToHigh;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint2 uv = id.xy;
+    
+    float height = _InTexture[uv].r;
+    
+    float t = saturate((height - _FromLow) / (_FromHigh - _FromLow));
+
+    _OutTexture[uv].r = lerp(_ToLow, _ToHigh, t);
+}
+
+

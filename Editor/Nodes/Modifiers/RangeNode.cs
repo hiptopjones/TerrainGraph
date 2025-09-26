@@ -189,19 +189,29 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var size = inputGrid.Size;
 
-                var outputGrid = new HeightGrid(size);
+                var inputTexture = inputGrid.RenderTexture;
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                for (int y = 0; y < size; y++)
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/RangeNode", out var shader))
                 {
-                    for (int x = 0; x < size; x++)
-                    {
-                        var fromValue = inputGrid[x, y];
-                        var t = Mathf.InverseLerp(fromRange.x, fromRange.y, fromValue);
-                        var toValue = Mathf.Lerp(toRange.x, toRange.y, t);
-                        outputGrid[x, y] = toValue;
-                    }
+                    return false;
                 }
 
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetFloat("_FromLow", fromRange.x);
+                shader.SetFloat("_FromHigh", fromRange.y);
+                shader.SetFloat("_ToLow", toRange.x);
+                shader.SetFloat("_ToHigh", toRange.y);
+
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
+
+                var outputGrid = new HeightGrid(size);
+
+                outputGrid.RenderTexture = outputTexture;
                 outputGrid.VersionHash = inputValues.VersionHash;
 
                 CacheData.Output = outputGrid;
