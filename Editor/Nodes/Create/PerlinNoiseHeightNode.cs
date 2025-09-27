@@ -183,7 +183,7 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var offset = inputValues.Offset;
-                var frequency = inputValues.Frequency / 1000f;
+                var frequency = inputValues.Frequency;
                 var seed = inputValues.Seed;
                 var size = inputValues.Size;
 
