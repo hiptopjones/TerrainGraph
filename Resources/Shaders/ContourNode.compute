@@ -1,0 +1,112 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+uint _Size;
+float _Height;
+
+AppendStructuredBuffer<float4> _OutSegments; // Stores p1.xy, p2.xy
+
+// Interpolation helper
+float2 LerpEdge(uint2 p1, uint2 p2, float v1, float v2)
+{
+    float t = saturate((_Height - v1) / (v2 - v1));
+    return lerp(p1, p2, t);
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size - 1 || id.y >= _Size - 1)
+    {
+        return;
+    }
+    
+    // a b
+    // c d
+    uint2 a = id.xy;
+    uint2 b = id.xy + uint2(1, 0);
+    uint2 c = id.xy + uint2(0, 1);
+    uint2 d = id.xy + uint2(1, 1);
+
+    float va = _InTexture[a];
+    float vb = _InTexture[b];
+    float vc = _InTexture[c];
+    float vd = _InTexture[d];
+
+    int caseIndex = 0;
+    if (va > _Height)
+        caseIndex |= 1;
+    if (vb > _Height)
+        caseIndex |= 2;
+    if (vd > _Height)
+        caseIndex |= 4;
+    if (vc > _Height)
+        caseIndex |= 8;
+    
+    // https://jamie-wong.com/2014/08/19/metaballs-and-marching-squares/
+    [branch]
+    switch (caseIndex)
+    {
+        case 0:
+        case 15:
+            break; // empty
+
+        case 5:
+        case 10:
+            break; // ignore saddle points
+
+        case 1:
+        case 14:
+            {
+                float2 p = LerpEdge(a, b, va, vb);
+                float2 q = LerpEdge(a, c, va, vc);
+                _OutSegments.Append(float4(p, q));
+            }
+            break;
+
+        case 2:
+        case 13:
+            {
+                float2 p = LerpEdge(b, a, vb, va);
+                float2 q = LerpEdge(b, d, vb, vd);
+                _OutSegments.Append(float4(p, q));
+            }
+            break;
+
+        case 3:
+        case 12:
+            {
+                float2 p = LerpEdge(a, c, va, vc);
+                float2 q = LerpEdge(b, d, vb, vd);
+                _OutSegments.Append(float4(p, q));
+            }
+            break;
+
+        case 4:
+        case 11:
+            {
+                float2 p = LerpEdge(d, b, vd, vb);
+                float2 q = LerpEdge(d, c, vd, vc);
+                _OutSegments.Append(float4(p, q));
+            }
+            break;
+        
+        case 6:
+        case 9:
+            {
+                float2 p = LerpEdge(a, b, va, vb);
+                float2 q = LerpEdge(d, c, vd, vc);
+                _OutSegments.Append(float4(p, q));
+            }
+            break;
+
+        case 7:
+        case 8:
+            {
+                float2 p = LerpEdge(a, c, va, vc);
+                float2 q = LerpEdge(d, c, vd, vc);
+                _OutSegments.Append(float4(p, q));
+            }
+            break;
+    }
+}

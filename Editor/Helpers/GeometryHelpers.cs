@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -140,6 +142,65 @@ namespace Indiecat.TerrainGraph.Editor
         public static float Cross(Vector2 a, Vector2 b)
         {
             return a.x * b.y - a.y * b.x;
+        }
+
+        // Ramer–Douglas–Peucker
+        public static List<Vector2> SimplifyPolyline(List<Vector2> points, float epsilon)
+        {
+            if (points == null || points.Count < 2)
+            {
+                return points;
+            }
+
+            var index = -1;
+            var maxDistance = 0f;
+
+            // Find point farthest from line between first & last
+            for (int i = 1; i < points.Count - 1; i++)
+            {
+                var distance = PerpendicularDistance(points[i], points[0], points[^1]);
+                if (distance > maxDistance)
+                {
+                    index = i;
+                    maxDistance = distance;
+                }
+            }
+
+            // If max distance > epsilon, recursively simplify
+            if (maxDistance > epsilon)
+            {
+                var left = SimplifyPolyline(points.GetRange(0, index + 1), epsilon);
+                var right = SimplifyPolyline(points.GetRange(index, points.Count - index), epsilon);
+
+                // Merge results (remove duplicate middle point)
+                var result = new List<Vector2>(left);
+                result.RemoveAt(result.Count - 1);
+                result.AddRange(right);
+
+                return result;
+            }
+            else
+            {
+                // Just keep endpoints
+                return new List<Vector2> { points[0], points[^1] };
+            }
+        }
+
+
+        public static float PerpendicularDistance(Vector2 p, Vector2 a, Vector2 b)
+        {
+            if (a == b)
+            {
+                return Vector2.Distance(p, a);
+            }
+
+            var ab = b - a;
+            var t = Vector2.Dot(p - a, ab) / Vector2.Dot(ab, ab);
+            var q = a + t * ab;
+            var pq = p - q;
+
+            var distance = pq.magnitude;
+            return distance;
         }
     }
 }
