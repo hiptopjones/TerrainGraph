@@ -14,17 +14,18 @@ namespace Indiecat.TerrainGraph.Editor
         private class InputValues
         {
             public SplineWrapper SplineWrapper;
-            public IProvider Provider;
-            public int VertexCount;
-            public DisplacementAxis DisplacementAxis;
+            public Vector2 Offset;
+            public float Frequency;
             public float Amplitude;
+            public int Seed;
             public int IterationCount;
+            public int VertexCount;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(SplineWrapper?.VersionHash, Provider?.VersionHash, VertexCount, DisplacementAxis, Amplitude, IterationCount);
+                return HashCode.Combine(SplineWrapper?.VersionHash, Offset, Frequency, Amplitude, Seed, IterationCount, VertexCount);
             }
         }
 
@@ -34,20 +35,23 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_SPLINE_ID = "spline_input";
         private const string NODE_INPUT_SPLINE_TITLE = "Spline";
 
-        private const string NODE_INPUT_PROVIDER_ID = "provider_input";
-        private const string NODE_INPUT_PROVIDER_TITLE = "Provider";
+        private const string NODE_INPUT_OFFSET_ID = "offset_input";
+        private const string NODE_INPUT_OFFSET_TITLE = "Offset";
 
-        private const string NODE_INPUT_VERTICES_ID = "vertices_input";
-        private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
-
-        private const string NODE_INPUT_AXIS_ID = "axis_input";
-        private const string NODE_INPUT_AXIS_TITLE = "Axis";
+        private const string NODE_INPUT_FREQUENCY_ID = "frequency_input";
+        private const string NODE_INPUT_FREQUENCY_TITLE = "Frequency";
 
         private const string NODE_INPUT_AMPLITUDE_ID = "amplitude_input";
         private const string NODE_INPUT_AMPLITUDE_TITLE = "Amplitude";
 
+        private const string NODE_INPUT_SEED_ID = "seed_input";
+        private const string NODE_INPUT_SEED_TITLE = "Seed";
+
         private const string NODE_INPUT_ITERATIONS_ID = "iterations_input";
         private const string NODE_INPUT_ITERATIONS_TITLE = "Iterations";
+
+        private const string NODE_INPUT_VERTICES_ID = "vertices_input";
+        private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
 
         // Outputs
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
@@ -63,13 +67,6 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
         }
 
-        private enum DisplacementAxis
-        {
-            Horizontal,
-            Vertical,
-            Both
-        }
-
         protected override void OnDefinePorts(IPortDefinitionContext context)
         {
             GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
@@ -78,24 +75,27 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
                 .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
                 .Build();
-            context.AddInputPort<IProvider>(NODE_INPUT_PROVIDER_ID)
-                .WithDisplayName(NODE_INPUT_PROVIDER_TITLE)
+            context.AddInputPort<Vector2>(NODE_INPUT_OFFSET_ID)
+                .WithDisplayName(NODE_INPUT_OFFSET_TITLE)
                 .Build();
-            context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
-                .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-                .WithDefaultValue(100)
-                .Build();
-            context.AddInputPort<DisplacementAxis>(NODE_INPUT_AXIS_ID)
-                .WithDisplayName(NODE_INPUT_AXIS_TITLE)
-                .WithDefaultValue(DisplacementAxis.Horizontal)
+            context.AddInputPort<float>(NODE_INPUT_FREQUENCY_ID)
+                .WithDisplayName(NODE_INPUT_FREQUENCY_TITLE)
+                .WithDefaultValue(0.05f)
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
                 .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
-                .WithDefaultValue(30)
+                .WithDefaultValue(5)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_SEED_ID)
+                .WithDisplayName(NODE_INPUT_SEED_TITLE)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_ITERATIONS_ID)
                 .WithDisplayName(NODE_INPUT_ITERATIONS_TITLE)
                 .WithDefaultValue(1)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
+                .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
+                .WithDefaultValue(100)
                 .Build();
 
             if (isPreviewEnabled)
@@ -134,32 +134,27 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Provider == null || !input.Provider.IsValid)
+            if (input.Frequency <= 0)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value missing", this);
-                isValid = false;
-            }
-            else if (input.Provider is not INoiseProvider)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_PROVIDER_TITLE} value incorrect", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_FREQUENCY_TITLE} value invalid: {input.Frequency} (valid: 0 < n)", this);
                 isValid = false;
             }
 
-            if (input.VertexCount < MIN_VERTEX_COUNT)
+            if (input.Amplitude <= 0)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
-                isValid = false;
-            }
-
-            if (!Enum.IsDefined(typeof(DisplacementAxis), input.DisplacementAxis))
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_AXIS_TITLE} option invalid", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_AMPLITUDE_TITLE} value invalid: {input.Amplitude} (valid: 0 < n)", this);
                 isValid = false;
             }
 
             if (input.IterationCount <= 0)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: 0 < n)", this);
+                isValid = false;
+            }
+
+            if (input.VertexCount < MIN_VERTEX_COUNT)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
                 isValid = false;
             }
 
@@ -178,11 +173,12 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PROVIDER_ID, out temp.Provider) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AXIS_ID, out temp.DisplacementAxis) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_OFFSET_ID, out temp.Offset) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_FREQUENCY_ID, out temp.Frequency) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.IterationCount);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SEED_ID, out temp.Seed) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.IterationCount) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount);
 
             if (success)
             {
@@ -239,12 +235,15 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var noiseProvider = inputValues.Provider as INoiseProvider;
                 var inputSplineWrapper = inputValues.SplineWrapper;
-                var vertexCount = inputValues.VertexCount;
-                var displacementAxis = inputValues.DisplacementAxis;
+                var offset = inputValues.Offset;
+                var frequency = inputValues.Frequency;
                 var amplitude = inputValues.Amplitude;
+                var seed = inputValues.Seed;
                 var iterationCount = inputValues.IterationCount;
+                var vertexCount = inputValues.VertexCount;
+
+                var start = NoiseHelpers.GetOffsetPositionInternal(offset, seed);
 
                 var currentSpline = inputSplineWrapper.Spline;
 
@@ -262,31 +261,18 @@ namespace Indiecat.TerrainGraph.Editor
                             t = j / (float)vertexCount;
                         }
 
-                        Vector3 position = currentSpline.EvaluatePosition(t);
-                        Vector3 tangent = ((Vector3)currentSpline.EvaluateTangent(t)).normalized;
+                        var position = currentSpline.EvaluatePosition(t);
+                        var tangent = ((Vector3)currentSpline.EvaluateTangent(t)).normalized;
 
-                        Vector3 up = Vector3.up;
-                        Vector3 binormal = Vector3.Cross(up, tangent).normalized;
+                        var up = Vector3.up;
+                        var binormal = Vector3.Cross(up, tangent).normalized;
 
-                        Vector3 displacement = Vector3.zero;
+                        var displacement = Vector3.zero;
 
-                        if (displacementAxis == DisplacementAxis.Horizontal || displacementAxis == DisplacementAxis.Both)
-                        {
-                            const float HORIZONTAL_NOISE_RADIUS = 1.0f;
-                            NoiseHelpers.TryGetSeamlessNoise(noiseProvider, HORIZONTAL_NOISE_RADIUS, t, out var noise);
-                            displacement += binormal * (noise - 0.5f) * amplitude;
-                        }
-                 
-                        if (displacementAxis == DisplacementAxis.Vertical || displacementAxis == DisplacementAxis.Both)
-                        {
-                            const float VERTICAL_NOISE_RADIUS = 1.1f;
-                            NoiseHelpers.TryGetSeamlessNoise(noiseProvider, VERTICAL_NOISE_RADIUS, t, out var noise);
+                        var noise = GetSeamlessNoise(start, frequency, t);
+                        displacement += binormal * (noise - 0.5f) * amplitude;
 
-                            // Unlike horizontal, this limits vertical displacement to half the noise range and only in the positive direction
-                            displacement += up * Mathf.Clamp01(noise - 0.5f) * amplitude;
-                        }
-
-                        Vector3 displacedPosition = position + displacement;
+                        var displacedPosition = position + displacement;
                         vertices.Add(displacedPosition);
                     }
 
@@ -314,5 +300,14 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
+        // Sample noise in a circle through the noise field, which makes it seamless
+        public static float GetSeamlessNoise(Vector2 start, float frequency, float t)
+        {
+            var x = frequency * Mathf.Cos(t * 2 * Mathf.PI);
+            var y = frequency * Mathf.Sin(t * 2 * Mathf.PI);
+
+            var noise = NoiseHelpers.PerlinNoise2D(start.x + x, start.y + y);
+            return noise;
+        }
     }
 }
