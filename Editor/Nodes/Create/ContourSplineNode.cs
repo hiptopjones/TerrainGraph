@@ -15,13 +15,14 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public HeightGrid Grid;
             public float ContourHeight;
+            public int ContourIndex;
             public int VertexCount;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, ContourHeight, VertexCount);
+                return HashCode.Combine(Grid?.VersionHash, ContourHeight, ContourIndex, VertexCount);
             }
         }
 
@@ -39,6 +40,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         private const string NODE_INPUT_HEIGHT_ID = "height_input";
         private const string NODE_INPUT_HEIGHT_TITLE = "Height";
+
+        private const string NODE_INPUT_INDEX_ID = "contour_input";
+        private const string NODE_INPUT_INDEX_TITLE = "Contour Index";
 
         private const string NODE_INPUT_VERTICES_ID = "vertices_input";
         private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
@@ -68,6 +72,10 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<float>(NODE_INPUT_HEIGHT_ID)
                 .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
                 .WithDefaultValue(0.3f)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_INDEX_ID)
+                .WithDisplayName(NODE_INPUT_INDEX_TITLE)
+                .WithDefaultValue(0)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
                 .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
@@ -110,6 +118,12 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
+            if (input.ContourIndex < 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_INDEX_TITLE} value invalid: {input.ContourIndex} (valid: 0 <= n)", this);
+                isValid = false;
+            }
+
             if (input.VertexCount <= 0)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} < n)", this);
@@ -132,6 +146,7 @@ namespace Indiecat.TerrainGraph.Editor
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.ContourHeight) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_INDEX_ID, out temp.ContourIndex) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount);
 
             if (success)
@@ -194,6 +209,7 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputGrid = inputValues.Grid;
                 var contourHeight = inputValues.ContourHeight;
+                var contourIndex = inputValues.ContourIndex;
                 var vertexCount = inputValues.VertexCount;
 
                 var size = inputGrid.Size;
@@ -237,7 +253,13 @@ namespace Indiecat.TerrainGraph.Editor
                     return false;
                 }
 
-                var contour = contours.OrderByDescending(x => x.Count).First();
+                if (contours.Count <= contourIndex)
+                {
+                    Debug.LogError($"Contour index invalid ({contours.Count} contours returned)");
+                    return false;
+                }
+
+                var contour = contours.OrderByDescending(x => x.Count).Skip(contourIndex).First();
                 var simplifiedContour = GeometryHelpers.SimplifyPolyline(contour, 2);
                 //Debug.Log($"contour: {contour.Count} simplified: {simplifiedContour.Count}");
 
