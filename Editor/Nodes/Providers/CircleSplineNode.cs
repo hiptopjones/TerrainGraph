@@ -1,44 +1,57 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
+using UnityEngine;
+using UnityEngine.Splines;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class CircleSplineNode : ProviderNode<IProvider>
+    public class CircleSplineNode : ExecutableNode<SplineWrapper>
     {
         private class InputValues
         {
             public int Size;
-            public float Angle;
+            public float AngleDegrees;
+            public int VertexCount;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Size, Angle);
+                return HashCode.Combine(Size, AngleDegrees, VertexCount);
             }
         }
 
         // Options
 
         // Inputs
+        private const string NODE_INPUT_ANGLE_ID = "angle_input";
+        private const string NODE_INPUT_ANGLE_TITLE = "Angle (Degrees)";
+
         private const string NODE_INPUT_SIZE_ID = "size_input";
         private const string NODE_INPUT_SIZE_TITLE = "Size";
 
-        private const string NODE_INPUT_ANGLE_ID = "angle_input";
-        private const string NODE_INPUT_ANGLE_TITLE = "Angle";
+        private const string NODE_INPUT_VERTICES_ID = "vertices_input";
+        private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
 
         // Outputs
-        private const string NODE_OUTPUT_PROVIDER_ID = "provider_output";
-        private const string NODE_OUTPUT_PROVIDER_TITLE = "Provider";
+        private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
+        private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
+
+        private const int MIN_VERTEX_COUNT = 4;
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
-            // N/A
+            context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
+                .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
+                .WithDefaultValue(false)
+                .Build();
         }
 
         protected override void OnDefinePorts(IPortDefinitionContext context)
         {
+            GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+
             // Input
             context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
                 .WithDisplayName(NODE_INPUT_SIZE_TITLE)
@@ -48,10 +61,21 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDisplayName(NODE_INPUT_ANGLE_TITLE)
                 .WithDefaultValue(360)
                 .Build();
+            context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
+                .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
+                .WithDefaultValue(10)
+                .Build();
+
+            if (isPreviewEnabled)
+            {
+                context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
+                    .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
+                    .Build();
+            }
 
             // Output
-            context.AddOutputPort<IProvider>(NODE_OUTPUT_PROVIDER_ID)
-                .WithDisplayName(NODE_OUTPUT_PROVIDER_TITLE)
+            context.AddOutputPort<SplineWrapper>(NODE_OUTPUT_SPLINE_ID)
+                .WithDisplayName(NODE_OUTPUT_SPLINE_TITLE)
                 .Build();
         }
 
@@ -78,9 +102,15 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Angle <= 0 || input.Angle > 360)
+            if (input.AngleDegrees <= 0 || input.AngleDegrees > 360)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ANGLE_TITLE} value invalid: {input.Angle} (valid: 0 < n <= 360)", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ANGLE_TITLE} value invalid: {input.AngleDegrees} (valid: 0 < n <= 360)", this);
+                isValid = false;
+            }
+
+            if (input.VertexCount < MIN_VERTEX_COUNT)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
                 isValid = false;
             }
 
@@ -99,7 +129,8 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ANGLE_ID, out temp.Angle);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ANGLE_ID, out temp.AngleDegrees) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount);
 
             if (success)
             {
@@ -112,22 +143,83 @@ namespace Indiecat.TerrainGraph.Editor
             return false;
         }
 
-        public override bool TryGetOutputValue(IPort _, out IProvider value)
+        public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
         {
-            if (!TryGetValidatedInputValues(out var inputValues))
+            if (!TryExecuteNode())
             {
                 value = null;
                 return false;
             }
 
-            value = new CircleSplineProvider()
-            {
-                Size = inputValues.Size,
-                Angle = inputValues.Angle,
-            
-                VersionHash = inputValues.VersionHash
-            };
+            value = CacheData.Output;
+            return true;
+        }
 
+        public override bool TryExecuteNode()
+        {
+            if (!TryGetValidatedInputValues(out var inputValues))
+            {
+                // Not in valid state
+                CacheData.Output = null;
+                return false;
+            }
+
+            if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
+            {
+                // Node is already up-to-date
+                return true;
+            }
+
+            // Clear the cached values in case there's an early exit below
+            CacheData.Output = null;
+
+            var startTime = DateTime.Now;
+            if (TryExecuteNodeInternal(inputValues))
+            {
+                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryExecuteNodeInternal(InputValues inputValues)
+        {
+            try
+            {
+                var angleDegrees = inputValues.AngleDegrees;
+                var size = inputValues.Size;
+                var vertexCount = inputValues.VertexCount;
+
+                if (!TryGetSpline(angleDegrees, size, vertexCount, out var outputSpline))
+                {
+                    return false;
+                }
+
+                var outputSplineWrapper = new SplineWrapper
+                {
+                    Spline = outputSpline,
+                };
+
+                outputSplineWrapper.VersionHash = inputValues.VersionHash;
+
+                CacheData.Output = outputSplineWrapper;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+
+        public bool TryGetSpline(float angleDegrees, int size, int vertexCount, out Spline spline)
+        {
+            var radius = size / 2f;
+            var center = Vector2.one * radius;
+            var interval = angleDegrees / vertexCount;
+
+            spline = SplineFunctions.Circle(radius, angleDegrees, interval, center);
             return true;
         }
     }
