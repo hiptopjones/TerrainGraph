@@ -38,14 +38,31 @@ namespace Indiecat.TerrainGraph.Editor
             return worldSpline;
         }
 
-        public static Vector3[] GetSplineVertices(Spline spline, float distanceStep)
+        public static List<Vector2> GetSplineVertices2d(Spline spline, int stepCount)
         {
-            List<Vector3> pathVertices = new List<Vector3>();
+            return GetSplineVertices2d(spline, spline.GetLength() / stepCount);
+        }
 
-            float t = 0;
+        public static List<Vector3> GetSplineVertices3d(Spline spline, int stepCount)
+        {
+            return GetSplineVertices3d(spline, spline.GetLength() / stepCount);
+        }
+
+        public static List<Vector2> GetSplineVertices2d(Spline spline, float distanceStep)
+        {
+            var vertices = GetSplineVertices3d(spline, distanceStep);
+            return vertices.Select(p => new Vector2(p.x, p.z)).ToList();
+        }
+
+        public static List<Vector3> GetSplineVertices3d(Spline spline, float distanceStep)
+        {
+            var vertices = new List<Vector3>();
+
+            var t = 0f;
+
             while (t < 1)
             {
-                pathVertices.Add(spline.EvaluatePosition(t));
+                vertices.Add(spline.EvaluatePosition(t));
 
                 // Find the next time based on a step distance
                 SplineUtility.GetPointAtLinearDistance(spline, t, distanceStep, out t);
@@ -54,10 +71,10 @@ namespace Indiecat.TerrainGraph.Editor
             if (!spline.Closed)
             {
                 // Add the last position, as we didn't evaluate it above
-                pathVertices.Add(spline.EvaluatePosition(1));
+                vertices.Add(spline.EvaluatePosition(1));
             }
 
-            return pathVertices.ToArray();
+            return vertices;
         }
 
         public static Spline CreateSpline(List<Vector2> vertices, bool closed = false)

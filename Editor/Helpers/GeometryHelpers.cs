@@ -195,7 +195,7 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             var ab = b - a;
-            var t = Vector2.Dot(p - a, ab) / Vector2.Dot(ab, ab);
+            var t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Vector2.Dot(ab, ab));
             var q = a + t * ab;
             var pq = p - q;
 
