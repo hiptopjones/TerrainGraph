@@ -1,8 +1,7 @@
 #pragma kernel CSMain
 
 Texture2D<float> _InTexture;
-float _RangeMin;
-float _RangeMax;
+float _Delta;
 
 RWTexture2D<float> _OutTexture;
 
@@ -13,5 +12,5 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     float height = _InTexture[uv].r;
     
-    _OutTexture[uv].r = saturate((height - _RangeMin) / (_RangeMax - _RangeMin));
+    _OutTexture[uv].r = height + _Delta;
 }

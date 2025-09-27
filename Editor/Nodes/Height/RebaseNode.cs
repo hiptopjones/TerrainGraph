@@ -1,6 +1,7 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using static Indiecat.TerrainGraph.Editor.ArithmeticNode;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -11,13 +12,13 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public RebaseType RebaseType;
             public HeightGrid Grid;
-            public float Value;
+            public float TargetValue;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(RebaseType, Grid?.VersionHash, Value);
+                return HashCode.Combine(RebaseType, Grid?.VersionHash, TargetValue);
             }
         }
 
@@ -127,7 +128,7 @@ namespace Indiecat.TerrainGraph.Editor
             var success =
                 GetNodeOptionByName(NODE_OPTION_TYPE_ID).TryGetValue(out temp.RebaseType) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VALUE_ID, out temp.Value);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VALUE_ID, out temp.TargetValue);
 
             if (success)
             {
@@ -180,30 +181,45 @@ namespace Indiecat.TerrainGraph.Editor
             return false;
         }
 
+
         private bool TryExecuteNodeInternal(InputValues inputValues)
         {
             try
             {
                 var rebaseType = inputValues.RebaseType;
                 var inputGrid = inputValues.Grid;
-                var value = inputValues.Value;
+                var targetValue = inputValues.TargetValue;
 
                 var size = inputGrid.Size;
 
-                (var min, var max) = GridHelpers.GetRange(inputGrid);
+                var inputTexture = inputGrid.RenderTexture;
 
-                var delta = rebaseType == RebaseType.Floor ? value - min : value - max;
+                if (!TextureHelpers.TryGetRange(inputTexture, out var rangeMin, out var rangeMax))
+                {
+                    return false;
+                }
+
+                var delta = targetValue - (rebaseType == RebaseType.Floor ? rangeMin : rangeMax);
+
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
+
+                if (!ComputeHelpers.TryLoadComputeShader("Shaders/RebaseNode", out var shader))
+                {
+                    return false;
+                }
+
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetFloat("_Delta", delta);
+
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
 
                 var outputGrid = new HeightGrid(size);
 
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        outputGrid[x, y] = inputGrid[x, y] + delta;
-                    }
-                }
-
+                outputGrid.RenderTexture = outputTexture;
                 outputGrid.VersionHash = inputValues.VersionHash;
 
                 CacheData.Output = outputGrid;
