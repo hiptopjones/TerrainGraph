@@ -117,8 +117,6 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
 
-            Texture2D workingTexture = null;
-
             try
             {
                 var inputGrid = inputValues.Grid;
@@ -126,7 +124,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var renderTexture = inputGrid.RenderTexture;
 
-                if (!TextureHelpers.TryCopyRenderTextureToTexture2D(renderTexture, TextureFormat.R16, out workingTexture))
+                if (!TextureHelpers.TryCopyRenderTextureToTexture2D(renderTexture, TextureFormat.R16, out var microverseTexture))
                 {
                     return false;
                 }
@@ -159,7 +157,9 @@ namespace Indiecat.TerrainGraph.Editor
 
                 heightStamp.transform.localScale = terrain.terrainData.size;
                 heightStamp.transform.position = new Vector3(terrain.terrainData.size.x, 0, terrain.terrainData.size.z) / 2;
-                heightStamp.stamp = workingTexture;
+
+                // TODO: How does this texture get cleaned up or reused when we regenerate?
+                heightStamp.stamp = microverseTexture;
 
                 microverse.enabled = true;
                 microverse.Invalidate();
@@ -170,14 +170,6 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
-            }
-            finally
-            {
-                if (workingTexture != null)
-                {
-                    Object.DestroyImmediate(workingTexture);
-                    workingTexture = null;
-                }
             }
         }
 
