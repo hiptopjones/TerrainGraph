@@ -25,10 +25,66 @@ namespace Indiecat.TerrainGraph.Editor
             // Joins related segments together to complete the contours
             var contours = GetContours(contourSegments);
 
+            // Ensures the returned contour has clockwise winding and has a deterministic start point
+            var orientedContours = OrientContours(contours);
+
             // Convert back to float vectors
-            var floatContours = ConvertContours(contours);
+            var floatContours = ConvertContours(orientedContours);
 
             return floatContours;
+        }
+
+        private static List<List<Vector2Int>> OrientContours(List<List<Vector2Int>> contours)
+        {
+            var orientedContours = new List<List<Vector2Int>>();
+
+            foreach (var contour in contours.OrderByDescending(c => c.Count))
+            {
+                var orientedContour = new List<Vector2Int>();
+
+                // Find the minimum vertex by X and then by Y
+                var minIndex = 0;
+                var minVertex = Vector2Int.one * int.MaxValue;
+
+                for (int i = 0; i < contour.Count; i++)
+                {
+                    var vertex = contour[i];
+
+                    if (vertex.x < minVertex.x)
+                    {
+                        minVertex = vertex;
+                        minIndex = i;
+                    }
+                    else if (vertex.x == minVertex.x)
+                    {
+                        if (vertex.y < minVertex.y)
+                        {
+                            minVertex = vertex;
+                            minIndex = i;
+                        }
+                    }
+                }
+
+                // Enforce clockwise winding
+                // Minimum vertex should be on the left side of the "clock"
+                var p1 = contour[(minIndex - 1 + contour.Count) % contour.Count];
+                var p2 = contour[(minIndex + 1) % contour.Count];
+                if (p1.y > p2.y)
+                {
+                    contour.Reverse();
+                    minIndex = (contour.Count - 1) - minIndex;
+                }
+
+                // Rotate the list, so the designated vertex is first (assumes the contour is closed)
+                for (int i = minIndex; i < minIndex + contour.Count; i++)
+                {
+                    orientedContour.Add(contour[i % contour.Count]);
+                }
+
+                orientedContours.Add(orientedContour);
+            }
+
+            return orientedContours;
         }
 
         private static List<List<Vector2>> ConvertContours(List<List<Vector2Int>> contours)
