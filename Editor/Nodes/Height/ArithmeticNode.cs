@@ -58,7 +58,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             context.AddOption<ArithmeticOperator>(NODE_OPTION_OPERATOR_ID)
                 .WithDisplayName(NODE_OPTION_OPERATOR_TITLE)
-                .WithDefaultValue(ArithmeticOperator.Add)
+                .WithDefaultValue(ArithmeticOperator.Multiply)
                 .Build();
             context.AddOption<bool>(NODE_OPTION_FLIP_ID)
                 .WithDisplayName(NODE_OPTION_FLIP_TITLE)
