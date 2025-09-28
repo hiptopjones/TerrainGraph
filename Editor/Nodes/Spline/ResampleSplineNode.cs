@@ -35,7 +35,7 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
         private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
-        private const int MIN_VERTEX_COUNT = 4;
+        private const int MIN_VERTEX_COUNT = 10;
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -101,7 +101,7 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.VertexCount <= 0)
+            if (input.VertexCount <= MIN_VERTEX_COUNT)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} < n)", this);
                 isValid = false;
