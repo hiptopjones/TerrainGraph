@@ -31,15 +31,19 @@ namespace Indiecat.TerrainGraph.Editor
 
             var target = fieldInfo.GetValue(property.serializedObject.targetObject) as PreviewImage;
 
-            target.Images.Add(image);
-            target.UpdateTexture(target.Texture);
-
-            // Ensures that previews are populated when the graph is loaded into the editor
-            image.schedule.Execute(() =>
+            // Node list preview can have a null target
+            if (target != null)
             {
+                target.Images.Add(image);
                 target.UpdateTexture(target.Texture);
+
+                // Ensures that previews are populated when the graph is loaded into the editor
+                image.schedule.Execute(() =>
+                {
+                    target.UpdateTexture(target.Texture);
+                }
+                ).StartingIn(100);
             }
-            ).StartingIn(100);
 
             return image;
         }
