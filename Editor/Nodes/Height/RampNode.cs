@@ -75,7 +75,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
                 .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
-                .WithDefaultValue(false)
+                .WithDefaultValue(true)
                 .Build();
         }
 
