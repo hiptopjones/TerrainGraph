@@ -140,12 +140,6 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Amplitude <= 0)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_AMPLITUDE_TITLE} value invalid: {input.Amplitude} (valid: 0 < n)", this);
-                isValid = false;
-            }
-
             if (input.IterationCount <= 0)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: 0 < n)", this);
