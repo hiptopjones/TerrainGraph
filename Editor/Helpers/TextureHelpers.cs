@@ -269,7 +269,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 RenderTexture.active = renderTexture;
 
-                outputTexture = new Texture2D(renderTexture.width, renderTexture.height, textureFormat, false);
+                outputTexture = new Texture2D(renderTexture.width, renderTexture.height, textureFormat, mipChain: false, linear: true);
 
                 outputTexture.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
                 outputTexture.Apply();
