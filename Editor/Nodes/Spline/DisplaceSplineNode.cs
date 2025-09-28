@@ -80,11 +80,11 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_FREQUENCY_ID)
                 .WithDisplayName(NODE_INPUT_FREQUENCY_TITLE)
-                .WithDefaultValue(0.05f)
+                .WithDefaultValue(2f)
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
                 .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
-                .WithDefaultValue(5)
+                .WithDefaultValue(30f)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_SEED_ID)
                 .WithDisplayName(NODE_INPUT_SEED_TITLE)
