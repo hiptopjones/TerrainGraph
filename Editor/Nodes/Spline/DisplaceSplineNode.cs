@@ -11,8 +11,15 @@ namespace Indiecat.TerrainGraph.Editor
     [Serializable]
     public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
     {
+        private enum DisplacementAxis
+        {
+            Horizontal,
+            Vertical
+        }
+
         private class InputValues
         {
+            public DisplacementAxis DisplacementAxis;
             public SplineWrapper SplineWrapper;
             public Vector2 Offset;
             public float Frequency;
@@ -25,11 +32,13 @@ namespace Indiecat.TerrainGraph.Editor
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(SplineWrapper?.VersionHash, Offset, Frequency, Amplitude, Seed, IterationCount, VertexCount);
+                return HashCode.Combine(DisplacementAxis, SplineWrapper?.VersionHash, Offset, Frequency, Amplitude, Seed, IterationCount, VertexCount);
             }
         }
 
         // Options
+        private const string NODE_OPTION_AXIS_ID = "axis_input";
+        private const string NODE_OPTION_AXIS_TITLE = "Axis";
 
         // Inputs
         private const string NODE_INPUT_SPLINE_ID = "spline_input";
@@ -64,6 +73,10 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
                 .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
                 .WithDefaultValue(true)
+                .Build();
+            context.AddOption<DisplacementAxis>(NODE_OPTION_AXIS_ID)
+                .WithDisplayName(NODE_OPTION_AXIS_TITLE)
+                .WithDefaultValue(DisplacementAxis.Horizontal)
                 .Build();
         }
 
@@ -128,6 +141,12 @@ namespace Indiecat.TerrainGraph.Editor
 
             var isValid = true;
 
+            if (!Enum.IsDefined(typeof(DisplacementAxis), input.DisplacementAxis))
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_AXIS_TITLE} option invalid", this);
+                isValid = false;
+            }
+
             if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
@@ -137,6 +156,12 @@ namespace Indiecat.TerrainGraph.Editor
             if (input.Frequency <= 0)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_FREQUENCY_TITLE} value invalid: {input.Frequency} (valid: 0 < n)", this);
+                isValid = false;
+            }
+
+            if (input.Amplitude <= 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_AMPLITUDE_TITLE} value invalid: {input.Amplitude} (valid: 0 < n)", this);
                 isValid = false;
             }
 
@@ -166,6 +191,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             var temp = new InputValues();
             var success =
+                GetNodeOptionByName(NODE_OPTION_AXIS_ID).TryGetValue(out temp.DisplacementAxis) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_OFFSET_ID, out temp.Offset) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_FREQUENCY_ID, out temp.Frequency) &&
@@ -229,6 +255,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
+                var displacementAxis = inputValues.DisplacementAxis;
                 var inputSplineWrapper = inputValues.SplineWrapper;
                 var offset = inputValues.Offset;
                 var frequency = inputValues.Frequency;
@@ -264,7 +291,17 @@ namespace Indiecat.TerrainGraph.Editor
                         var displacement = Vector3.zero;
 
                         var noise = GetSeamlessNoise(start, frequency, t);
-                        displacement += binormal * (noise - 0.5f) * amplitude;
+
+                        switch (displacementAxis)
+                        {
+                            case DisplacementAxis.Horizontal:
+                                displacement += binormal * noise * amplitude;
+                                break;
+
+                            case DisplacementAxis.Vertical:
+                                displacement += up * Mathf.Clamp01(noise) * amplitude;
+                                break;
+                        }
 
                         var displacedPosition = position + displacement;
                         vertices.Add(displacedPosition);
