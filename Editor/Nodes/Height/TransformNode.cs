@@ -190,7 +190,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var center = Vector2.one * size / 2f;
 
                 var trs = Matrix4x4.TRS(
-                    new Vector3(translation.x, translation.y, 0),
+                    new Vector3(-translation.x, translation.y, 0),
                     Quaternion.Euler(0, 0, rotationDegrees),
                     new Vector3(1 / scale.x, 1 / scale.y, 1));
 
