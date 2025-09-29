@@ -1,18 +1,13 @@
 #pragma kernel CSMain
 
-StructuredBuffer<float2> _Points;
+StructuredBuffer<float3> _Points;
 int _PointsCount;
 bool _Closed; // 0=open, 1=closed
+bool _ApplySplineHeight;
+float _SplineHeightBlendDistance;
 int _Size;
 
 RWTexture2D<float> _OutTexture;
-
-float2 GetClosestPointOnSegment(float2 p, float2 a, float2 b)
-{
-    float2 ab = b - a;
-    float t = saturate(dot(p - a, ab) / max(dot(ab, ab), 1e-20));
-    return a + t * ab;
-}
 
 bool IsPointInPolygon(float2 p)
 {
@@ -22,8 +17,8 @@ bool IsPointInPolygon(float2 p)
     {
         int j = (i + 1) % _PointsCount;
         
-        float2 a = _Points[i];
-        float2 b = _Points[j];
+        float2 a = _Points[i].xz;
+        float2 b = _Points[j].xz;
 
         // Check if point crosses edge
         bool intersect = ((a.y > p.y) != (b.y > p.y)) &&
@@ -61,16 +56,25 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float2 direction;
     float2 segmentStart;
     float2 segmentEnd;
+    float height;
 
     [loop]
     for (int i = 0; i < segmentCount; i++)
     {
         int j = (i + 1) % _PointsCount;
         
-        float2 a = _Points[i];
-        float2 b = _Points[j];
+        float2 a = _Points[i].xz;
+        float2 b = _Points[j].xz;
+        float ah = _Points[i].y;
+        float bh = _Points[j].y;
+        float2 ab = b - a;
+        
+        // Find closest point on this segment, clamping to the ends
+        float t = saturate(dot(p - a, ab) / max(dot(ab, ab), 1e-20));
+        float2 q = a + t * ab;
+        
+        float qh = lerp(ah, bh, t);
 
-        float2 q = GetClosestPointOnSegment(p, a, b);
         float d = length(p - q);
         
         if (d < distance)
@@ -80,12 +84,19 @@ void CSMain(uint3 id : SV_DispatchThreadID)
             segmentStart = a;
             segmentEnd = b;
             direction = normalize(q - p);
-
+            height = qh;
         }
     }
 
     bool inside = _Closed ? IsPointInPolygon(p) : IsPointOnRight(p, segmentStart, segmentEnd, direction);
     float signedDistance = inside ? +distance : -distance;
+    
+    if (_ApplySplineHeight && inside)
+    {
+        float t = 1 - saturate(distance / _SplineHeightBlendDistance);
+        signedDistance += lerp(0, height, t);
+
+    }
     
     _OutTexture[uv].r = signedDistance;
 }

@@ -13,14 +13,14 @@ namespace Indiecat.TerrainGraph.Editor
             public SplineWrapper SplineWrapper;
             public int Samples;
             public bool IsCentered;
-            public bool IncludeEdgeHeight;
+            public bool ApplySplineHeight;
             public int Size;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(SplineWrapper?.VersionHash, Samples, IsCentered, IncludeEdgeHeight, Size);
+                return HashCode.Combine(SplineWrapper?.VersionHash, Samples, IsCentered, ApplySplineHeight, Size);
             }
         }
 
@@ -37,7 +37,7 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_CENTER_TITLE = "Center";
 
         private const string NODE_INPUT_EDGE_ID = "edge_input";
-        private const string NODE_INPUT_EDGE_TITLE = "Include Edge Height";
+        private const string NODE_INPUT_EDGE_TITLE = "Apply Spline Height";
 
         private const string NODE_INPUT_SIZE_ID = "size_input";
         private const string NODE_INPUT_SIZE_TITLE = "Size";
@@ -146,7 +146,7 @@ namespace Indiecat.TerrainGraph.Editor
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SAMPLES_ID, out temp.Samples) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_CENTER_ID, out temp.IsCentered) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_EDGE_ID, out temp.IncludeEdgeHeight) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_EDGE_ID, out temp.ApplySplineHeight) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
 
             if (success)
@@ -202,6 +202,8 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool TryExecuteNodeInternal(InputValues inputValues)
         {
+            const float SPLINE_HEIGHT_BLEND_DISTANCE = 40f;
+
             ComputeBuffer pointsBuffer = null;
 
             try
@@ -209,21 +211,21 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputSplineWrapper = inputValues.SplineWrapper;
                 var sampleCount = inputValues.Samples;
                 var isCentered = inputValues.IsCentered;
-                var includeEdgeHeight = inputValues.IncludeEdgeHeight;
+                var applySplineHeight = inputValues.ApplySplineHeight;
                 var size = inputValues.Size;
 
                 var inputSpline = inputSplineWrapper.Spline;
 
-                var points = SplineHelpers.GetSplineVertices2d(inputSpline, sampleCount);
+                var points = SplineHelpers.GetSplineVertices3d(inputSpline, sampleCount);
                 if (isCentered)
                 {
-                    var splineCenter = SplineHelpers.GetCenter(inputSpline);
-                    var gridCenter = Vector2.one * size / 2;
+                    var splineCenter = SplineHelpers.GetCenter(inputSpline).ToVector3XZ();
+                    var gridCenter = (Vector2.one * size / 2).ToVector3XZ();
 
                     points = points.Select(p => p - splineCenter + gridCenter).ToList();
                 }
 
-                pointsBuffer = new ComputeBuffer(points.Count, sizeof(float) * 2);
+                pointsBuffer = new ComputeBuffer(points.Count, sizeof(float) * 3);
                 pointsBuffer.SetData(points);
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
@@ -239,6 +241,8 @@ namespace Indiecat.TerrainGraph.Editor
                 shader.SetBuffer(kernel, "_Points", pointsBuffer);
                 shader.SetInt("_PointsCount", points.Count);
                 shader.SetBool("_Closed", inputSpline.Closed);
+                shader.SetBool("_ApplySplineHeight", applySplineHeight);
+                shader.SetFloat("_SplineHeightBlendDistance", SPLINE_HEIGHT_BLEND_DISTANCE);
                 shader.SetInt("_Size", size);
 
                 var groups = Mathf.CeilToInt(size / 8.0f);
