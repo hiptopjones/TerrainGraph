@@ -375,5 +375,26 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
         }
+
+        public static Texture2D GetRampTexture(int width, Func<float, float> rampFunction)
+        {
+            var height = 1;
+
+            var colors = new Color[width];
+
+            for (int x = 0; x < width; x++)
+            {
+                var t = x / (float)(width - 1);
+                colors[x] = new Color(rampFunction(t), 0, 0, 0);
+            }
+
+            var texture = CreateTexture(width, height, TextureFormat.RFloat);
+            texture.SetPixels(colors);
+            texture.Apply();
+
+            return texture;
+        }
+
+
     }
 }
