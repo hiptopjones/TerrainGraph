@@ -21,7 +21,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public DisplacementAxis DisplacementAxis;
             public SplineWrapper SplineWrapper;
-            public Vector2 Offset;
+            public float LinearOffset;
             public float Frequency;
             public float Amplitude;
             public int Seed;
@@ -32,7 +32,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(DisplacementAxis, SplineWrapper?.VersionHash, Offset, Frequency, Amplitude, Seed, IterationCount, VertexCount);
+                return HashCode.Combine(DisplacementAxis, SplineWrapper?.VersionHash, LinearOffset, Frequency, Amplitude, Seed, IterationCount, VertexCount);
             }
         }
 
@@ -88,7 +88,7 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
                 .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
                 .Build();
-            context.AddInputPort<Vector2>(NODE_INPUT_OFFSET_ID)
+            context.AddInputPort<float>(NODE_INPUT_OFFSET_ID)
                 .WithDisplayName(NODE_INPUT_OFFSET_TITLE)
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_FREQUENCY_ID)
@@ -193,7 +193,7 @@ namespace Indiecat.TerrainGraph.Editor
             var success =
                 GetNodeOptionByName(NODE_OPTION_AXIS_ID).TryGetValue(out temp.DisplacementAxis) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_OFFSET_ID, out temp.Offset) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_OFFSET_ID, out temp.LinearOffset) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_FREQUENCY_ID, out temp.Frequency) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SEED_ID, out temp.Seed) &&
@@ -257,14 +257,14 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var displacementAxis = inputValues.DisplacementAxis;
                 var inputSplineWrapper = inputValues.SplineWrapper;
-                var offset = inputValues.Offset;
+                var offset = inputValues.LinearOffset;
                 var frequency = inputValues.Frequency;
                 var amplitude = inputValues.Amplitude;
                 var seed = inputValues.Seed;
                 var iterationCount = inputValues.IterationCount;
                 var vertexCount = inputValues.VertexCount;
 
-                var start = NoiseHelpers.GetOffsetPositionInternal(offset, seed);
+                var start = NoiseHelpers.GetOffsetPositionInternal(Vector2.zero, seed);
 
                 var currentSpline = inputSplineWrapper.Spline;
 
@@ -290,7 +290,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                         var displacement = Vector3.zero;
 
-                        var noise = GetSeamlessNoise(start, frequency, t);
+                        var noise = GetSeamlessNoise(start, frequency, t + offset);
 
                         switch (displacementAxis)
                         {
