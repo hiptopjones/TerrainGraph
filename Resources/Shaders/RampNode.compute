@@ -13,8 +13,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     float t = _InTexture[uv].r;
     
-    float2 position = float2(t, 0);
+    float2 samplerPosition = float2(t, 0);
     float lod = 0;
     
-    _OutTexture[uv].r = _RampTexture.SampleLevel(sampler_RampTexture, position, lod);
+    float height = _RampTexture.SampleLevel(sampler_RampTexture, samplerPosition, lod).r;
+
+    _OutTexture[uv].r = height;
 }

@@ -25,10 +25,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float2 inputCenter = inputSize / 2;
     float2 outputCenter = outputSize / 2;
     
-    float2 inputUV = ((outputUV - outputCenter) * _Scale + inputCenter) / inputSize;
+    float2 samplerPosition = ((outputUV - outputCenter) * _Scale + inputCenter) / inputSize;
     float lod = 0; 
     
-    float height = _InTexture.SampleLevel(sampler_InTexture, inputUV, lod).r;
+    float height = _InTexture.SampleLevel(sampler_InTexture, samplerPosition, lod).r;
     
     _OutTexture[outputUV].r = height;
 }

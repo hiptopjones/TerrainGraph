@@ -20,16 +20,16 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     uint2 uv = id.xy;
     
     float2 center = float2(_Size / 2, _Size / 2) + 0.5f;
-    float2 transformedUV = (ApplyTransform(uv - center) + center) / _Size;
+    float2 samplerPosition = (ApplyTransform(uv - center) + center) / _Size;
     float lod = 1;
     
     float height = 0;
     
     // Sampler will clamp out-of-range coordinates, but we want them to be zero
-    if (transformedUV.x > 0 && transformedUV.x < 1 &&
-        transformedUV.y > 0 && transformedUV.y < 1)
+    if (samplerPosition.x >= 0 && samplerPosition.x <= 1 &&
+        samplerPosition.y >= 0 && samplerPosition.y <= 1)
     {
-        height = _InTexture.SampleLevel(sampler_InTexture, transformedUV, lod).r;
+        height = _InTexture.SampleLevel(sampler_InTexture, samplerPosition, lod).r;
     }
     
     _OutTexture[uv].r = height;
