@@ -159,7 +159,7 @@ namespace Indiecat.TerrainGraph.Editor
                     outputSpline.Closed = inputSpline.Closed;
                 }
 
-                var splineContainer = Object.FindObjectsByType<SplineContainer>(FindObjectsSortMode.None)
+                var splineContainer = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                     .Single(x => x.name == inputTargetName);
 
                 splineContainer.Spline = outputSpline;
