@@ -1,0 +1,34 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+float _Threshold;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint2 uv = id.xy;
+    
+    uint width;
+    uint height;
+    
+    _InTexture.GetDimensions(width, height);
+
+    uint2 uvLeft = uint2(max(uv.x - 1, 0), uv.y);
+    uint2 uvRight = uint2(min(uv.x + 1, width - 1), uv.y);
+    uint2 uvUp = uint2(uv.x, min(uv.y + 1, height));
+    uint2 uvDown = uint2(uv.x, max(uv.y - 1, 0));   
+    
+    float heightLeft = _InTexture[uvLeft];
+    float heightRight = _InTexture[uvRight];
+    float heightUp = _InTexture[uvUp];
+    float heightDown = _InTexture[uvDown];
+    
+    float dx = heightRight - heightLeft / 2;
+    float dy = heightUp - heightDown / 2;
+    
+    float slope = length(float2(dx, dy));
+
+    _OutTexture[uv].r = slope > _Threshold ? slope : 0;    
+}
