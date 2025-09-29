@@ -90,7 +90,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var spline = splineWrapper.Spline;
                 var length = spline.GetLength();
                 var bounds = spline.GetBounds();
-                var center = bounds.center;
+                var center = bounds.center.WithY(0);
 
                 var size = SplineHelpers.GetMinimumBoundingSquareSize(spline, MARGIN_WIDTH);
                 var halfSize = new float3(size / 2, 0, size / 2);
@@ -132,18 +132,27 @@ namespace Indiecat.TerrainGraph.Editor
                     }
 
                     var p = spline.EvaluatePosition(t);
-
-
-
                     p = p - (float3)center + halfSize;
 
-
-
-                    var currentPosition = new Vector2(p.x, p.z);
+                    var currentPosition = (Vector3)p;
 
                     if (i > 0)
                     {
-                        DrawLine(outputTexture, previousPosition, currentPosition, Color.white);
+                        var color = Color.white;
+                        if (currentPosition.y > 1)
+                        {
+                            color = Color.green;
+                        }
+                        else if (currentPosition.y < 0)
+                        {
+                            color = Color.red;
+                        }
+                        else
+                        {
+                            color = Color.white;
+                        }
+
+                        DrawLine(outputTexture, previousPosition.SwizzleXZ(), currentPosition.SwizzleXZ(), color);
                     }
 
                     previousPosition = currentPosition;
