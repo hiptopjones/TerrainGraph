@@ -92,7 +92,7 @@ namespace Indiecat.TerrainGraph.Editor
             }
             else
             {
-                var count = Object.FindObjectsByType<SplineContainer>(FindObjectsSortMode.None)
+                var count = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                     .Count(x => x.name == input.TargetObjectName);
                 if (count == 0)
                 {
