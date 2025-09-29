@@ -1,0 +1,34 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+SamplerState sampler_InTexture;
+float _Scale;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint2 outputUV = id.xy;
+    
+    uint inputWidth;
+    uint inputHeight;
+    uint outputWidth;
+    uint outputHeight;
+    
+    _InTexture.GetDimensions(inputWidth, inputHeight);
+    _OutTexture.GetDimensions(outputWidth, outputHeight);
+    
+    float2 inputSize = float2(inputWidth, inputHeight);
+    float2 outputSize = float2(outputWidth, outputHeight);
+    
+    float2 inputCenter = inputSize / 2;
+    float2 outputCenter = outputSize / 2;
+    
+    float2 samplerPosition = ((outputUV - outputCenter) * _Scale + inputCenter) / inputSize;
+    float lod = 0; 
+    
+    float height = _InTexture.SampleLevel(sampler_InTexture, samplerPosition, lod).r;
+    
+    _OutTexture[outputUV].r = height;
+}

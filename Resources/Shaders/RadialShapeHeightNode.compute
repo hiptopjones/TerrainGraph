@@ -1,0 +1,59 @@
+#pragma kernel CSMain
+
+#pragma multi_compile OP_CONE OP_CYLINDER OP_GAUSSIAN OP_SMOOTHSTEP
+
+float _Radius;
+float2 _Center;
+
+RWTexture2D<float> _OutTexture;
+
+#if OP_CONE
+float EvaluateShape(float2 position)
+{
+    float distance = length(position);
+    return 1 - saturate(distance / _Radius);
+}
+#elif OP_CYLINDER
+float EvaluateShape(float2 position)
+{
+    float distance = length(position);
+    return step(distance, _Radius);
+}
+#elif OP_GAUSSIAN
+float EvaluateShape(float2 position)
+{
+    // sigma chosen so that (3 * sigma) ~ distance to edge
+    float sigma = _Radius / 3;
+    float twoSigmaSquared = 2 * sigma * sigma;
+
+    float lengthSquared = dot(position, position);
+
+    float g = exp(-lengthSquared / twoSigmaSquared); // value in [0,1]
+    return saturate(g);
+}
+#elif OP_SMOOTHSTEP
+float EvaluateShape(float2 position)
+{
+    float distance = length(position);
+    float t = 1 - saturate(distance / _Radius);
+    return smoothstep(0, 1, t);
+}
+#else
+float EvaluateShape(float2 position)
+{
+    return 1;
+}
+#endif
+
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    // TODO: Bounds check?
+    uint2 uv = id.xy;
+    
+    float2 position = uv - _Center;
+    float output = EvaluateShape(position);
+
+    _OutTexture[uv].r = output;
+}

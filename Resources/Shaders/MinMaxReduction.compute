@@ -1,0 +1,130 @@
+#pragma kernel ReduceTexture
+#pragma kernel ReduceBuffer
+
+// The number of threads in a thread group.
+// This also determines how many elements we reduce in shared memory.
+#define THREADS_PER_GROUP 128
+
+// Largest positive finite float
+#define FLT_MAX 3.402823e38
+
+// Input textures or buffers
+Texture2D<float> _InputTexture;
+StructuredBuffer<float> _InputValues;
+
+// Output buffers (one value per thread group)
+// You could also pack into a float2, but keeping them separate is clearer
+RWStructuredBuffer<float> _OutputMinValues;
+RWStructuredBuffer<float> _OutputMaxValues;
+
+// Shared memory for intermediate reductions inside one thread group
+groupshared float sharedMinValues[THREADS_PER_GROUP];
+groupshared float sharedMaxValues[THREADS_PER_GROUP];
+
+
+// -----------------------------------------------------------------------------
+// Pass 1: Reduce directly from a Texture2D
+// -----------------------------------------------------------------------------
+[numthreads(THREADS_PER_GROUP, 1, 1)]
+void ReduceTexture(uint3 dispatchThreadId : SV_DispatchThreadID,
+                   uint localThreadId : SV_GroupThreadID,
+                   uint3 groupId : SV_GroupID)
+{
+    uint width, height;
+    _InputTexture.GetDimensions(width, height);
+    
+    uint totalPixels = width * height;
+    
+    uint globalIndex = dispatchThreadId.x;
+
+    float minHeightValue = +FLT_MAX;
+    float maxHeightValue = -FLT_MAX;
+    
+    // Bounds check (since total pixels might not align with THREADS_PER_GROUP)
+    if (globalIndex < totalPixels)
+    {
+        uint2 uv = uint2(globalIndex % width, globalIndex / height);
+
+        minHeightValue = _InputTexture[uv];
+        maxHeightValue = _InputTexture[uv];
+    }
+    
+    // Initialize this thread's contribution to the shared arrays
+    sharedMinValues[localThreadId] = minHeightValue;
+    sharedMaxValues[localThreadId] = maxHeightValue;
+
+    // Make sure all threads have written their initial values
+    GroupMemoryBarrierWithGroupSync();
+
+    // Do the parallel reduction inside this thread group
+    for (uint stepSize = THREADS_PER_GROUP / 2; stepSize > 0; stepSize >>= 1)
+    {
+        if (localThreadId < stepSize)
+        {
+            sharedMinValues[localThreadId] = min(sharedMinValues[localThreadId], sharedMinValues[localThreadId + stepSize]);
+            sharedMaxValues[localThreadId] = max(sharedMaxValues[localThreadId], sharedMaxValues[localThreadId + stepSize]);
+        }
+        
+        GroupMemoryBarrierWithGroupSync();
+    }
+
+    // At this point, thread 0 holds the min and max for the whole group.
+    if (localThreadId == 0)
+    {
+        uint outputIndex = groupId.x; // each group writes one entry
+        
+        _OutputMinValues[outputIndex] = sharedMinValues[0];
+        _OutputMaxValues[outputIndex] = sharedMaxValues[0];
+    }
+}
+
+
+// -----------------------------------------------------------------------------
+// Pass 2+: Reduce from a StructuredBuffer (smaller and smaller each pass)
+// -----------------------------------------------------------------------------
+[numthreads(THREADS_PER_GROUP, 1, 1)]
+void ReduceBuffer(uint3 dispatchThreadId : SV_DispatchThreadID,
+                  uint localThreadId : SV_GroupThreadID,
+                  uint3 groupId : SV_GroupID)
+{
+    uint globalIndex = dispatchThreadId.x;
+
+    float minValue = +FLT_MAX;
+    float maxValue = -FLT_MAX;
+    
+    // Bounds checking
+    if (globalIndex < _InputValues.Length)
+    {
+        // Read the values from the input buffer
+        minValue = _InputValues[globalIndex];
+        maxValue = _InputValues[globalIndex];
+    }
+    
+    // Initialize this thread's contribution to the shared arrays
+    sharedMinValues[localThreadId] = minValue;
+    sharedMaxValues[localThreadId] = maxValue;
+    
+    // Make sure all threads have written their initial values
+    GroupMemoryBarrierWithGroupSync();
+    
+    // Do the parallel reduction inside this thread group
+    for (uint stepSize = THREADS_PER_GROUP / 2; stepSize > 0; stepSize >>= 1)
+    {
+        if (localThreadId < stepSize)
+        {
+            sharedMinValues[localThreadId] = min(sharedMinValues[localThreadId], sharedMinValues[localThreadId + stepSize]);
+            sharedMaxValues[localThreadId] = max(sharedMaxValues[localThreadId], sharedMaxValues[localThreadId + stepSize]);
+        }
+        
+        GroupMemoryBarrierWithGroupSync();
+    }
+
+    // Write the result of this group back to the output buffers
+    if (localThreadId == 0)
+    {
+        uint outputIndex = groupId.x;
+
+        _OutputMinValues[outputIndex] = sharedMinValues[0];
+        _OutputMaxValues[outputIndex] = sharedMaxValues[0];
+    }
+}

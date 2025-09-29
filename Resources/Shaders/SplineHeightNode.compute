@@ -1,0 +1,94 @@
+#pragma kernel CSMain
+
+StructuredBuffer<float2> _Points;
+int _PointsCount;
+bool _Closed; // 0=open, 1=closed
+int _Size;
+
+RWTexture2D<float> _OutTexture;
+
+float2 GetClosestPointOnSegment(float2 p, float2 a, float2 b)
+{
+    float2 ab = b - a;
+    float t = saturate(dot(p - a, ab) / max(dot(ab, ab), 1e-20));
+    return a + t * ab;
+}
+
+bool IsPointInPolygon(float2 p)
+{
+    bool inside = false;
+
+    for (int i = 0; i < _PointsCount; i++)
+    {
+        int j = (i + 1) % _PointsCount;
+        
+        float2 a = _Points[i];
+        float2 b = _Points[j];
+
+        // Check if point crosses edge
+        bool intersect = ((a.y > p.y) != (b.y > p.y)) &&
+                         (p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y + 1e-6) + a.x);
+
+        if (intersect)
+        {
+            inside = !inside;
+        }
+    }
+
+    return inside;
+}
+
+bool IsPointOnRight(float2 p, float2 a, float2 b, float2 d)
+{
+    // 2D cross product to get side of line
+    float2 ab = b - a;
+    float cross = ab.x * d.y - ab.y * d.x;
+    return cross < 0;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint2 uv = id.xy;
+    
+    float2 p = uv;
+    
+    int segmentCount = (_Closed != 0) ? _PointsCount : max(_PointsCount - 1, 0);
+
+    // Minimum distance detail
+    float distance = 1e20;    
+    float2 nearestPoint;
+    float2 direction;
+    float2 segmentStart;
+    float2 segmentEnd;
+
+    [loop]
+    for (int i = 0; i < segmentCount; i++)
+    {
+        int j = (i + 1) % _PointsCount;
+        
+        float2 a = _Points[i];
+        float2 b = _Points[j];
+
+        float2 q = GetClosestPointOnSegment(p, a, b);
+        float d = length(p - q);
+        
+        if (d < distance)
+        {
+            distance = d;
+            nearestPoint = q;
+            segmentStart = a;
+            segmentEnd = b;
+            direction = normalize(q - p);
+
+        }
+    }
+
+    bool inside = _Closed ? IsPointInPolygon(p) : IsPointOnRight(p, segmentStart, segmentEnd, direction);
+    float signedDistance = inside ? +distance : -distance;
+    
+    _OutTexture[uv].r = signedDistance;
+}
+
+
+

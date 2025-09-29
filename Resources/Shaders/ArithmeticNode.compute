@@ -1,0 +1,54 @@
+#pragma kernel CSMain
+
+#pragma multi_compile OP_ADD OP_SUBTRACT OP_MULTIPLY OP_DIVIDE OP_MAXIMUM OP_MINIMUM OP_AVERAGE OP_COMPARE
+#pragma multi_compile ARGS_NORMAL ARGS_FLIPPED
+
+Texture2D<float> _InTexture;
+float _Value;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    // TODO: Bounds check?
+    uint2 uv = id.xy;
+    
+    float height = _InTexture[uv].r;
+    
+    float output;
+
+    #if ARGS_NORMAL
+        float a = height;
+        float b = _Value;
+    #elif ARGS_FLIPPED
+        float a = _Value;
+        float b = height;
+    #endif
+    
+    // Choose operation
+    #if OP_ADD
+        output = a + b;
+    #elif OP_SUBTRACT
+        output = a - b;
+    #elif OP_MULTIPLY
+        output = a * b;
+    #elif OP_DIVIDE
+        output = a / b;
+    #elif OP_MAXIMUM
+        output = max(a, b);
+    #elif OP_MINIMUM
+        output = min(a, b);
+    #elif OP_AVERAGE
+        output = (a + b) / 2;
+    #elif OP_COMPARE
+        if (a == b)
+            output = 0;
+        else
+            output = lerp(-1, 1, step(a, b));
+    #endif
+
+    _OutTexture[uv].r = output;
+}
+
+
