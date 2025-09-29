@@ -228,7 +228,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader("Shaders/SplineHeightNode", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(SplineHeightNode)}", out var shader))
                 {
                     return false;
                 }

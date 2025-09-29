@@ -191,7 +191,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader("Shaders/PerlinNoiseNode", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(PerlinNoiseHeightNode)}", out var shader))
                 {
                     return false;
                 }

@@ -220,7 +220,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var inputTexture = inputGrid.RenderTexture;
 
-                if (!ComputeHelpers.TryLoadComputeShader("Shaders/ContourNode", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(ContourSplineNode)}", out var shader))
                 {
                     return false;
                 }

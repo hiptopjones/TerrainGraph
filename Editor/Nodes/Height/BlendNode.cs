@@ -236,7 +236,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputTexture2 = inputGrid2.RenderTexture;
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader("Shaders/BlendNode", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(BlendNode)}", out var shader))
                 {
                     return false;
                 }

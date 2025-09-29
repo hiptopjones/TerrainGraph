@@ -187,7 +187,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputTexture = inputGrid.RenderTexture;
                 var outputTexture = GetOrCreateNodeRenderTexture(targetSize);
 
-                if (!ComputeHelpers.TryLoadComputeShader("Shaders/ResizeNode", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(ResizeNode)}", out var shader))
                 {
                     return false;
                 }

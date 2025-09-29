@@ -216,7 +216,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputTexture = inputGrid.RenderTexture;
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader("Shaders/RampNode", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(RampNode)}", out var shader))
                 {
                     return false;
                 }

@@ -168,7 +168,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader("Shaders/ConstantNode", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(ConstantHeightNode)}", out var shader))
                 {
                     return false;
                 }
