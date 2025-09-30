@@ -1,0 +1,38 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+int _Size;
+int _Radius;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+
+    uint2 uv = id.xy;
+    
+    // Loop over neighbors
+    for (int y = -_Radius; y <= _Radius; y++)
+    {
+        for (int x = -_Radius; x <= _Radius; x++)
+        {
+            uint2 sampleUV = uint2(
+                clamp(uv.x + x, 0, _Size),
+                clamp(uv.y + y, 0, _Size));
+            
+            float height = _InTexture[sampleUV];
+            if (height > 0)
+            {
+                _OutTexture[uv].r = 1;
+                return;
+            }
+        }
+    }
+    
+    _OutTexture[uv].r = 0;
+}
