@@ -19,6 +19,7 @@ namespace Indiecat.TerrainGraph.Editor
             Maximum = 600,
             Average = 700,
             Compare = 1000,
+            Power = 2000,
         }
 
         private class InputValues

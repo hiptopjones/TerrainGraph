@@ -1,6 +1,6 @@
 #pragma kernel CSMain
 
-#pragma multi_compile OP_ADD OP_SUBTRACT OP_MULTIPLY OP_DIVIDE OP_MAXIMUM OP_MINIMUM OP_AVERAGE OP_COMPARE
+#pragma multi_compile OP_ADD OP_SUBTRACT OP_MULTIPLY OP_DIVIDE OP_MAXIMUM OP_MINIMUM OP_AVERAGE OP_COMPARE OP_POWER
 #pragma multi_compile ARGS_NORMAL ARGS_FLIPPED
 
 Texture2D<float> _InTexture;
@@ -46,6 +46,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
             output = 0;
         else
             output = lerp(-1, 1, step(a, b));
+    #elif OP_POWER
+        output = pow(a, b);
     #endif
 
     _OutTexture[uv].r = output;
