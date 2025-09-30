@@ -1,0 +1,59 @@
+#pragma kernel CSMain
+
+#pragma multi_compile EASING_CONSTANT EASING_LINEAR EASING_CUBIC EASING_SMOOTHSTEP
+
+Texture2D<float> _InTexture;
+Texture2D<float> _SdfTexture;
+int _Size;
+float2 _Center;
+float _Strength;
+float _Margin;
+
+RWTexture2D<float> _OutTexture;
+
+float EaseInOutCubic(float t) : number
+{
+    if (t < 0.5)
+    {
+        return 4 * t * t * t;   
+    }
+
+    return 1 - pow(-2 * t + 2, 3) / 2;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+
+    uint2 uv = id.xy;
+    
+    float height = _InTexture[uv].r;
+    
+    float signedDistanceToSpline = _SdfTexture[uv].r;
+    
+    if (signedDistanceToSpline > 0)
+    {
+        float distanceToSdf = abs(signedDistanceToSpline) + _Margin;
+        float distanceToCenter = length(_Center - uv);
+        
+        float t = 1 - saturate(distanceToCenter / (distanceToSdf + distanceToCenter));
+        
+        float easing = 0;
+#if EASING_CONSTANT
+        easing = 1;
+#elif EASING_LINEAR
+        easing = t;
+#elif EASING_CUBIC
+        easing = EaseInOutCubic(t);
+#elif EASING_SMOOTHSTEP
+        easing = smoothstep(0.0, 1.0, t);
+#endif
+        height += _Strength * easing;
+    }
+
+    _OutTexture[uv].r = height;    
+}
