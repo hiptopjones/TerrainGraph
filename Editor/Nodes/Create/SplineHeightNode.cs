@@ -2,6 +2,8 @@
 using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using UnityEngine.AdaptivePerformance.Provider;
+using UnityEngine.Splines;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -202,10 +204,6 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool TryExecuteNodeInternal(InputValues inputValues)
         {
-            const float SPLINE_HEIGHT_BLEND_DISTANCE = 40f;
-
-            ComputeBuffer pointsBuffer = null;
-
             try
             {
                 var inputSplineWrapper = inputValues.SplineWrapper;
@@ -215,38 +213,12 @@ namespace Indiecat.TerrainGraph.Editor
                 var size = inputValues.Size;
 
                 var inputSpline = inputSplineWrapper.Spline;
+                RenderTexture outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                var points = SplineHelpers.GetSplineVertices3d(inputSpline, sampleCount);
-                if (isCentered)
-                {
-                    var splineCenter = SplineHelpers.GetCenter(inputSpline).ToVector3XZ();
-                    var gridCenter = (Vector2.one * size / 2).ToVector3XZ();
-
-                    points = points.Select(p => p - splineCenter + gridCenter).ToList();
-                }
-
-                pointsBuffer = new ComputeBuffer(points.Count, sizeof(float) * 3);
-                pointsBuffer.SetData(points);
-
-                var outputTexture = GetOrCreateNodeRenderTexture(size);
-
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(SplineHeightNode)}", out var shader))
+                if (!ShaderWrappers.TryGenerateSdf(inputSpline, size, sampleCount, isCentered, applySplineHeight, ref outputTexture))
                 {
                     return false;
                 }
-
-                var kernel = shader.FindKernel("CSMain");
-
-                shader.SetTexture(kernel, "_OutTexture", outputTexture);
-                shader.SetBuffer(kernel, "_Points", pointsBuffer);
-                shader.SetInt("_PointsCount", points.Count);
-                shader.SetBool("_Closed", inputSpline.Closed);
-                shader.SetBool("_ApplySplineHeight", applySplineHeight);
-                shader.SetFloat("_SplineHeightBlendDistance", SPLINE_HEIGHT_BLEND_DISTANCE);
-                shader.SetInt("_Size", size);
-
-                var groups = Mathf.CeilToInt(size / 8.0f);
-                shader.Dispatch(kernel, groups, groups, 1);
 
                 var outputGrid = new HeightGrid(size);
 
@@ -260,14 +232,6 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
-            }
-            finally
-            {
-                if (pointsBuffer != null)
-                {
-                    pointsBuffer.Release();
-                    pointsBuffer = null;
-                }
             }
         }
     }

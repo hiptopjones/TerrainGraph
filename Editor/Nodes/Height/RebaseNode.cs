@@ -194,7 +194,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var inputTexture = inputGrid.RenderTexture;
 
-                if (!TextureHelpers.TryGetRange(inputTexture, out var rangeMin, out var rangeMax))
+                if (!ShaderWrappers.TryGetRange(inputTexture, out var rangeMin, out var rangeMax))
                 {
                     return false;
                 }
