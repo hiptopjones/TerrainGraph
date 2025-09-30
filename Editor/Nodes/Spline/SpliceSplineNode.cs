@@ -141,7 +141,7 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.VertexCount <= MIN_VERTEX_COUNT)
+            if (input.VertexCount < MIN_VERTEX_COUNT)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
                 isValid = false;
