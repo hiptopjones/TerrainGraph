@@ -1,30 +1,39 @@
 #pragma kernel CSMain
 
 Texture2D<float> _InTexture;
+int _Size;
 float _Threshold;
 bool _ThresholdOver;
+float _IgnoreHeight;
 
 RWTexture2D<float> _OutTexture;
 
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
-{
+{    
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+
     uint2 uv = id.xy;
-    
-    uint width;
-    uint height;
-    
-    _InTexture.GetDimensions(width, height);
 
     uint2 uvLeft = uint2(max(uv.x - 1, 0), uv.y);
-    uint2 uvRight = uint2(min(uv.x + 1, width - 1), uv.y);
-    uint2 uvUp = uint2(uv.x, min(uv.y + 1, height));
+    uint2 uvRight = uint2(min(uv.x + 1, _Size - 1), uv.y);
+    uint2 uvUp = uint2(uv.x, min(uv.y + 1, _Size - 1));
     uint2 uvDown = uint2(uv.x, max(uv.y - 1, 0));   
     
-    float heightLeft = _InTexture[uvLeft];
-    float heightRight = _InTexture[uvRight];
-    float heightUp = _InTexture[uvUp];
-    float heightDown = _InTexture[uvDown];
+    float heightCenter = _InTexture[uv].r;
+    if (heightCenter == _IgnoreHeight)
+    {
+        _OutTexture[uv].r = 0;
+        return;
+    }
+
+    float heightLeft = _InTexture[uvLeft].r;
+    float heightRight = _InTexture[uvRight].r;
+    float heightUp = _InTexture[uvUp].r;
+    float heightDown = _InTexture[uvDown].r;
     
     float dx = (heightRight - heightLeft) / 2;
     float dy = (heightUp - heightDown) / 2;
@@ -33,10 +42,10 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     if (_ThresholdOver)
     {
-        _OutTexture[uv].r = slope >= _Threshold ? slope : 0;
+        _OutTexture[uv].r = slope >= _Threshold ? 1 : 0;
     }
     else
     {
-        _OutTexture[uv].r = slope <= _Threshold ? 1 - slope : 0;        
+        _OutTexture[uv].r = slope <= _Threshold ? 1 : 0;
     }
 }

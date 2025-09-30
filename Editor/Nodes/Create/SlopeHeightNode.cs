@@ -1,7 +1,6 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using static Indiecat.TerrainGraph.Editor.ArithmeticNode;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -19,12 +18,13 @@ namespace Indiecat.TerrainGraph.Editor
             public HeightGrid Grid;
             public float Threshold;
             public ThresholdMode ThresholdMode;
+            public float IgnoreHeight;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, Threshold, ThresholdMode);
+                return HashCode.Combine(Grid?.VersionHash, Threshold, ThresholdMode, IgnoreHeight);
             }
         }
 
@@ -39,6 +39,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         private const string NODE_INPUT_MODE_ID = "mode_input";
         private const string NODE_INPUT_MODE_TITLE = "Mode";
+
+        private const string NODE_INPUT_IGNORE_ID = "ignore_input";
+        private const string NODE_INPUT_IGNORE_TITLE = "Ignore Height";
 
         // Outputs
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -69,6 +72,10 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<ThresholdMode>(NODE_INPUT_MODE_ID)
                 .WithDisplayName(NODE_INPUT_MODE_TITLE)
                 .WithDefaultValue(ThresholdMode.Over)
+                .Build();
+            context.AddInputPort<float>(NODE_INPUT_IGNORE_ID)
+                .WithDisplayName(NODE_INPUT_IGNORE_TITLE)
+                .WithDefaultValue(0)
                 .Build();
 
             if (isPreviewEnabled)
@@ -135,7 +142,8 @@ namespace Indiecat.TerrainGraph.Editor
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_THRESHOLD_ID, out temp.Threshold) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_MODE_ID, out temp.ThresholdMode);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_MODE_ID, out temp.ThresholdMode) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_IGNORE_ID, out temp.IgnoreHeight);
 
             if (success)
             {
@@ -195,6 +203,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputGrid = inputValues.Grid;
                 var threshold = inputValues.Threshold;
                 var thresholdMode = inputValues.ThresholdMode;
+                var ignoreHeight = inputValues.IgnoreHeight;
 
                 var size = inputGrid.Size;
 
@@ -210,8 +219,10 @@ namespace Indiecat.TerrainGraph.Editor
 
                 shader.SetTexture(kernel, "_OutTexture", outputTexture);
                 shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetInt("_Size", size);
                 shader.SetFloat("_Threshold", threshold);
                 shader.SetBool("_ThresholdOver", thresholdMode == ThresholdMode.Over);
+                shader.SetFloat("_IgnoreHeight", ignoreHeight);
 
                 var groups = Mathf.CeilToInt(size / 8.0f);
                 shader.Dispatch(kernel, groups, groups, 1);
