@@ -1,23 +1,30 @@
 ﻿using System;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using static Indiecat.TerrainGraph.Editor.ArithmeticNode;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class SlopeHeightNode : ExecutableNode<HeightGrid>
     {
+        private enum ThresholdMode
+        {
+            Over,
+            Under
+        }
+
         private class InputValues
         {
             public HeightGrid Grid;
             public float Threshold;
+            public ThresholdMode ThresholdMode;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, Threshold);
+                return HashCode.Combine(Grid?.VersionHash, Threshold, ThresholdMode);
             }
         }
 
@@ -29,6 +36,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         private const string NODE_INPUT_THRESHOLD_ID = "threshold_input";
         private const string NODE_INPUT_THRESHOLD_TITLE = "Threshold";
+
+        private const string NODE_INPUT_MODE_ID = "mode_input";
+        private const string NODE_INPUT_MODE_TITLE = "Mode";
 
         // Outputs
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
@@ -55,6 +65,10 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<float>(NODE_INPUT_THRESHOLD_ID)
                 .WithDisplayName(NODE_INPUT_THRESHOLD_TITLE)
                 .WithDefaultValue(0.5f)
+                .Build();
+            context.AddInputPort<ThresholdMode>(NODE_INPUT_MODE_ID)
+                .WithDisplayName(NODE_INPUT_MODE_TITLE)
+                .WithDefaultValue(ThresholdMode.Over)
                 .Build();
 
             if (isPreviewEnabled)
@@ -99,6 +113,12 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
+            if (!Enum.IsDefined(typeof(ThresholdMode), input.ThresholdMode))
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_MODE_TITLE} value invalid", this);
+                isValid = false;
+            }
+
             if (isValid)
             {
                 validatedInput = input;
@@ -114,7 +134,8 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_THRESHOLD_ID, out temp.Threshold);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_THRESHOLD_ID, out temp.Threshold) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_MODE_ID, out temp.ThresholdMode);
 
             if (success)
             {
@@ -173,6 +194,7 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputGrid = inputValues.Grid;
                 var threshold = inputValues.Threshold;
+                var thresholdMode = inputValues.ThresholdMode;
 
                 var size = inputGrid.Size;
 
@@ -189,6 +211,7 @@ namespace Indiecat.TerrainGraph.Editor
                 shader.SetTexture(kernel, "_OutTexture", outputTexture);
                 shader.SetTexture(kernel, "_InTexture", inputTexture);
                 shader.SetFloat("_Threshold", threshold);
+                shader.SetBool("_ThresholdOver", thresholdMode == ThresholdMode.Over);
 
                 var groups = Mathf.CeilToInt(size / 8.0f);
                 shader.Dispatch(kernel, groups, groups, 1);
