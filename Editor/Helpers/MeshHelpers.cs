@@ -6,11 +6,15 @@ namespace Indiecat.TerrainGraph.Editor
 {
     public static class MeshHelpers
     {
-        private class MeshData
+        public class MeshData
         {
             public Vector3[] Vertices;
             public int[] Triangles;
             public Vector2[] Uvs;
+
+            public MeshData()
+            {
+            }
 
             public MeshData(HeightGrid grid)
             {
@@ -77,7 +81,19 @@ namespace Indiecat.TerrainGraph.Editor
             return meshData;
         }
 
-        private static string GetObjData(MeshData meshData)
+        public static string GetObjData(Mesh mesh)
+        {
+            var meshData = new MeshData
+            {
+                Vertices = mesh.vertices,
+                Uvs = mesh.uv,
+                Triangles = mesh.triangles
+            };
+
+            return GetObjData(meshData);
+        }
+
+        public static string GetObjData(MeshData meshData)
         {
             var builder = new StringBuilder();
 
