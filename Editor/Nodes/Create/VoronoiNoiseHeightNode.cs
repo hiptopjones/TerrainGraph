@@ -1,0 +1,229 @@
+using System;
+using Unity.GraphToolkit.Editor;
+using UnityEngine;
+
+namespace Indiecat.TerrainGraph.Editor
+{
+    [Serializable]
+    public class VoronoiNoiseHeightNode : ExecutableNode<HeightGrid>
+    {
+        private class InputValues
+        {
+            public Vector2 Offset;
+            public int PointCount;
+            public int Seed;
+            public int Size;
+
+            public int VersionHash;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(
+                    HashCode.Combine(Offset, PointCount, Seed, Size)
+                );
+            }
+        }
+
+        // Options
+
+        // Inputs
+        private const string NODE_INPUT_OFFSET_ID = "offset_input";
+        private const string NODE_INPUT_OFFSET_TITLE = "Offset";
+
+        private const string NODE_INPUT_POINTS_ID = "points_input";
+        private const string NODE_INPUT_POINTS_TITLE = "Point Count";
+
+        private const string NODE_INPUT_SEED_ID = "seed_input";
+        private const string NODE_INPUT_SEED_TITLE = "Seed";
+
+        private const string NODE_INPUT_SIZE_ID = "size_input";
+        private const string NODE_INPUT_SIZE_TITLE = "Size";
+
+        // Outputs
+        private const string NODE_OUTPUT_GRID_ID = "grid_output";
+        private const string NODE_OUTPUT_GRID_TITLE = "Grid";
+
+        protected override void OnDefineOptions(IOptionDefinitionContext context)
+        {
+            context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
+                .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
+                .WithDefaultValue(true)
+                .Build();
+        }
+
+        protected override void OnDefinePorts(IPortDefinitionContext context)
+        {
+            GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
+
+            // Input
+            context.AddInputPort<Vector2>(NODE_INPUT_OFFSET_ID)
+                .WithDisplayName(NODE_INPUT_OFFSET_TITLE)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_POINTS_ID)
+                .WithDisplayName(NODE_INPUT_POINTS_TITLE)
+                .WithDefaultValue(20)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_SEED_ID)
+                .WithDisplayName(NODE_INPUT_SEED_TITLE)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
+                .WithDisplayName(NODE_INPUT_SIZE_TITLE)
+                .WithDefaultValue(256)
+                .Build();
+
+            if (isPreviewEnabled)
+            {
+                context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
+                    .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
+                    .Build();
+            }
+
+            // Output
+            context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
+                .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
+                .Build();
+        }
+
+        public override bool TryValidateNode(GraphLogger graphLogger = null)
+        {
+            return TryGetValidatedInputValues(out _, graphLogger);
+        }
+
+        private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
+        {
+            validatedInput = null;
+
+            if (!TryGetInputValues(out var input))
+            {
+                if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
+                return false;
+            }
+
+            var isValid = true;
+
+            if (input.PointCount <= 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_POINTS_TITLE} value invalid: {input.PointCount} (valid: 0 < n)", this);
+                isValid = false;
+            }
+
+            if (input.Size <= 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
+                isValid = false;
+            }
+
+            if (isValid)
+            {
+                validatedInput = input;
+            }
+
+            return isValid;
+        }
+
+        private bool TryGetInputValues(out InputValues input)
+        {
+            input = null;
+
+            var temp = new InputValues();
+            var success =
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_OFFSET_ID, out temp.Offset) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_POINTS_ID, out temp.PointCount) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SEED_ID, out temp.Seed) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
+
+            if (success)
+            {
+                temp.VersionHash = temp.GetHashCode();
+
+                input = temp;
+                return true;
+            }
+
+            return false;
+        }
+
+        public override bool TryGetOutputValue(IPort _, out HeightGrid value)
+        {
+            if (!TryExecuteNode())
+            {
+                value = null;
+                return false;
+            }
+
+            value = CacheData.Output;
+            return true;
+        }
+
+        public override bool TryExecuteNode()
+        {
+            if (!TryGetValidatedInputValues(out var inputValues))
+            {
+                // Not in valid state
+                CacheData.Output = null;
+                return false;
+            }
+
+            if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
+            {
+                // Node is already up-to-date
+                return true;
+            }
+
+            // Clear the cached values in case there's an early exit below
+            CacheData.Output = null;
+
+            var startTime = DateTime.Now;
+            if (TryExecuteNodeInternal(inputValues))
+            {
+                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryExecuteNodeInternal(InputValues inputValues)
+        {
+            try
+            {
+                var offset = inputValues.Offset;
+                var pointCount = inputValues.PointCount;
+                var seed = inputValues.Seed;
+                var size = inputValues.Size;
+
+                var start = NoiseHelpers.GetOffsetPositionInternal(offset, seed);
+
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
+
+                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(VoronoiNoiseHeightNode)}", out var shader))
+                {
+                    return false;
+                }
+
+                var kernel = shader.FindKernel("CSMain");
+
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetFloat("_PointCount", pointCount);
+                shader.SetVector("_Start", start);
+                shader.SetInt("_Size", size);
+
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
+
+                var outputGrid = new HeightGrid(size);
+
+                outputGrid.RenderTexture = outputTexture;
+                outputGrid.VersionHash = inputValues.VersionHash;
+
+                CacheData.Output = outputGrid;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+    }
+}

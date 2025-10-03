@@ -1,0 +1,47 @@
+#pragma kernel CSMain
+
+int _Size;
+float2 _Start;
+int _PointCount;
+
+RWTexture2D<float> _OutTexture;
+
+float hash(float2 p)
+{
+    // Use irrational numbers and a dot product to scramble
+    float h = dot(p, float2(127.1, 311.7));
+    // Apply sine and fract to spread values in [0,1)
+    return frac(sin(h) * 43758.5453123);
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+
+    float2 uv = (float2(id.xy) + 0.5) / _Size;
+
+    float minDistance = 1.0;
+    float2 closestPoint = 0;
+
+    for (int i = 0; i < _PointCount; i++)
+    {
+        // Keeping p1 separate from _Start means that the color of the cell
+        // stays constant as we scroll through the zone
+        float2 p1 = frac(sin(float2(i * 127.1, i * 311.7)) * 43758.5453);
+        
+        float2 p2 = frac(p1 + _Start);
+        float dist = distance(uv, p2);
+
+        if (dist < minDistance)
+        {
+            minDistance = dist;
+            closestPoint = p1;
+        }
+    }
+
+    _OutTexture[id.xy].r = saturate(hash(closestPoint));
+}

@@ -1,6 +1,5 @@
 #pragma kernel CSMain
 
-Texture2D<float> _InTexture;
 float2 _Start;
 float _CellSize;
 
