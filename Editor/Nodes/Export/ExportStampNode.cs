@@ -5,7 +5,6 @@ using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -14,12 +13,6 @@ namespace Indiecat.TerrainGraph.Editor
         IValidatableNode,
         IExecutableNode
     {
-        private enum FileFormat
-        {
-            PNG,
-            RAW,
-        }
-
         private class InputValues
         {
             public HeightGrid Grid;
