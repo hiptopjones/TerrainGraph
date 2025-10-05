@@ -249,13 +249,28 @@ namespace Indiecat.TerrainGraph.Editor
 
             var indexMap = new Dictionary<Vector2Int, int>();
 
+            var minHeight = float.MaxValue;
+            var maxHeight = float.MinValue;
+                
+            foreach (var p in cluster)
+            {
+                var height = grid[p.x, p.y];
+
+                minHeight = Mathf.Min(height, minHeight);
+                maxHeight = Mathf.Max(height, maxHeight);
+            }
+
             // Build vertex list
             foreach (var p in cluster)
             {
                 var index = vertices.Count;
                 indexMap[p] = index;
 
-                vertices.Add(new Vector3(p.x, grid[p.x, p.y] * heightScale, p.y));
+                var height = grid[p.x, p.y];
+                var t = (height - minHeight) / (maxHeight - minHeight);
+                var easedHeight = Mathf.Lerp(minHeight, maxHeight, Mathf.Pow(t, 0.75f));
+
+                vertices.Add(new Vector3(p.x, easedHeight * heightScale, p.y));
             }
 
             // Connect neighbors into triangles
@@ -265,7 +280,6 @@ namespace Indiecat.TerrainGraph.Editor
                     indexMap.ContainsKey(new Vector2Int(p.x, p.y + 1)) &&
                     indexMap.ContainsKey(new Vector2Int(p.x + 1, p.y + 1)))
                 {
-
                     int i0 = indexMap[p];
                     int i1 = indexMap[new Vector2Int(p.x + 1, p.y)];
                     int i2 = indexMap[new Vector2Int(p.x, p.y + 1)];
