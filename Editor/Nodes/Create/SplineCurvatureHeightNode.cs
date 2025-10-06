@@ -8,7 +8,7 @@ using UnityEngine.Splines;
 using Object = UnityEngine.Object;
 
 [Serializable]
-public class ShorelineNode : ExecutableNode<HeightGrid>
+public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
 {
     private class InputValues
     {
