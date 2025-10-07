@@ -161,8 +161,6 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool TryExecuteNodeInternal(InputValues inputValues)
         {
-            RenderTexture sdfTexture = null;
-
             try
             {
                 var inputGrid = inputValues.Grid;
@@ -200,14 +198,6 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
-            }
-            finally
-            {
-                if (sdfTexture != null)
-                {
-                    Object.DestroyImmediate(sdfTexture);
-                    sdfTexture = null;
-                }
             }
         }
     }
