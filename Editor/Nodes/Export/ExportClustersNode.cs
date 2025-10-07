@@ -138,7 +138,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var rawTextureData = workingTexture.GetRawTextureData<float>();
                 rawTextureData.CopyTo(workingGrid.Values);
 
-                var clusters = FindClusters(workingGrid);
+                var clusters = GridHelpers.GetClusters(workingGrid);
 
                 for (int i = 0; i < clusters.Count; i++)
                 {
@@ -177,69 +177,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
             File.WriteAllText(outputFilePath, objData);
-        }
-
-        private List<List<Vector2Int>> FindClusters(HeightGrid grid)
-        {
-            var neighbors = new Vector2Int[]
-            {
-                new Vector2Int(-1, 0),
-                new Vector2Int(1, 0),
-                new Vector2Int(0, 1),
-                new Vector2Int(0, -1),
-            };
-
-            var clusters = new List<List<Vector2Int>>();
-            var visited = new HashSet<Vector2Int>();
-
-            var size = grid.Size;
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    var p = new Vector2Int(x, y);
-
-                    if (visited.Add(p))
-                    {
-                        if (grid[p.x, p.y] != 0)
-                        {
-                            var cluster = new List<Vector2Int>();
-                            var queue = new Queue<Vector2Int>();
-
-                            queue.Enqueue(p);
-
-                            while (queue.Any())
-                            {
-                                var q = queue.Dequeue();
-
-                                cluster.Add(q);
-
-                                foreach (var neighbor in neighbors)
-                                {
-                                    var n = q + neighbor;
-
-                                    if (n.x >= 0 && n.x < size &&
-                                        n.y >= 0 && n.y < size)
-                                    {
-                                        if (visited.Add(n))
-                                        {
-                                            if (grid[n.x, n.y] != 0)
-                                            {
-                                                queue.Enqueue(n);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            clusters.Add(cluster);
-                        }
-                    }
-                }
-            }
-
-            return clusters;
         }
 
         private Mesh CreateMesh(List<Vector2Int> cluster, HeightGrid grid, float heightScale)
