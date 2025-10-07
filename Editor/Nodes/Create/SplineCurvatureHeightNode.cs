@@ -206,6 +206,8 @@ public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
 
             tempTexture = TextureHelpers.CreateTexture(size, size, TextureFormat.RFloat);
 
+            var pixels = new List<Color>(size * size);
+
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
@@ -244,10 +246,11 @@ public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
                         }
                     }
 
-                    tempTexture.SetPixel(x, y, new Color(height, 0, 0));
+                    pixels.Add(new Color(height, 0, 0));
                 }
             }
 
+            tempTexture.SetPixels(pixels.ToArray());
             tempTexture.Apply();
 
             var outputTexture = GetOrCreateNodeRenderTexture(size);
@@ -304,19 +307,7 @@ public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
             return false;
         }
 
-        var distances = new List<float>();
-
-        distances.Add(0);
-
-        for (int i = 1; i < positions.Count; i++)
-        {
-            var p1 = positions[i - 1];
-            var p2 = positions[i];
-
-            var distance = (p2 - p1).magnitude;
-
-            distances.Add(distance);
-        }
+        var distances = GetDistances(positions);
 
         var startIndex = 0;
 
@@ -343,17 +334,37 @@ public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
         return true;
     }
 
-    private static bool TryGetCurvatures(Spline inputSpline, int sampleCount, float straightThreshold, out List<CurvatureType> curvatures, out List<float> crosses, out List<Vector2> positions)
+    private static List<float> GetDistances(List<Vector2> positions)
+    {
+        var distances = new List<float>();
+
+        distances.Add(0);
+
+        for (int i = 1; i < positions.Count; i++)
+        {
+            var p1 = positions[i - 1];
+            var p2 = positions[i];
+
+            var distance = (p2 - p1).magnitude;
+
+            distances.Add(distance);
+        }
+
+        return distances;
+    }
+
+    private static bool TryGetCurvatures(Spline spline, int sampleCount, float straightThreshold, out List<CurvatureType> curvatures, out List<float> crosses, out List<Vector2> positions)
     {
         curvatures = new List<CurvatureType>();
         crosses = new List<float>();
         positions = new List<Vector2>();
 
+        // Get the sample positions
         for (int i = 0; i < sampleCount; i++)
         {
             var t = i / (float)(sampleCount - 1);
 
-            Vector3 position = inputSpline.EvaluatePosition(t);
+            Vector3 position = spline.EvaluatePosition(t);
             positions.Add(new Vector2(position.x, position.z));
         }
 
@@ -386,13 +397,7 @@ public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
         {
             return CurvatureType.Straight;
         }
-        else if (cross > 0)
-        {
-            return CurvatureType.Convex;
-        }
-        else
-        {
-            return CurvatureType.Concave;
-        }
+        
+        return cross > 0 ? CurvatureType.Convex : CurvatureType.Concave;
     }
 }
