@@ -1,7 +1,7 @@
 #pragma kernel CSMain
 
 Texture2D<float> _InTexture;
-int _Size;
+uint _Size;
 int _Radius;
 
 RWTexture2D<float> _OutTexture;
@@ -16,23 +16,31 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     uint2 uv = id.xy;
     
-    // Loop over neighbors
-    for (int y = -_Radius; y <= _Radius; y++)
+    float height = _InTexture[uv];
+    if (height == 0)
     {
-        for (int x = -_Radius; x <= _Radius; x++)
+        float sum = 0;
+        int count = 0;
+    
+        for (int y = -_Radius; y <= _Radius; y++)
         {
-            uint2 sampleUV = uint2(
-                clamp(uv.x + x, 0, _Size),
-                clamp(uv.y + y, 0, _Size));
-            
-            float height = _InTexture[sampleUV];
-            if (height > 0)
+            for (int x = -_Radius; x <= _Radius; x++)
             {
-                _OutTexture[uv].r = 1;
-                return;
+                uint2 sampleUV = uint2(
+                clamp(uv.x + x, 0, _Size - 1),
+                clamp(uv.y + y, 0, _Size - 1));
+            
+                float value = _InTexture[sampleUV];
+                if (value > 0)
+                {
+                    sum += value;
+                    count++;
+                }
             }
         }
+        
+        height = count > 0 ? sum / count : 0;
     }
     
-    _OutTexture[uv].r = 0;
+    _OutTexture[uv].r = height;
 }
