@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using UnityEngine.Splines;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -24,12 +25,6 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 return HashCode.Combine(Grid?.VersionHash, ContourHeight, ContourIndex, VertexCount);
             }
-        }
-
-        private struct Segment
-        {
-            public Vector2 p1;
-            public Vector2 p2;
         }
 
         // Options
@@ -202,9 +197,6 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool TryExecuteNodeInternal(InputValues inputValues)
         {
-            ComputeBuffer segmentBuffer = null;
-            ComputeBuffer counterBuffer = null;
-
             try
             {
                 var inputGrid = inputValues.Grid;
@@ -213,58 +205,11 @@ namespace Indiecat.TerrainGraph.Editor
                 var vertexCount = inputValues.VertexCount;
 
                 var size = inputGrid.Size;
-                var maxSegmentCount = size * size;
 
-                segmentBuffer = new ComputeBuffer(maxSegmentCount, sizeof(float) * 4, ComputeBufferType.Append | ComputeBufferType.Counter);
-                counterBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
-
-                var inputTexture = inputGrid.RenderTexture;
-
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(ContourSplineNode)}", out var shader))
+                if (!ShaderWrappers.TryGenerateContour(inputGrid, contourHeight, contourIndex, vertexCount, size, out var outputSpline))
                 {
                     return false;
                 }
-
-                var kernel = shader.FindKernel("CSMain");
-
-                shader.SetTexture(kernel, "_InTexture", inputTexture);
-                shader.SetInt("_Size", size);
-                shader.SetFloat("_Height", contourHeight);
-                shader.SetBuffer(kernel, "_OutSegments", segmentBuffer);
-                shader.SetBuffer(kernel, "_SegmentCount", counterBuffer);
-
-                var groups = Mathf.CeilToInt(size / 8.0f);
-                shader.Dispatch(kernel, groups, groups, 1);
-
-                ComputeBuffer.CopyCount(segmentBuffer, counterBuffer, 0);
-                var countArray = new int[] { 0 };
-                counterBuffer.GetData(countArray);
-                var count = countArray[0];
-
-                var segmentArray = new Segment[count];
-                segmentBuffer.GetData(segmentArray, 0, 0, count);
-
-                var segments = segmentArray.Select(s => new KeyValuePair<Vector2, Vector2>(s.p1, s.p2)).ToList();
-
-                var contours = ContourDetector.GetContours(segments, contourHeight);
-                if (contours == null || !contours.Any())
-                {
-                    Debug.LogError("Contours not detected");
-                    return false;
-                }
-
-                if (contours.Count <= contourIndex)
-                {
-                    Debug.LogError($"Contour index invalid ({contours.Count} contours returned)");
-                    return false;
-                }
-
-                var contour = contours.OrderByDescending(x => x.Count).Skip(contourIndex).First();
-                var simplifiedContour = GeometryHelpers.SimplifyPolyline(contour, 2);
-                //Debug.Log($"contour: {contour.Count} simplified: {simplifiedContour.Count}");
-
-                var contourSpline = SplineHelpers.CreateSpline(simplifiedContour, closed: true);
-                var outputSpline = SplineHelpers.ResampleSpline(contourSpline, vertexCount);
 
                 var outputSplineWrapper = new SplineWrapper
                 {
@@ -280,20 +225,6 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
-            }
-            finally
-            {
-                if (segmentBuffer != null)
-                {
-                    segmentBuffer.Release();
-                    segmentBuffer = null;
-                }
-
-                if (counterBuffer != null)
-                {
-                    counterBuffer.Release();
-                    counterBuffer = null;
-                }
             }
         }
     }
