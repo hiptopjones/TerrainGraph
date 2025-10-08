@@ -1,40 +1,63 @@
 ﻿using System;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class IslandsHeightNode : ExecutableNode<HeightGrid>
+    public class StampNode : ExecutableNode<HeightGrid>
     {
+        private enum EasingType
+        {
+            Constant = 100,
+            Linear = 200,
+            Cubic = 300,
+            SmoothStep = 400,
+        }
+
         private class InputValues
         {
+            public EasingType EasingType;
             public HeightGrid Grid;
+            public HeightGrid StampGrid;
+            public HeightGrid MaskGrid;
+            public int Radius;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash);
+                return HashCode.Combine(EasingType, Grid?.VersionHash, StampGrid?.VersionHash, MaskGrid?.VersionHash, Radius);
             }
         }
 
         // Options
+        private const string NODE_OPTION_TYPE_ID = "type_option";
+        private const string NODE_OPTION_TYPE_TITLE = "Easing Type";
 
         // Inputs
         private const string NODE_INPUT_GRID_ID = "grid_input";
         private const string NODE_INPUT_GRID_TITLE = "Grid";
 
+        private const string NODE_INPUT_STAMP_ID = "stamp_input";
+        private const string NODE_INPUT_STAMP_TITLE = "Stamp";
+
+        private const string NODE_INPUT_MASK_ID = "mask_input";
+        private const string NODE_INPUT_MASK_TITLE = "Mask";
+
+        private const string NODE_INPUT_RADIUS_ID = "radius_input";
+        private const string NODE_INPUT_RADIUS_TITLE = "Radius";
+
         // Outputs
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
-        private const int MIN_SAMPLES = 10;
-
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
+            context.AddOption<EasingType>(NODE_OPTION_TYPE_ID)
+                .WithDisplayName(NODE_OPTION_TYPE_TITLE)
+                .WithDefaultValue(EasingType.SmoothStep)
+                .Build();
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
                 .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
                 .WithDefaultValue(true)
@@ -48,6 +71,16 @@ namespace Indiecat.TerrainGraph.Editor
             // Input
             context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
                 .WithDisplayName(NODE_INPUT_GRID_TITLE)
+                .Build();
+            context.AddInputPort<HeightGrid>(NODE_INPUT_STAMP_ID)
+                .WithDisplayName(NODE_INPUT_STAMP_TITLE)
+                .Build();
+            context.AddInputPort<HeightGrid>(NODE_INPUT_MASK_ID)
+                .WithDisplayName(NODE_INPUT_MASK_TITLE)
+                .Build();
+            context.AddInputPort<int>(NODE_INPUT_RADIUS_ID)
+                .WithDisplayName(NODE_INPUT_RADIUS_TITLE)
+                .WithDefaultValue(10)
                 .Build();
 
             if (isPreviewEnabled)
@@ -80,9 +113,27 @@ namespace Indiecat.TerrainGraph.Editor
 
             var isValid = true;
 
+            if (!Enum.IsDefined(typeof(EasingType), input.EasingType))
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_TYPE_TITLE} option invalid", this);
+                isValid = false;
+            }
+
             if (input.Grid == null || !input.Grid.IsValid)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
+                isValid = false;
+            }
+
+            if (input.StampGrid == null || !input.StampGrid.IsValid)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_STAMP_TITLE} input missing", this);
+                isValid = false;
+            }
+
+            if (input.MaskGrid == null || !input.MaskGrid.IsValid)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_MASK_TITLE} input missing", this);
                 isValid = false;
             }
 
@@ -100,7 +151,11 @@ namespace Indiecat.TerrainGraph.Editor
 
             var temp = new InputValues();
             var success =
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid);
+                GetNodeOptionByName(NODE_OPTION_TYPE_ID).TryGetValue(out temp.EasingType) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_STAMP_ID, out temp.StampGrid) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_MASK_ID, out temp.MaskGrid) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RADIUS_ID, out temp.Radius);
 
             if (success)
             {
@@ -155,45 +210,42 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool TryExecuteNodeInternal(InputValues inputValues)
         {
-            Texture2D workingTexture = null;
-
             try
             {
+                var easingType = inputValues.EasingType;
                 var inputGrid = inputValues.Grid;
+                var stampGrid = inputValues.StampGrid;
+                var maskGrid = inputValues.MaskGrid;
+                var radius = inputValues.Radius;
 
                 var size = inputGrid.Size;
 
-                var inputTexture = inputGrid.RenderTexture;
+                var keywordBuilder = new KeywordBuilder();
+                keywordBuilder.AddKeyword($"EASING_{easingType.ToString().ToUpper()}");
 
-                if (!TextureHelpers.TryCopyRenderTextureToTexture2D(inputTexture, TextureFormat.RFloat, out workingTexture))
+                var inputTexture = inputGrid.RenderTexture;
+                var stampTexture = stampGrid.RenderTexture;
+                var maskTexture = maskGrid.RenderTexture;
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
+
+                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(StampNode)}", out var shader))
                 {
                     return false;
                 }
 
-                var workingGrid = new HeightGrid(size);
-                var rawTextureData = workingTexture.GetRawTextureData<float>();
-                rawTextureData.CopyTo(workingGrid.Values);
+                var kernel = shader.FindKernel("CSMain");
 
-                var clusters = GridHelpers.GetClusters(workingGrid);
+                shader.SetTexture(kernel, "_InTexture", inputTexture);
+                shader.SetTexture(kernel, "_StampTexture", stampTexture);
+                shader.SetTexture(kernel, "_MaskTexture", maskTexture);
+                shader.SetTexture(kernel, "_OutTexture", outputTexture);
+                shader.SetInt("_Radius", radius);
+                shader.SetInt("_Size", size);
 
-                for (int i = 0; i < clusters.Count; i++)
-                {
-                    var cluster = clusters[i];
+                shader.shaderKeywords = keywordBuilder.GetKeywords();
 
-                    foreach (var point in cluster)
-                    {
-                        // Use non-zero color values
-                        var color = new Color(i + 1, 0, 0);
-
-                        workingTexture.SetPixel(point.x, point.y, color);
-                    }
-                }
-
-                workingTexture.Apply();
-
-                var outputTexture = GetOrCreateNodeRenderTexture(size);
-
-                Graphics.Blit(workingTexture, outputTexture);
+                var groups = Mathf.CeilToInt(size / 8.0f);
+                shader.Dispatch(kernel, groups, groups, 1);
 
                 var outputGrid = new HeightGrid(size);
 
@@ -207,14 +259,6 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
-            }
-            finally
-            {
-                if (workingTexture != null)
-                {
-                    Object.DestroyImmediate(workingTexture);
-                    workingTexture = null;
-                }
             }
         }
     }

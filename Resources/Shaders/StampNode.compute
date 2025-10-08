@@ -1,0 +1,129 @@
+#pragma kernel CSMain
+
+#pragma multi_compile EASING_CONSTANT EASING_LINEAR EASING_CUBIC EASING_SMOOTHSTEP
+
+Texture2D<float> _InTexture;
+Texture2D<float> _StampTexture;
+Texture2D<float> _MaskTexture;
+int _Size;
+int _Radius;
+
+RWTexture2D<float> _OutTexture;
+
+float EaseInOutCubic(float t) : number
+{
+    if (t < 0.5)
+    {
+        return 4 * t * t * t;   
+    }
+
+    return 1 - pow(-2 * t + 2, 3) / 2;
+}
+
+float GetNearestStampHeight(uint2 uv, out float distance)
+{
+    float nearestStampHeight = 0;
+    
+    float radiusSquared = _Radius * _Radius;
+    float minDistanceSquared = _Size * _Size; // some impossible max
+
+    int startX = clamp(uv.x - _Radius, 0, _Size - 1);
+    int endX = clamp(uv.x + _Radius, 0, _Size - 1);
+    int startY = clamp(uv.y - _Radius, 0, _Size - 1);
+    int endY = clamp(uv.y + _Radius, 0, _Size - 1);
+
+    for (int y = startY; y <= endY; y++)
+    {
+        for (int x = startX; x <= endX; x++)
+        {
+            if (x == uv.x && y == uv.y)
+            {
+                // Ignore ourselves
+                continue;
+            }
+            
+            float maskHeight = _MaskTexture[uint2(x, y)].r;
+            if (maskHeight <= 0)
+            {
+                // Ignore anywhere the mask is zero
+                continue;
+            }
+                
+            int distanceX = x - uv.x;
+            int distanceY = y - uv.y;
+                
+            float distanceSquared = distanceX * distanceX + distanceY * distanceY;
+            if (distanceSquared > radiusSquared)
+            {
+                // Ignore anything outsdie of the radius (we are iterating over a square)
+                continue;
+            }
+                        
+            float stampHeight = _StampTexture[uint2(x, y)].r;
+            if (distanceSquared < minDistanceSquared)
+            {
+                minDistanceSquared = distanceSquared;
+                nearestStampHeight = stampHeight;
+            }
+        }
+    }
+    
+    distance = sqrt(minDistanceSquared);
+    return nearestStampHeight;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+
+    uint2 uv = id.xy;
+
+    float outputHeight = 0;
+    
+    float originalHeight = _InTexture[uv].r;
+    float stampHeight = _StampTexture[uv].r;
+    float maskHeight = _MaskTexture[uv].r;
+    
+    if (maskHeight > 0)
+    {
+        // If non-zero mask height, we are inside the stamp
+        outputHeight = stampHeight;
+    }
+    else
+    {
+        // We are outside the stamp, so check if we're close enough to blend
+        
+        float distanceToStamp = 0;
+        float nearestStampHeight = GetNearestStampHeight(uv, distanceToStamp);
+        
+        if (nearestStampHeight > 0)
+        {
+            // We are close enough to blend
+            
+            float t = saturate(distanceToStamp / _Radius);
+        
+            float easedT = 0;
+#if EASING_CONSTANT
+        easedT = 1;
+#elif EASING_LINEAR
+        easedT = t;
+#elif EASING_CUBIC
+        easedT = EaseInOutCubic(t);
+#elif EASING_SMOOTHSTEP
+        easedT = smoothstep(0.0, 1.0, t);
+#endif
+        
+            outputHeight = lerp(nearestStampHeight, originalHeight, easedT);
+        }
+        else
+        {
+            outputHeight = originalHeight;
+        }
+    }
+
+    _OutTexture[uv].r = outputHeight;
+}

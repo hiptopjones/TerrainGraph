@@ -42,17 +42,17 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         
         float t = 1 - saturate(distanceToCenter / (distanceToSdf + distanceToCenter));
         
-        float easing = 0;
+        float easedT = 0;
 #if EASING_CONSTANT
-        easing = 1;
+        easedT = 1;
 #elif EASING_LINEAR
-        easing = t;
+        easedT = t;
 #elif EASING_CUBIC
-        easing = EaseInOutCubic(t);
+        easedT = EaseInOutCubic(t);
 #elif EASING_SMOOTHSTEP
-        easing = smoothstep(0.0, 1.0, t);
+        easedT = smoothstep(0.0, 1.0, t);
 #endif
-        height += _Strength * easing;
+        height += _Strength * easedT;
     }
 
     _OutTexture[uv].r = height;    
