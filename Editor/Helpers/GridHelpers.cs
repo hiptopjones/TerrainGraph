@@ -7,37 +7,36 @@ namespace Indiecat.TerrainGraph.Editor
 {
     public static class GridHelpers
     {
-        public static float SafeIndex(HeightGrid grid, int x, int y)
+        public static float SafeIndex(float[,] heights, int x, int y)
         {
-            int w = grid.Size;
-            int h = grid.Size;
+            int size = heights.GetLength(0);
 
-            x = Mathf.Clamp(x, 0, w - 1);
-            y = Mathf.Clamp(y, 0, h - 1);
+            x = Mathf.Clamp(x, 0, size - 1);
+            y = Mathf.Clamp(y, 0, size - 1);
 
-            return grid[x, y];
+            return heights[x, y];
         }
 
 
-        public static float SafeIndex(HeightGrid grid, float x, float y)
+        public static float SafeIndex(float[,] heights, float x, float y)
         {
             var x1 = Mathf.FloorToInt(x);
             var y1 = Mathf.FloorToInt(y);
             var x2 = Mathf.FloorToInt(x + 1);
             var y2 = Mathf.FloorToInt(y + 1);
 
-            var q11 = GridHelpers.SafeIndex(grid, x1, y1);
-            var q21 = GridHelpers.SafeIndex(grid, x2, y1);
-            var q22 = GridHelpers.SafeIndex(grid, x2, y2);
-            var q12 = GridHelpers.SafeIndex(grid, x1, y2);
+            var q11 = SafeIndex(heights, x1, y1);
+            var q21 = SafeIndex(heights, x2, y1);
+            var q22 = SafeIndex(heights, x2, y2);
+            var q12 = SafeIndex(heights, x1, y2);
 
             var height = GeometryHelpers.BilinearInterpolate(x, y, q11, q21, q22, q12, x1, y1, x2, y2);
             return height;
         }
 
-        public static (float, float) GetRange(HeightGrid grid)
+        public static (float, float) GetRange(float[,] heights)
         {
-            var size = grid.Size;
+            var size = heights.GetLength(0);
 
             var maxValue = float.MinValue;
             var minValue = float.MaxValue;
@@ -46,7 +45,7 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 for (int x = 0; x < size; x++)
                 {
-                    var value = grid[x, y];
+                    var value = heights[x, y];
 
                     maxValue = Mathf.Max(maxValue, value);
                     minValue = Mathf.Min(minValue, value);
@@ -56,7 +55,7 @@ namespace Indiecat.TerrainGraph.Editor
             return (minValue, maxValue);
         }
 
-        public static List<List<Vector2Int>> GetClusters(HeightGrid grid)
+        public static List<List<Vector2Int>> GetClusters(float[,] heights)
         {
             var neighbors = new Vector2Int[]
             {
@@ -69,7 +68,7 @@ namespace Indiecat.TerrainGraph.Editor
             var clusters = new List<List<Vector2Int>>();
             var visited = new HashSet<Vector2Int>();
 
-            var size = grid.Size;
+            var size = heights.GetLength(0);
 
             for (int y = 0; y < size; y++)
             {
@@ -79,7 +78,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                     if (visited.Add(p))
                     {
-                        if (grid[p.x, p.y] != 0)
+                        if (heights[p.x, p.y] != 0)
                         {
                             var cluster = new List<Vector2Int>();
                             var queue = new Queue<Vector2Int>();
@@ -101,7 +100,7 @@ namespace Indiecat.TerrainGraph.Editor
                                     {
                                         if (visited.Add(n))
                                         {
-                                            if (grid[n.x, n.y] != 0)
+                                            if (heights[n.x, n.y] != 0)
                                             {
                                                 queue.Enqueue(n);
                                             }
@@ -117,6 +116,19 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             return clusters;
+        }
+
+        public static void CopyHeights(float[] tempHeights, float[,] heights)
+        {
+            var size = heights.GetLength(0);
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    heights[x, y] = tempHeights[x + y * size];
+                }
+            }
         }
     }
 }

@@ -16,11 +16,8 @@ namespace Indiecat.TerrainGraph.Editor
             {
             }
 
-            public MeshData(HeightGrid grid)
+            public MeshData(int width, int height)
             {
-                var width = grid.Size;
-                var height = grid.Size;
-
                 Vertices = new Vector3[width * height];
                 Uvs = new Vector2[width * height];
 
@@ -29,50 +26,49 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        public static void ExportMesh(HeightGrid grid, float heightMultiplier, string outputFilePath)
+        public static void ExportMesh(float[,] heights, float heightMultiplier, string outputFilePath)
         {
-            var meshData = TessellateGrid(grid, heightMultiplier);
+            var meshData = TessellateGrid(heights, heightMultiplier);
             var objData = GetObjData(meshData);
 
             Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
             File.WriteAllText(outputFilePath, objData);
         }
 
-        private static MeshData TessellateGrid(HeightGrid grid, float heightMultiplier)
+        private static MeshData TessellateGrid(float[,] heights, float heightMultiplier)
         {
-            MeshData meshData = new MeshData(grid);
+            int size = heights.GetLength(0);
 
-            int width = grid.Size;
-            int height = grid.Size;
+            MeshData meshData = new MeshData(size, size);
 
             int vertexIndex = 0;
             int triangleIndex = 0;
 
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < size; y++)
             {
-                for (int x = 0; x < width; x++)
+                for (int x = 0; x < size; x++)
                 {
-                    float value = grid[x, y] * heightMultiplier;
+                    float value = heights[x, y] * heightMultiplier;
 
                     meshData.Vertices[vertexIndex] = new Vector3(x, value, y);
 
                     // No triangles on the last row/column of vertices
-                    if (x < width - 1 && y < height - 1)
+                    if (x < size - 1 && y < size - 1)
                     {
                         // Consistent triangle winding is important for consistent face culling
 
                         // Left triangle of quad
                         meshData.Triangles[triangleIndex++] = vertexIndex;
-                        meshData.Triangles[triangleIndex++] = vertexIndex + width;
-                        meshData.Triangles[triangleIndex++] = vertexIndex + width + 1;
+                        meshData.Triangles[triangleIndex++] = vertexIndex + size;
+                        meshData.Triangles[triangleIndex++] = vertexIndex + size + 1;
 
                         // Right triangle of quad
                         meshData.Triangles[triangleIndex++] = vertexIndex;
-                        meshData.Triangles[triangleIndex++] = vertexIndex + width + 1;
+                        meshData.Triangles[triangleIndex++] = vertexIndex + size + 1;
                         meshData.Triangles[triangleIndex++] = vertexIndex + 1;
                     }
 
-                    meshData.Uvs[vertexIndex] = new Vector2((float)x / width, (float)y / height);
+                    meshData.Uvs[vertexIndex] = new Vector2((float)x / size, (float)y / size);
 
                     vertexIndex++;
                 }

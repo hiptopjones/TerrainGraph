@@ -169,18 +169,18 @@ namespace Indiecat.TerrainGraph.Editor
                     return false;
                 }
 
-                var workingGrid = new HeightGrid(renderTexture.width);
-                var rawTextureData = workingTexture.GetRawTextureData<float>();
-                rawTextureData.CopyTo(workingGrid.Values);
-
+                var rawHeights = new float[size * size];
                 var heights = new float[size, size];
+
+                var rawTextureData = workingTexture.GetRawTextureData<float>();
+                rawTextureData.CopyTo(rawHeights);
 
                 for (int y = 0; y < size; y++)
                 {
                     for (int x = 0; x < size; x++)
                     {
                         // NOTE: Unity's heightmap is indexed in reverse
-                        heights[y, x] = workingGrid[x, y];
+                        heights[y, x] = rawHeights[x + y * size];
                     }
                 }
 

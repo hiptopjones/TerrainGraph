@@ -170,11 +170,15 @@ namespace Indiecat.TerrainGraph.Editor
                     return false;
                 }
 
-                var workingGrid = new HeightGrid(size);
-                var rawTextureData = workingTexture.GetRawTextureData<float>();
-                rawTextureData.CopyTo(workingGrid.Values);
+                var rawHeights = new float[size * size];
+                var heights = new float[size, size];
 
-                var clusters = GridHelpers.GetClusters(workingGrid);
+                var rawTextureData = workingTexture.GetRawTextureData<float>();
+                rawTextureData.CopyTo(rawHeights);
+
+                GridHelpers.CopyHeights(rawHeights, heights);
+
+                var clusters = GridHelpers.GetClusters(heights);
 
                 for (int i = 0; i < clusters.Count; i++)
                 {

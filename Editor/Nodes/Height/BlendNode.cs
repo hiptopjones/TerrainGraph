@@ -141,7 +141,9 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (isValid && input.Grid1.Values.Length != input.Grid2.Values.Length)
+            if (isValid &&
+                (input.Grid1.RenderTexture.width != input.Grid2.RenderTexture.width ||
+                input.Grid1.RenderTexture.height != input.Grid2.RenderTexture.height))
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID1_TITLE} and {NODE_INPUT_GRID2_TITLE} size mismatch", this);
                 isValid = false;
