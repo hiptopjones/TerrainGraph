@@ -2,9 +2,6 @@
 
 Texture2D<float> _InTexture;
 int _Size;
-float _Threshold;
-bool _ThresholdOver;
-float _IgnoreHeight;
 
 RWTexture2D<float> _OutTexture;
 
@@ -23,13 +20,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     uint2 uvUp = uint2(uv.x, min(uv.y + 1, _Size - 1));
     uint2 uvDown = uint2(uv.x, max(uv.y - 1, 0));   
     
-    float heightCenter = _InTexture[uv].r;
-    if (heightCenter == _IgnoreHeight)
-    {
-        _OutTexture[uv].r = 0;
-        return;
-    }
-
     float heightLeft = _InTexture[uvLeft].r;
     float heightRight = _InTexture[uvRight].r;
     float heightUp = _InTexture[uvUp].r;
@@ -40,12 +30,5 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     float slope = length(float2(dx, dy));
 
-    if (_ThresholdOver)
-    {
-        _OutTexture[uv].r = slope >= _Threshold ? 1 : 0;
-    }
-    else
-    {
-        _OutTexture[uv].r = slope <= _Threshold ? 1 : 0;
-    }
+    _OutTexture[uv].r = slope;
 }
