@@ -178,7 +178,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 GridHelpers.CopyHeights(rawHeights, heights);
 
-                var clusters = GridHelpers.GetClusters(heights);
+                var clusters = GridHelpers.GetClusters(heights).OrderByDescending(c => c.Count).ToList();
 
                 for (int i = 0; i < clusters.Count; i++)
                 {
