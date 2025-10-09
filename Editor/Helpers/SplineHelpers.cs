@@ -165,14 +165,44 @@ namespace Indiecat.TerrainGraph.Editor
             return center;
         }
 
-        public static int GetMinimumBoundingSquareSize(Spline spline, int margin = 0)
+        public static Bounds GetMinimumBoundingSquare(Spline spline, int margin = 0)
         {
             var bounds = spline.GetBounds();
+            bounds.Expand(margin);
 
             var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
-            size += margin * 2;
+            bounds.size = new Vector3(size, bounds.size.y, size);
 
-            return size;
+            return bounds;
+        }
+
+        public static Bounds GetMinimumBoundingSquare(List<Spline> splines, int margin = 0)
+        {
+            var bounds = splines[0].GetBounds();
+
+            foreach (var spline in splines.Skip(1))
+            {
+                bounds.Encapsulate(spline.GetBounds());
+            }
+
+            bounds.Expand(margin);
+
+            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
+            bounds.size = new Vector3(size, bounds.size.y, size);
+
+            return bounds;
+        }
+
+        public static int GetMinimumBoundingSquareSize(Spline spline, int margin = 0)
+        {
+            var bounds = GetMinimumBoundingSquare(spline, margin);
+            return (int)bounds.size.x;
+        }
+
+        public static int GetMinimumBoundingSquareSize(List<Spline> splines, int margin = 0)
+        {
+            var bounds = GetMinimumBoundingSquare(splines, margin);
+            return (int)bounds.size.x;
         }
 
         public static int GetOriginBoundingSquareSize(Spline spline, int margin = 0)
@@ -200,6 +230,26 @@ namespace Indiecat.TerrainGraph.Editor
 
             var translatedSpline = CreateSpline(vertices, spline.Closed);
             return translatedSpline;
+        }
+
+        public static List<Spline> CreateSplines(List<List<Vector2>> contours, int vertexCount)
+        {
+            var splines = new List<Spline>();
+
+            var orderedContours = contours.OrderByDescending(x => x.Count);
+            foreach (var contour in orderedContours)
+            {
+                var simplifiedContour = GeometryHelpers.SimplifyPolyline(contour, 2);
+                //Debug.Log($"contour: {contour.Count} simplified: {simplifiedContour.Count}");
+
+                var contourSpline = CreateSpline(simplifiedContour, closed: true);
+
+                var spline = ResampleSpline(contourSpline, vertexCount);
+
+                splines.Add(spline);
+            }
+
+            return splines;
         }
     }
 }

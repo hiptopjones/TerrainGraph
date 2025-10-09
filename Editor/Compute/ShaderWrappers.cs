@@ -159,6 +159,26 @@ namespace Indiecat.TerrainGraph.Editor
 
         public static bool TryGenerateContour(HeightGrid grid, float contourHeight, int contourIndex, int vertexCount, int size, out Spline spline)
         {
+            if (!TryGenerateContours(grid, contourHeight, vertexCount, size, out var splines))
+            {
+                spline = null;
+                return false;
+            }
+
+            if (splines.Count <= contourIndex)
+            {
+                Debug.LogError($"Contour index invalid ({splines.Count} contours returned)");
+
+                spline = null;
+                return false;
+            }
+
+            spline = splines[contourIndex];
+            return true;
+        }
+
+        public static bool TryGenerateContours(HeightGrid grid, float contourHeight, int vertexCount, int size, out List<Spline> splines)
+        {
             ComputeBuffer segmentBuffer = null;
             ComputeBuffer counterBuffer = null;
 
@@ -173,7 +193,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(ContourSplineNode)}", out var shader))
                 {
-                    spline = null;
+                    splines = null;
                     return false;
                 }
 
@@ -203,25 +223,13 @@ namespace Indiecat.TerrainGraph.Editor
                 {
                     Debug.LogError("Contours not detected");
 
-                    spline = null;
+                    splines = null;
                     return false;
                 }
 
-                if (contours.Count <= contourIndex)
-                {
-                    Debug.LogError($"Contour index invalid ({contours.Count} contours returned)");
+                var simplifiedContours = SplineHelpers.CreateSplines(contours, vertexCount);
 
-                    spline = null;
-                    return false;
-                }
-
-                var contour = contours.OrderByDescending(x => x.Count).Skip(contourIndex).First();
-                var simplifiedContour = GeometryHelpers.SimplifyPolyline(contour, 2);
-                //Debug.Log($"contour: {contour.Count} simplified: {simplifiedContour.Count}");
-
-                var contourSpline = SplineHelpers.CreateSpline(simplifiedContour, closed: true);
-
-                spline = SplineHelpers.ResampleSpline(contourSpline, vertexCount);
+                splines = simplifiedContours;
                 return true;
             }
             catch (Exception ex)
@@ -229,7 +237,7 @@ namespace Indiecat.TerrainGraph.Editor
                 Debug.LogException(ex);
 
 
-                spline = null;
+                splines = null;
                 return false;
             }
             finally

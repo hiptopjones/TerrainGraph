@@ -16,11 +16,9 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 for (int x = 0; x < texture.width; x++)
                 {
-                    texture.SetPixel(x, y, new Color(0, 0, 0, 1));
+                    texture.SetPixel(x, y, Color.black);
                 }
             }
-
-            texture.Apply(false, false);
         }
 
         public static bool TryCreatePreviewTexture(IVersionedObject value, out Texture texture)
@@ -34,6 +32,9 @@ namespace Indiecat.TerrainGraph.Editor
 
                 case SplineWrapper splineWrapper:
                     return TryCreateSplineWrapperPreviewTexture(splineWrapper, out texture);
+
+                case SplineListWrapper splineListWrapper:
+                    return TryCreateSplineListWrapperPreviewTexture(splineListWrapper, out texture);
 
                 default:
                     Debug.LogError($"Unhandled data type: {value.GetType().Name}");
@@ -88,86 +89,17 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var spline = splineWrapper.Spline;
-                var length = spline.GetLength();
-                var bounds = spline.GetBounds();
-                var center = bounds.center.WithY(0);
 
-                var size = SplineHelpers.GetMinimumBoundingSquareSize(spline, MARGIN_WIDTH);
-                var halfSize = new float3(size / 2, 0, size / 2);
+                var bounds = SplineHelpers.GetMinimumBoundingSquare(spline, MARGIN_WIDTH);
+                var size = (int)bounds.size.x;
 
-                if (size <= 0 || size > Mathf.Pow(2, 14))
-                {
-                    Debug.LogError($"Spline size is invalid: {size} (valid: 0 < n < 16384)");
-
-                    texture = null;
-                    return false;
-                }
-
-                var width = size;
-                var height = size;
-
-                outputTexture = new Texture2D(width, height, TextureFormat.RGB24, mipChain: false, linear: true);
+                outputTexture = new Texture2D(size, size, TextureFormat.RGB24, mipChain: false, linear: true);
                 outputTexture.wrapMode = TextureWrapMode.Clamp;
                 outputTexture.filterMode = FilterMode.Bilinear;
 
-                // Clear the texture
-                for (int y = 0; y < outputTexture.height; y++)
-                {
-                    for (int x = 0; x < outputTexture.width; x++)
-                    {
-                        outputTexture.SetPixel(x, y, Color.black);
-                    }
-                }
+                ClearTexture(outputTexture);
 
-                var firstPosition = Vector3.zero;
-                var previousPosition = Vector3.zero;
-
-                // Draw the spline outline
-                for (int i = 0; i < length; i++)
-                {
-                    var t = i / (length - 1);
-                    if (spline.Closed)
-                    {
-                        t = i / length;
-                    }
-
-                    var p = spline.EvaluatePosition(t);
-                    p = p - (float3)center + halfSize;
-
-                    var currentPosition = (Vector3)p;
-
-                    if (i > 0)
-                    {
-                        var color = Color.white;
-                        if (currentPosition.y > 1)
-                        {
-                            color = Color.green;
-                        }
-                        else if (currentPosition.y < 0)
-                        {
-                            color = Color.red;
-                        }
-                        else
-                        {
-                            color = Color.white;
-                        }
-
-                        DrawLine(outputTexture, previousPosition.SwizzleXZ(), currentPosition.SwizzleXZ(), color);
-                    }
-
-                    previousPosition = currentPosition;
-
-
-                    if (i == 0)
-                    {
-                        firstPosition = currentPosition;
-                    }
-                }
-
-                if (spline.Closed)
-                {
-                    DrawLine(outputTexture, previousPosition, firstPosition, Color.white);
-                }
+                DrawSpline(outputTexture, spline, bounds);
 
                 AddExecutionTime(splineWrapper.ExecutionTime, outputTexture);
 
@@ -182,6 +114,100 @@ namespace Indiecat.TerrainGraph.Editor
 
                 texture = null;
                 return false;
+            }
+        }
+
+        private static bool TryCreateSplineListWrapperPreviewTexture(SplineListWrapper splineListWrapper, out Texture texture)
+        {
+            const int MARGIN_WIDTH = 5;
+
+            Texture2D outputTexture = null;
+
+            try
+            {
+                var splines = splineListWrapper.Splines;
+
+                var bounds = SplineHelpers.GetMinimumBoundingSquare(splines, MARGIN_WIDTH);
+                var size = (int)bounds.size.x;
+
+                outputTexture = new Texture2D(size, size, TextureFormat.RGB24, mipChain: false, linear: true);
+                outputTexture.wrapMode = TextureWrapMode.Clamp;
+                outputTexture.filterMode = FilterMode.Bilinear;
+
+                ClearTexture(outputTexture);
+
+                foreach (var spline in splines)
+                {
+                    DrawSpline(outputTexture, spline, bounds);
+                }
+
+                AddExecutionTime(splineListWrapper.ExecutionTime, outputTexture);
+
+                outputTexture.Apply(false, false);
+
+                texture = outputTexture;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+
+                texture = null;
+                return false;
+            }
+        }
+
+        private static void DrawSpline(Texture2D texture, Spline spline, Bounds bounds)
+        {
+            var length = spline.GetLength();
+
+            var firstPosition = Vector3.zero;
+            var previousPosition = Vector3.zero;
+
+            // Draw the spline outline
+            for (int i = 0; i < length; i++)
+            {
+                var t = i / (length - 1);
+                if (spline.Closed)
+                {
+                    t = i / length;
+                }
+
+                var p = spline.EvaluatePosition(t);
+                p = p - bounds.min;
+
+                var currentPosition = ((Vector3)p).WithY(0);
+
+                if (i > 0)
+                {
+                    var color = Color.white;
+                    if (currentPosition.y > 1)
+                    {
+                        color = Color.green;
+                    }
+                    else if (currentPosition.y < 0)
+                    {
+                        color = Color.red;
+                    }
+                    else
+                    {
+                        color = Color.white;
+                    }
+
+                    DrawLine(texture, previousPosition.SwizzleXZ(), currentPosition.SwizzleXZ(), color);
+                }
+
+                previousPosition = currentPosition;
+
+                if (i == 0)
+                {
+                    firstPosition = currentPosition;
+                }
+            }
+
+            if (spline.Closed)
+            {
+                DrawLine(texture, previousPosition.SwizzleXZ(), firstPosition.SwizzleXZ(), Color.white);
             }
         }
 
