@@ -1,7 +1,7 @@
 ﻿using System;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
+using Indiecat.UnityCommon.Runtime;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor

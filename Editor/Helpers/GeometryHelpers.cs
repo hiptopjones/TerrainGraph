@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Indiecat.TerrainGraph.Editor
 {
