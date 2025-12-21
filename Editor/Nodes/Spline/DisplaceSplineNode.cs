@@ -303,7 +303,7 @@ namespace Indiecat.TerrainGraph.Editor
                                 break;
                         }
 
-                        var displacedPosition = position + displacement;
+                        var displacedPosition = (Vector3)position + displacement;
                         vertices.Add(displacedPosition);
                     }
 

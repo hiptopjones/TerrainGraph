@@ -173,7 +173,7 @@ namespace Indiecat.TerrainGraph.Editor
                     t = i / length;
                 }
 
-                var p = spline.EvaluatePosition(t);
+                var p = (Vector3)spline.EvaluatePosition(t);
                 p = p - bounds.min;
 
                 var currentPosition = ((Vector3)p).WithY(0);

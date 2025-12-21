@@ -150,7 +150,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             foreach (var knot in spline)
             {
-                var vertex = targetCenter + knot.Position - sourceCenter;
+                var vertex = targetCenter + (Vector3)knot.Position - sourceCenter;
                 vertices.Add(vertex);
             }
 
