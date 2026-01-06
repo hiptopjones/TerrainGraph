@@ -1,0 +1,58 @@
+#pragma kernel CSMain
+
+int _Size;
+float2 _Center;
+int _PointCount;
+float _RotationCount;
+
+RWTexture2D<float> _OutTexture;
+
+static const float PI = 3.14159265359;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+    
+    if (_PointCount < 2)
+    {
+        return;
+    }
+    
+    float2 uv = (float2(id.xy) + 0.5) / _Size;
+    float2 c = saturate(_Center);
+    
+    float maxRadius = min(min(c.x, 1.0 - c.x), min(c.y, 1.0 - c.y));
+    maxRadius = max(maxRadius, 1e-6);
+
+    float minDist = 1e20;
+    int nearestIndex = 0;
+
+    float dt = rcp((float) _PointCount - 1);
+    
+    [loop]
+    for (int i = 0; i < _PointCount; i++)
+    {
+        float t = i * dt;
+
+        float angle = t * _RotationCount * 2.0 * PI;
+        float radius = t * maxRadius;
+
+        float2 p = c + float2(cos(angle), sin(angle)) * radius;
+
+        float d = distance(uv, p);
+        if (d < minDist)
+        {
+            minDist = d;
+            nearestIndex = i;
+        }
+    }
+
+    float cellT = nearestIndex * dt;
+    float height = 1.0 - cellT; // 1 at center, 0 at outermost
+
+    _OutTexture[int2(id.xy)] = height;
+}
