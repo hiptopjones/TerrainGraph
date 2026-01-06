@@ -12,6 +12,8 @@ namespace Indiecat.TerrainGraph.Editor
             public Vector2 Center;
             public int PointCount;
             public float RotationCount;
+            public float Squareness;
+            public float JitterStrength;
             public int Size;
 
             public int VersionHash;
@@ -19,7 +21,7 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    HashCode.Combine(Center, PointCount, RotationCount, Size)
+                    HashCode.Combine(Center, PointCount, RotationCount, Squareness, JitterStrength, Size)
                 );
             }
         }
@@ -35,6 +37,12 @@ namespace Indiecat.TerrainGraph.Editor
 
         private const string NODE_INPUT_ROTATIONS_ID = "rotations_input";
         private const string NODE_INPUT_ROTATIONS_TITLE = "Rotation Count";
+
+        private const string NODE_INPUT_SQUARENESS_ID = "squareness_input";
+        private const string NODE_INPUT_SQUARENESS_TITLE = "Squareness";
+
+        private const string NODE_INPUT_JITTER_ID = "jitter_input";
+        private const string NODE_INPUT_JITTER_TITLE = "Jitter";
 
         private const string NODE_INPUT_SIZE_ID = "size_input";
         private const string NODE_INPUT_SIZE_TITLE = "Size";
@@ -66,6 +74,14 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<float>(NODE_INPUT_ROTATIONS_ID)
                 .WithDisplayName(NODE_INPUT_ROTATIONS_TITLE)
                 .WithDefaultValue(1.5f)
+                .Build();
+            context.AddInputPort<float>(NODE_INPUT_SQUARENESS_ID)
+                .WithDisplayName(NODE_INPUT_SQUARENESS_TITLE)
+                .WithDefaultValue(0f)
+                .Build();
+            context.AddInputPort<float>(NODE_INPUT_JITTER_ID)
+                .WithDisplayName(NODE_INPUT_JITTER_TITLE)
+                .WithDefaultValue(2f)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
                 .WithDisplayName(NODE_INPUT_SIZE_TITLE)
@@ -117,7 +133,19 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (input.RotationCount < 1)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ROTATIONS_TITLE} value invalid: {input.RotationCount} (valid: 1 < n)", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ROTATIONS_TITLE} value invalid: {input.RotationCount} (valid: 1 <= n)", this);
+                isValid = false;
+            }
+
+            if (input.Squareness < 0 || input.Squareness > 1)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SQUARENESS_TITLE} value invalid: {input.Squareness} (valid: 0 <= n <= 1)", this);
+                isValid = false;
+            }
+
+            if (input.JitterStrength < 0)
+            {
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_JITTER_TITLE} value invalid: {input.JitterStrength} (valid: 0 <= n)", this);
                 isValid = false;
             }
 
@@ -144,6 +172,8 @@ namespace Indiecat.TerrainGraph.Editor
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_CENTER_ID, out temp.Center) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_POINTS_ID, out temp.PointCount) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ROTATIONS_ID, out temp.RotationCount) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SQUARENESS_ID, out temp.Squareness) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_JITTER_ID, out temp.JitterStrength) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
 
             if (success)
@@ -204,6 +234,8 @@ namespace Indiecat.TerrainGraph.Editor
                 var center = inputValues.Center;
                 var pointCount = inputValues.PointCount;
                 var rotationCount = inputValues.RotationCount;
+                var squareness = inputValues.Squareness;
+                var jitterStrength = inputValues.JitterStrength;
                 var size = inputValues.Size;
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
@@ -218,6 +250,8 @@ namespace Indiecat.TerrainGraph.Editor
                 shader.SetTexture(kernel, "_OutTexture", outputTexture);
                 shader.SetFloat("_PointCount", pointCount);
                 shader.SetFloat("_RotationCount", rotationCount);
+                shader.SetFloat("_Squareness", squareness);
+                shader.SetFloat("_JitterStrength", jitterStrength);
                 shader.SetVector("_Center", center);
                 shader.SetInt("_Size", size);
 
