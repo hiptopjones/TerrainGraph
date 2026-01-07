@@ -21,7 +21,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float minDistance = 1e20;
 
     int nearestIndex = 0;
-    float nearestHeight = 0;
     
     [loop]
     for (int i = 0; i < _PointsCount; i++)
@@ -35,14 +34,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         float d = distance(id.xy, p.xz);
         if (d < minDistance)
         {
-            minDistance = d;
-            
+            minDistance = d;            
             nearestIndex = i;
-            nearestHeight = p.y;
         }
     }
 
-    float height = (nearestHeight - minHeight) / (maxHeight - minHeight);
+    float height = nearestIndex / ((float) _PointsCount - 1);
 
     _OutTexture[int2(id.xy)] = height;
 }
