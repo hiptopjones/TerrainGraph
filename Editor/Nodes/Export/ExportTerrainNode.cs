@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Linq;
 using Unity.GraphToolkit.Editor;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Splines;
+using UnityEngine.Windows;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -13,15 +17,13 @@ namespace Indiecat.TerrainGraph.Editor
         private class InputValues
         {
             public HeightGrid Grid;
-            public TerrainDataWrapper TerrainDataWrapper;
-            public int TerrainHeight;
-            public int TerrainSize;
+            public string TargetAssetName;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, TerrainDataWrapper?.TerrainData, TerrainHeight, TerrainSize);
+                return HashCode.Combine(Grid?.VersionHash, TargetAssetName);
             }
         }
 
@@ -31,14 +33,8 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_GRID_ID = "grid_input";
         private const string NODE_INPUT_GRID_TITLE = "Grid";
 
-        private const string NODE_INPUT_TERRAIN_ID = "terrain_input";
-        private const string NODE_INPUT_TERRAIN_TITLE = "Terrain";
-
-        private const string NODE_INPUT_HEIGHT_ID = "height_input";
-        private const string NODE_INPUT_HEIGHT_TITLE = "Height";
-
-        private const string NODE_INPUT_SIZE_ID = "size_input";
-        private const string NODE_INPUT_SIZE_TITLE = "Size";
+        private const string NODE_INPUT_NAME_ID = "terrain_input";
+        private const string NODE_INPUT_NAME_TITLE = "Terrain";
 
         // Outputs
 
@@ -48,14 +44,9 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
                 .WithDisplayName(NODE_INPUT_GRID_TITLE)
                 .Build();
-            context.AddInputPort<TerrainDataWrapper>(NODE_INPUT_TERRAIN_ID)
-                .WithDisplayName(NODE_INPUT_TERRAIN_TITLE)
-                .Build();
-            context.AddInputPort<int>(NODE_INPUT_HEIGHT_ID)
-                .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
-                .Build();
-            context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
-                .WithDisplayName(NODE_INPUT_SIZE_TITLE)
+            context.AddInputPort<string>(NODE_INPUT_NAME_ID)
+                .WithDisplayName(NODE_INPUT_NAME_TITLE)
+                .WithDefaultValue("My Terrain Data")
                 .Build();
         }
 
@@ -82,33 +73,41 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.TerrainDataWrapper == null || !input.TerrainDataWrapper.IsValid)
+            if (string.IsNullOrEmpty(input.TargetAssetName))
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_TERRAIN_TITLE} value missing", this);
+                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_NAME_TITLE} value missing", this);
                 isValid = false;
             }
             else
             {
-                var terrainData = input.TerrainDataWrapper.TerrainData;
-                var terrainSize = terrainData.heightmapResolution - 1;
+                var terrainDataGuids = AssetDatabase.FindAssets($"t:TerrainData {input.TargetAssetName}");
 
-                if (input.Grid.Size != terrainSize)
+                var terrainDataGuidCount = terrainDataGuids.Length;
+                if (terrainDataGuidCount == 0)
                 {
-                    if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} and {NODE_INPUT_TERRAIN_TITLE} size mismatch", this);
+                    if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_NAME_TITLE} value invalid", this);
                     isValid = false;
                 }
-            }
+                else if (terrainDataGuidCount > 1)
+                {
+                    if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_NAME_TITLE} value ambiguous", this);
+                    isValid = false;
+                }
+                else
+                {
+                    var terrainDataGuid = terrainDataGuids.First();
+                    var assetFilePath = AssetDatabase.GUIDToAssetPath(terrainDataGuid);
 
-            if (input.TerrainHeight <= 0)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_HEIGHT_TITLE} value invalid: {input.TerrainHeight} (valid: 0 < n)", this);
-                isValid = false;
-            }
+                    var terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(assetFilePath);
 
-            if (input.TerrainSize <= 0)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.TerrainSize} (valid: 0 < n)", this);
-                isValid = false;
+                    var terrainSize = terrainData.heightmapResolution - 1;
+
+                    if (input.Grid.Size != terrainSize)
+                    {
+                        if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} and {NODE_INPUT_NAME_TITLE} heightmap resolution mismatch", this);
+                        isValid = false;
+                    }
+                }
             }
 
             if (isValid)
@@ -126,9 +125,7 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_TERRAIN_ID, out temp.TerrainDataWrapper) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_HEIGHT_ID, out temp.TerrainHeight) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.TerrainSize);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_NAME_ID, out temp.TargetAssetName);
 
             if (success)
             {
@@ -154,11 +151,11 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var inputGrid = inputValues.Grid;
-                var inputTerrainWrapper = inputValues.TerrainDataWrapper;
-                var inputTerrainHeight = inputValues.TerrainHeight;
-                var inputTerrainSize = inputValues.TerrainSize;
+                var inputTargetName = inputValues.TargetAssetName;
 
-                var terrainData = inputTerrainWrapper.TerrainData;
+                var terrainDataGuid = AssetDatabase.FindAssets($"t:TerrainData {inputTargetName}").First();
+                var assetFilePath = AssetDatabase.GUIDToAssetPath(terrainDataGuid);
+                var terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(assetFilePath);
 
                 var size = inputGrid.Size;
 
@@ -185,7 +182,6 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 terrainData.SetHeights(0, 0, heights);
-                terrainData.size = new Vector3(inputTerrainSize, inputTerrainHeight, inputTerrainSize);
 
                 return true;
             }
