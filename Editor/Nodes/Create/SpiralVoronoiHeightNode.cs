@@ -125,7 +125,7 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.PointCount <= 1)
+            if (input.PointCount < 2)
             {
                 if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_POINTS_TITLE} value invalid: {input.PointCount} (valid: 1 < n)", this);
                 isValid = false;
