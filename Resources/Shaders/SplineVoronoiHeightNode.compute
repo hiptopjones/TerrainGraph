@@ -1,0 +1,48 @@
+#pragma kernel CSMain
+
+StructuredBuffer<float3> _Points;
+int _PointsCount;
+int _Size;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+    
+    float2 uv = (float2(id.xy) + 0.5) / _Size;
+
+    float minHeight = 1e20;
+    float maxHeight = -1e20;
+    float minDistance = 1e20;
+
+    int nearestIndex = 0;
+    float nearestHeight = 0;
+    
+    [loop]
+    for (int i = 0; i < _PointsCount; i++)
+    {
+        float3 p = _Points[i];
+
+        minHeight = min(minHeight, p.y);
+        maxHeight = max(maxHeight, p.y);
+        
+        // TODO: Should not be using id.xy here
+        float d = distance(id.xy, p.xz);
+        if (d < minDistance)
+        {
+            minDistance = d;
+            
+            nearestIndex = i;
+            nearestHeight = p.y;
+        }
+    }
+
+    float height = (nearestHeight - minHeight) / (maxHeight - minHeight);
+
+    _OutTexture[int2(id.xy)] = height;
+}
