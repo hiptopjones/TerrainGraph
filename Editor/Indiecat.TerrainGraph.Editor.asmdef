@@ -19,7 +19,9 @@
         ""
     ],
     "autoReferenced": true,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "UNITY_EDITOR"
+    ],
     "versionDefines": [
         {
             "name": "com.jbooth.microverse",
