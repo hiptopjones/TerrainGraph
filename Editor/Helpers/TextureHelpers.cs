@@ -289,6 +289,7 @@ namespace Indiecat.TerrainGraph.Editor
             var renderTexture = new RenderTexture(size, size, 0, format);
 
             renderTexture.enableRandomWrite = true;
+            renderTexture.wrapMode = TextureWrapMode.Clamp;
             renderTexture.Create();
 
             return renderTexture;

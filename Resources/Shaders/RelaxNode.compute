@@ -1,0 +1,42 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+uint _Size;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+    
+    uint2 uv = id.xy;
+    
+    float height = _InTexture[uv].r;
+    
+    if (height == 0)
+    {
+        // Treat anything with a value of zero as a fixed value
+        _OutTexture[uv].r = height;
+        return;
+    }
+    
+    if (uv.x == 0 || uv.x == _Size - 1 ||
+        uv.y == 0 || uv.y == _Size - 1)
+    {
+        // Skip edge pixels to avoid indexing values outside of the input
+        _OutTexture[uv].r = height;
+        return;
+    }
+    
+    float left = _InTexture[uv + int2(-1, 0)];
+    float right = _InTexture[uv + int2(1, 0)];
+    float top = _InTexture[uv + int2(0, 1)];
+    float bottom = _InTexture[uv + int2(0, -1)];
+
+    // Jacobi grid relaxation (Laplace solver)
+    _OutTexture[uv] = (left + right + top + bottom) * 0.25;
+}
