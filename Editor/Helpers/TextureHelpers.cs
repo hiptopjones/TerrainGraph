@@ -342,6 +342,8 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             var texture = CreateTexture(width, height, TextureFormat.RFloat);
+            texture.wrapMode = TextureWrapMode.Clamp;
+
             texture.SetPixels(colors);
             texture.Apply();
 
