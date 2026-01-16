@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Indiecat.UnityCommon.Runtime;
+using System;
 using UnityEngine;
 using UnityEngine.Splines;
-using Indiecat.UnityCommon.Runtime;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -93,10 +93,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var bounds = SplineHelpers.GetMinimumBoundingSquare(spline, MARGIN_WIDTH);
                 var size = (int)bounds.size.x;
 
-                outputTexture = new Texture2D(size, size, TextureFormat.RGB24, mipChain: false, linear: true);
-                outputTexture.wrapMode = TextureWrapMode.Clamp;
-                outputTexture.filterMode = FilterMode.Bilinear;
-
+                outputTexture = CreateTexture(size, size, TextureFormat.RGB24);
                 ClearTexture(outputTexture);
 
                 DrawSpline(outputTexture, spline, bounds);
@@ -111,6 +108,12 @@ namespace Indiecat.TerrainGraph.Editor
             catch (Exception ex)
             {
                 Debug.LogException(ex);
+
+                if (outputTexture != null)
+                {
+                    Object.DestroyImmediate(outputTexture);
+                    outputTexture = null;
+                }
 
                 texture = null;
                 return false;
@@ -130,10 +133,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var bounds = SplineHelpers.GetMinimumBoundingSquare(splines, MARGIN_WIDTH);
                 var size = (int)bounds.size.x;
 
-                outputTexture = new Texture2D(size, size, TextureFormat.RGB24, mipChain: false, linear: true);
-                outputTexture.wrapMode = TextureWrapMode.Clamp;
-                outputTexture.filterMode = FilterMode.Bilinear;
-
+                outputTexture = CreateTexture(size, size, TextureFormat.RGB24);
                 ClearTexture(outputTexture);
 
                 foreach (var spline in splines)
@@ -151,6 +151,12 @@ namespace Indiecat.TerrainGraph.Editor
             catch (Exception ex)
             {
                 Debug.LogException(ex);
+
+                if (outputTexture != null)
+                {
+                    Object.DestroyImmediate(outputTexture);
+                    outputTexture = null;
+                }
 
                 texture = null;
                 return false;
@@ -281,6 +287,10 @@ namespace Indiecat.TerrainGraph.Editor
         public static Texture2D CreateTexture(int width, int height, TextureFormat format)
         {
             var texture = new Texture2D(width, height, format, mipChain: false, linear: true);
+
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+
             return texture;
         }
 
@@ -290,6 +300,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             renderTexture.enableRandomWrite = true;
             renderTexture.wrapMode = TextureWrapMode.Clamp;
+            renderTexture.filterMode = FilterMode.Bilinear;
             renderTexture.Create();
 
             return renderTexture;
@@ -305,8 +316,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 RenderTexture.active = renderTexture;
 
-                outputTexture = new Texture2D(renderTexture.width, renderTexture.height, textureFormat, mipChain: false, linear: true);
-
+                outputTexture = CreateTexture(renderTexture.width, renderTexture.height, textureFormat);
                 outputTexture.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
                 outputTexture.Apply();
 
@@ -343,7 +353,6 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             var texture = CreateTexture(width, height, TextureFormat.RFloat);
-            texture.wrapMode = TextureWrapMode.Clamp;
 
             texture.SetPixels(colors);
             texture.Apply();
