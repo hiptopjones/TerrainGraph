@@ -2,6 +2,7 @@
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
+using static Indiecat.TerrainGraph.Editor.ArithmeticNode;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -14,6 +15,7 @@ namespace Indiecat.TerrainGraph.Editor
         private class InputValues
         {
             public HeightGrid Grid;
+            public bool IgnoreZero;
             public float HeightScale;
             public string ExportPath;
 
@@ -21,7 +23,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, HeightScale, ExportPath);
+                return HashCode.Combine(Grid?.VersionHash, IgnoreZero, HeightScale, ExportPath);
             }
         }
 
@@ -31,6 +33,9 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_GRID_ID = "grid_input";
         private const string NODE_INPUT_GRID_TITLE = "Grid";
 
+        private const string NODE_OPTION_ZERO_ID = "zero_option";
+        private const string NODE_OPTION_ZERO_TITLE = "Ignore Zero";
+
         private const string NODE_INPUT_SCALE_ID = "scale_input";
         private const string NODE_INPUT_SCALE_TITLE = "Height Scale";
 
@@ -38,6 +43,14 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_PATH_TITLE = "Path";
 
         // Outputs
+
+        protected override void OnDefineOptions(IOptionDefinitionContext context)
+        {
+            context.AddOption<bool>(NODE_OPTION_ZERO_ID)
+                .WithDisplayName(NODE_OPTION_ZERO_TITLE)
+                .WithDefaultValue(false)
+                .Build();
+        }
 
         protected override void OnDefinePorts(IPortDefinitionContext context)
         {
@@ -94,6 +107,7 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
+                GetNodeOptionByName(NODE_OPTION_ZERO_ID).TryGetValue(out temp.IgnoreZero) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SCALE_ID, out temp.HeightScale) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PATH_ID, out temp.ExportPath);
 
@@ -121,6 +135,7 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var inputGrid = inputValues.Grid;
+                var ignoreZero = inputValues.IgnoreZero;
                 var heightScale = inputValues.HeightScale;
                 var exportPath = inputValues.ExportPath;
 
@@ -141,7 +156,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 GridHelpers.CopyHeights(rawHeights, heights);
 
-                MeshHelpers.ExportMesh(heights, heightScale, exportPath);
+                MeshHelpers.ExportMesh(heights, heightScale, ignoreZero, exportPath);
 
                 // Ensure the editor picks up any changes
                 // NOTE: Unable to invoke a refresh directly during graph asset import
