@@ -9,11 +9,19 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
+            var container = new VisualElement
+            {
+                style =
+                {
+                    flexGrow = 1
+                }
+            };
+
             var image = new Image
             {
                 scaleMode = ScaleMode.ScaleToFit,
                 style =
-                {   
+                {
                     flexGrow = 1,
                     width = 200,
                     height = 200,
@@ -28,24 +36,28 @@ namespace Indiecat.TerrainGraph.Editor
                     marginBottom = 6
                 }
             };
+            container.Add(image);
+
+            var label = new Label();
+            container.Add(label);
 
             var target = fieldInfo.GetValue(property.serializedObject.targetObject) as PreviewImage;
 
             // Node list preview can have a null target
             if (target != null)
             {
-                target.Images.Add(image);
-                target.UpdateTexture(target.Texture);
+                target.Containers.Add(container);
+                target.UpdateTexture(target.Texture, target.GridSize);
 
                 // Ensures that previews are populated when the graph is loaded into the editor
-                image.schedule.Execute(() =>
+                container.schedule.Execute(() =>
                 {
-                    target.UpdateTexture(target.Texture);
+                    target.UpdateTexture(target.Texture, target.GridSize);
                 }
                 ).StartingIn(100);
             }
 
-            return image;
+            return container;
         }
     }
 }

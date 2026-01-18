@@ -8,5 +8,6 @@ namespace Indiecat.TerrainGraph.Editor
         public RenderTexture RenderTexture;
         public int PreviewHash;
         public Texture PreviewTexture;
+        public int GridSize; // Either size of grid or bounding size for spline
     }
 }

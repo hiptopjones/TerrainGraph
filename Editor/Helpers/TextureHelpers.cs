@@ -21,20 +21,21 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        public static bool TryCreatePreviewTexture(IVersionedObject value, out Texture texture)
+        public static bool TryCreatePreviewTexture(IVersionedObject value, out Texture texture, out int gridSize)
         {
+            gridSize = 0;
             texture = null;
 
             switch (value)
             {
                 case HeightGrid grid:
-                    return TryCreateHeightGridPreviewTexture(grid, out texture);
+                    return TryCreateHeightGridPreviewTexture(grid, out texture, out gridSize);
 
                 case SplineWrapper splineWrapper:
-                    return TryCreateSplineWrapperPreviewTexture(splineWrapper, out texture);
+                    return TryCreateSplineWrapperPreviewTexture(splineWrapper, out texture, out gridSize);
 
                 case SplineListWrapper splineListWrapper:
-                    return TryCreateSplineListWrapperPreviewTexture(splineListWrapper, out texture);
+                    return TryCreateSplineListWrapperPreviewTexture(splineListWrapper, out texture, out gridSize);
 
                 default:
                     Debug.LogError($"Unhandled data type: {value.GetType().Name}");
@@ -42,7 +43,7 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        public static bool TryCreateHeightGridPreviewTexture(HeightGrid grid, out Texture texture)
+        public static bool TryCreateHeightGridPreviewTexture(HeightGrid grid, out Texture texture, out int gridSize)
         {
             RenderTexture outputTexture = null;
 
@@ -53,6 +54,7 @@ namespace Indiecat.TerrainGraph.Editor
                 {
                     Debug.LogError($"Unable to find colorizer shader");
 
+                    gridSize = 0;
                     texture = null;
                     return false;
                 }
@@ -62,6 +64,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 Graphics.Blit(grid.RenderTexture, outputTexture, material);
 
+                gridSize = grid.RenderTexture.width;
                 texture = outputTexture;
                 return true;
             }
@@ -75,12 +78,13 @@ namespace Indiecat.TerrainGraph.Editor
                     outputTexture = null;
                 }
 
+                gridSize = 0;
                 texture = null;
                 return false;
             }
         }
 
-        public static bool TryCreateSplineWrapperPreviewTexture(SplineWrapper splineWrapper, out Texture texture)
+        public static bool TryCreateSplineWrapperPreviewTexture(SplineWrapper splineWrapper, out Texture texture, out int gridSize)
         {
             const int MARGIN_WIDTH = 5;
 
@@ -91,9 +95,10 @@ namespace Indiecat.TerrainGraph.Editor
                 var spline = splineWrapper.Spline;
 
                 var bounds = SplineHelpers.GetMinimumBoundingSquare(spline, MARGIN_WIDTH);
-                var size = (int)bounds.size.x;
+                var width = (int)bounds.size.x;
+                var height = width;
 
-                outputTexture = CreateTexture(size, size, TextureFormat.RGB24);
+                outputTexture = CreateTexture(width, height, TextureFormat.RGB24);
                 ClearTexture(outputTexture);
 
                 DrawSpline(outputTexture, spline, bounds);
@@ -102,6 +107,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 outputTexture.Apply(false, false);
 
+                gridSize = width;
                 texture = outputTexture;
                 return true;
             }
@@ -115,12 +121,13 @@ namespace Indiecat.TerrainGraph.Editor
                     outputTexture = null;
                 }
 
+                gridSize = 0;
                 texture = null;
                 return false;
             }
         }
 
-        private static bool TryCreateSplineListWrapperPreviewTexture(SplineListWrapper splineListWrapper, out Texture texture)
+        private static bool TryCreateSplineListWrapperPreviewTexture(SplineListWrapper splineListWrapper, out Texture texture, out int gridSize)
         {
             const int MARGIN_WIDTH = 5;
 
@@ -131,9 +138,10 @@ namespace Indiecat.TerrainGraph.Editor
                 var splines = splineListWrapper.Splines;
 
                 var bounds = SplineHelpers.GetMinimumBoundingSquare(splines, MARGIN_WIDTH);
-                var size = (int)bounds.size.x;
+                var width = (int)bounds.size.x;
+                var height = width;
 
-                outputTexture = CreateTexture(size, size, TextureFormat.RGB24);
+                outputTexture = CreateTexture(width, height, TextureFormat.RGB24);
                 ClearTexture(outputTexture);
 
                 foreach (var spline in splines)
@@ -145,6 +153,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 outputTexture.Apply(false, false);
 
+                gridSize = width;
                 texture = outputTexture;
                 return true;
             }
@@ -158,6 +167,7 @@ namespace Indiecat.TerrainGraph.Editor
                     outputTexture = null;
                 }
 
+                gridSize = 0;
                 texture = null;
                 return false;
             }

@@ -44,13 +44,14 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 // TODO: Should not be re-creating this if nothing has changed
-                if (TryCreatePreviewTexture(CacheData.Output, out var texture))
+                if (TryCreatePreviewTexture(CacheData.Output, out var texture, out var gridSize))
                 {
-                    if (TrySetPreviewTexture(texture))
+                    if (TrySetPreviewTexture(texture, gridSize))
                     {
                         // Cache generation value to avoid unnecessary updates
                         CacheData.PreviewHash = CacheData.Output.VersionHash;
                         CacheData.PreviewTexture = texture;
+                        CacheData.GridSize = gridSize;
 
                         // Ensure the texture gets cleaned up when the output object goes away
                         TextureMemoryManager.Register(CacheData.Output, texture);
@@ -67,20 +68,22 @@ namespace Indiecat.TerrainGraph.Editor
                 var warningTexture = EditorGUIUtility.IconContent("console.warnicon.sml").image;
 
                 // Best effort, not checking the return
-                TrySetPreviewTexture(warningTexture);
+                TrySetPreviewTexture(warningTexture, 0);
             }
 
             // Preview failed to update
             return false;
         }
 
-        private bool TryCreatePreviewTexture(T value, out Texture texture)
+        private bool TryCreatePreviewTexture(T value, out Texture texture, out int gridSize)
         {
+            gridSize = 0;
             texture = null;
 
             if (CacheData.PreviewHash == CacheData.Output.VersionHash)
             {
                 // Preview is already up-to-date
+                gridSize = CacheData.GridSize;
                 texture = CacheData.PreviewTexture;
                 return true;
             }
@@ -91,7 +94,7 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
 
-            if (TextureHelpers.TryCreatePreviewTexture(value, out texture))
+            if (TextureHelpers.TryCreatePreviewTexture(value, out texture, out gridSize))
             {
                 // Successfully created texture
                 return true;
@@ -101,7 +104,7 @@ namespace Indiecat.TerrainGraph.Editor
             return false;
         }
 
-        private bool TrySetPreviewTexture(Texture texture)
+        private bool TrySetPreviewTexture(Texture texture, int gridSize)
         {
             try
             {
@@ -126,7 +129,7 @@ namespace Indiecat.TerrainGraph.Editor
                     return false;
                 }
 
-                previewImage.UpdateTexture(texture);
+                previewImage.UpdateTexture(texture, gridSize);
 
                 return true;
             }
