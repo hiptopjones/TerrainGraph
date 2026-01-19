@@ -22,9 +22,31 @@ namespace Indiecat.TerrainGraph.Editor
 
         public override void OnGraphChanged(GraphLogger graphLogger)
         {
+            if (!IsUpdateEnabled())
+            {
+                // TODO: We should give the user a hint about this flag being set, but not spam them...
+                return;
+            }
+
             ValidateNodes(graphLogger);
 
             UpdatePreviews();
+        }
+
+        private bool IsUpdateEnabled()
+        {
+            // Create a variable in the blackboard with the below properties to enable this check
+
+            var variable = GetVariables().SingleOrDefault(x => x.name == "UpdateEnabled" && x.dataType == typeof(bool));
+            if (variable != null)
+            {
+                if (variable.TryGetDefaultValue(out bool isEnabled))
+                {
+                    return isEnabled;
+                }
+            }
+
+            return true;
         }
 
         private void ValidateNodes(GraphLogger graphLogger)
