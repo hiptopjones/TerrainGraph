@@ -1,5 +1,7 @@
 #pragma kernel CSMain
 
+#define MAX_FLOAT 3.402823466E+38
+
 Texture2D<float> _InTexture;
 Texture2D<float> _MaskTexture;
 uint _Size;
@@ -15,23 +17,18 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     }
     
     uint2 uv = id.xy;
-    
-    bool insideMask = _MaskTexture[id.xy] > 0.5;
-    if (!insideMask)
-    {
-        return;
-    }
-    
+
     float height = _InTexture[uv].r;
     
-    if (height == 0)
+    bool insideMask = _MaskTexture[id.xy] > 0.5;
+    if (!insideMask || height != 0)
     {
-        // Treat anything with a value of zero as a fixed value
+        // Treat anything non-zero as a fixed value
         _OutTexture[uv].r = height;
         return;
     }
     
-    // 8-neighborhood
+    // 8-neighborhood   
     int2 offsets[8] =
     {
         int2(-1, -1), int2(0, -1), int2(1, -1),
@@ -39,12 +36,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         int2(-1, 1),  int2(0, 1),  int2(1, 1)
     };
 
-    float bestHeight = 1e9;
+    float bestHeight = MAX_FLOAT;
     
     for (int i = 0; i < 8; i++)
     {
         int2 neighborUV = id.xy + offsets[i];
-        float neighborHeight = _InTexture[neighborUV];
+        float neighborHeight = _InTexture[neighborUV].r;
 
         if (neighborHeight != 0)
         {
@@ -53,8 +50,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         }
     }
     
-    if (bestHeight < 1e9)
+    if (bestHeight < MAX_FLOAT)
     {
-        _OutTexture[uv] = bestHeight;
-    }   
+        _OutTexture[uv].r = bestHeight;
+    }
 }
