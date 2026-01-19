@@ -1,10 +1,12 @@
 ﻿#if __MICROVERSE__
 using JBooth.MicroVerseCore;
 using System;
+using System.IO;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -17,12 +19,13 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public HeightGrid Grid;
             public string StampName;
+            public string FilePath;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, StampName);
+                return HashCode.Combine(Grid?.VersionHash, StampName, FilePath);
             }
         }
 
@@ -34,6 +37,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         private const string NODE_INPUT_NAME_ID = "name_input";
         private const string NODE_INPUT_NAME_TITLE = "Stamp Name";
+
+        private const string NODE_INPUT_PATH_ID = "path_input";
+        private const string NODE_INPUT_PATH_TITLE = "Path";
 
         // Outputs
 
@@ -47,6 +53,10 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<string>(NODE_INPUT_NAME_ID)
                 .WithDisplayName(NODE_INPUT_NAME_TITLE)
                 .WithDefaultValue("Height Stamp")
+                .Build();
+            context.AddInputPort<string>(NODE_INPUT_PATH_ID)
+                .WithDisplayName(NODE_INPUT_PATH_TITLE)
+                .WithDefaultValue("Assets/Textures/ExportedStamp.png")
                 .Build();
         }
 
@@ -89,7 +99,8 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_NAME_ID, out temp.StampName);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_NAME_ID, out temp.StampName) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PATH_ID, out temp.FilePath);
 
             if (success)
             {
@@ -114,10 +125,11 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputGrid = inputValues.Grid;
                 var stampName = inputValues.StampName;
+                var exportFilePath = inputValues.FilePath;
 
-                var renderTexture = inputGrid.RenderTexture;
+                var size = inputGrid.Size;
 
-                if (!TextureHelpers.TryCopyRenderTextureToTexture2D(renderTexture, TextureFormat.R16, out var microverseTexture))
+                if (!TextureHelpers.TryExportHeightGridTexture(inputGrid, exportFilePath))
                 {
                     return false;
                 }
@@ -151,8 +163,9 @@ namespace Indiecat.TerrainGraph.Editor
                 heightStamp.transform.localScale = terrain.terrainData.size;
                 heightStamp.transform.position = new Vector3(terrain.terrainData.size.x, 0, terrain.terrainData.size.z) / 2;
 
-                // TODO: How does this texture get cleaned up or reused when we regenerate?
-                heightStamp.stamp = microverseTexture;
+                // NOTE: This may return null until the asset database picks up the new file
+                var stampTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(exportFilePath);
+                heightStamp.stamp = stampTexture;
 
                 microverse.enabled = true;
                 microverse.Invalidate();

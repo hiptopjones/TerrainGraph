@@ -1,5 +1,6 @@
 ﻿using Indiecat.UnityCommon.Runtime;
 using System;
+using System.IO;
 using UnityEngine;
 using UnityEngine.Splines;
 using Object = UnityEngine.Object;
@@ -370,6 +371,41 @@ namespace Indiecat.TerrainGraph.Editor
             return texture;
         }
 
+        public static bool TryExportHeightGridTexture(HeightGrid inputGrid, string exportFilePath)
+        {
+            Texture2D exportTexture = null;
 
+            try
+            {
+                var renderTexture = inputGrid.RenderTexture;
+
+                if (!TryCopyRenderTextureToTexture2D(renderTexture, TextureFormat.R16, out exportTexture))
+                {
+                    return false;
+                }
+
+                var bytes = exportTexture.EncodeToPNG();
+
+                Directory.CreateDirectory(Path.GetDirectoryName(exportFilePath));
+
+                exportFilePath = Path.ChangeExtension(exportFilePath, "png");
+                File.WriteAllBytes(exportFilePath, bytes);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+            finally
+            {
+                if (exportTexture != null)
+                {
+                    Object.DestroyImmediate(exportTexture);
+                    exportTexture = null;
+                }
+            }
+        }
     }
 }

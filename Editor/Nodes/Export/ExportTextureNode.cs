@@ -113,7 +113,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputGrid = inputValues.Grid;
                 var exportFilePath = inputValues.ExportFilePath;
 
-                if (!TryExportPng(inputGrid, exportFilePath))
+                if (!TextureHelpers.TryExportHeightGridTexture(inputGrid, exportFilePath))
                 {
                     return false;
                 }
@@ -128,43 +128,6 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
-            }
-        }
-
-        private static bool TryExportPng(HeightGrid inputGrid, string exportFilePath)
-        {
-            Texture2D exportTexture = null;
-
-            try
-            {
-                var renderTexture = inputGrid.RenderTexture;
-
-                if (!TextureHelpers.TryCopyRenderTextureToTexture2D(renderTexture, TextureFormat.R16, out exportTexture))
-                {
-                    return false;
-                }
-
-                var bytes = exportTexture.EncodeToPNG();
-
-                Directory.CreateDirectory(Path.GetDirectoryName(exportFilePath));
-
-                exportFilePath = Path.ChangeExtension(exportFilePath, "png");
-                File.WriteAllBytes(exportFilePath, bytes);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
-            finally
-            {
-                if (exportTexture != null)
-                {
-                    Object.DestroyImmediate(exportTexture);
-                    exportTexture = null;
-                }
             }
         }
     }
