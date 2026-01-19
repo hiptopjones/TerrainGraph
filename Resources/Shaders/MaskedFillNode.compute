@@ -1,0 +1,60 @@
+#pragma kernel CSMain
+
+Texture2D<float> _InTexture;
+Texture2D<float> _MaskTexture;
+uint _Size;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+    
+    uint2 uv = id.xy;
+    
+    bool insideMask = _MaskTexture[id.xy] > 0.5;
+    if (!insideMask)
+    {
+        return;
+    }
+    
+    float height = _InTexture[uv].r;
+    
+    if (height == 0)
+    {
+        // Treat anything with a value of zero as a fixed value
+        _OutTexture[uv].r = height;
+        return;
+    }
+    
+    // 8-neighborhood
+    int2 offsets[8] =
+    {
+        int2(-1, -1), int2(0, -1), int2(1, -1),
+        int2(-1, 0),               int2(1, 0),
+        int2(-1, 1),  int2(0, 1),  int2(1, 1)
+    };
+
+    float bestHeight = 1e9;
+    
+    for (int i = 0; i < 8; i++)
+    {
+        int2 neighborUV = id.xy + offsets[i];
+        float neighborHeight = _InTexture[neighborUV];
+
+        if (neighborHeight != 0)
+        {
+            // Prefer the lowest height
+            bestHeight = min(bestHeight, neighborHeight);
+        }
+    }
+    
+    if (bestHeight < 1e9)
+    {
+        _OutTexture[uv] = bestHeight;
+    }   
+}
