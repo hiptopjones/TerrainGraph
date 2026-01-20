@@ -80,8 +80,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         sediment -= deposit;
     }
 
-    //// Remove water from the system
-    //water *= (1.0 - _Evaporation);
+    // Remove water from the system
+    water *= (1.0 - _Evaporation);
 
     _OutHeightTexture[uv] = height;
     _OutWaterTexture[uv] = water;
