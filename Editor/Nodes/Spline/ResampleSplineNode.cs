@@ -41,6 +41,10 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
                 .WithDefaultValue(true)
                 .Build();
+            context.AddOption<bool>(NODE_OPTION_DISABLE_ID)
+                .WithDisplayName(NODE_OPTION_DISABLE_TITLE)
+                .WithDefaultValue(false)
+                .Build();
         }
 
         private enum DisplacementAxis
@@ -78,6 +82,12 @@ namespace Indiecat.TerrainGraph.Editor
 
         public override bool TryValidateNode(GraphLogger graphLogger = null)
         {
+            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
+            if (isNodeSkipped)
+            {
+                return true;
+            }
+
             return TryGetValidatedInputValues(out _, graphLogger);
         }
 
@@ -135,6 +145,12 @@ namespace Indiecat.TerrainGraph.Editor
 
         public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
         {
+            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeDisabled);
+            if (isNodeDisabled)
+            {
+                return PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out value);
+            }
+
             if (!TryExecuteNode())
             {
                 value = null;

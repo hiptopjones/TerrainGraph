@@ -16,6 +16,9 @@ namespace Indiecat.TerrainGraph.Editor
         protected const string NODE_OPTION_PREVIEW_ID = "preview_option";
         protected const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
 
+        protected const string NODE_OPTION_DISABLE_ID = "disable_option";
+        protected const string NODE_OPTION_DISABLE_TITLE = "Disable Node";
+
         protected const string NODE_INPUT_PREVIEW_ID = "preview_input";
         protected const string NODE_INPUT_PREVIEW_TITLE = "Preview";
 
