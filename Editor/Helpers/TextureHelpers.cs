@@ -305,7 +305,7 @@ namespace Indiecat.TerrainGraph.Editor
             return texture;
         }
 
-        public static RenderTexture CreateRenderTexture(int size, RenderTextureFormat format)
+        public static RenderTexture CreateRenderTexture(int size, RenderTextureFormat format, bool clear = false)
         {
             var renderTexture = new RenderTexture(size, size, 0, format);
 
@@ -313,6 +313,14 @@ namespace Indiecat.TerrainGraph.Editor
             renderTexture.wrapMode = TextureWrapMode.Clamp;
             renderTexture.filterMode = FilterMode.Bilinear;
             renderTexture.Create();
+
+            if (clear)
+            {
+                RenderTexture previousActive = RenderTexture.active;
+                RenderTexture.active = renderTexture;
+                GL.Clear(false, true, Color.black);
+                RenderTexture.active = previousActive;
+            }
 
             return renderTexture;
         }
