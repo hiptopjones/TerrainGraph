@@ -3,8 +3,6 @@ using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Splines;
-using UnityEngine.Windows;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor

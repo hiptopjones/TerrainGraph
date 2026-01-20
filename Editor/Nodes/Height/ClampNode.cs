@@ -22,7 +22,7 @@ namespace Indiecat.TerrainGraph.Editor
         }
 
         // Options
-    
+
         // Inputs
         private const string NODE_INPUT_GRID_ID = "grid_input";
         private const string NODE_INPUT_GRID_TITLE = "Grid";
@@ -31,7 +31,7 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_MINIMUM_TITLE = "Minimum";
 
         private const string NODE_INPUT_MAXIMUM_ID = "maximum_input";
-        private const string NODE_INPUT_MAXIMUM_TITLE = "Maximum"; 
+        private const string NODE_INPUT_MAXIMUM_TITLE = "Maximum";
 
         // Outputs
         private const string NODE_OUTPUT_GRID_ID = "grid_output";

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.IO;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {

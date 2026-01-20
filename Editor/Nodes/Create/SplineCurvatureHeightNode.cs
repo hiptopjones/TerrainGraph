@@ -397,7 +397,7 @@ public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
         {
             return CurvatureType.Straight;
         }
-        
+
         return cross > 0 ? CurvatureType.Convex : CurvatureType.Concave;
     }
 }

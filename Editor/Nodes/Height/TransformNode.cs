@@ -30,7 +30,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         private const string NODE_INPUT_ROTATION_ID = "degrees_input";
         private const string NODE_INPUT_ROTATION_TITLE = "Rotation (Degrees)";
-        
+
         private const string NODE_INPUT_SCALE_ID = "scale_input";
         private const string NODE_INPUT_SCALE_TITLE = "Scale";
 

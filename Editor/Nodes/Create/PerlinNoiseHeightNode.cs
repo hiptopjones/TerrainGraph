@@ -1,7 +1,6 @@
 using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace Indiecat.TerrainGraph.Editor
 {

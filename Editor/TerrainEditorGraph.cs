@@ -52,7 +52,7 @@ namespace Indiecat.TerrainGraph.Editor
         private void ValidateNodes(GraphLogger graphLogger)
         {
             var nodes = GetNodes().OfType<IValidatableNode>().ToList();
-     
+
             foreach (var node in nodes)
             {
                 node.TryValidateNode(graphLogger);

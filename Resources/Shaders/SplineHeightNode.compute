@@ -95,7 +95,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     {
         float t = 1 - saturate(distance / _SplineHeightBlendDistance);
         signedDistance += lerp(0, height, t);
-
     }
     
     _OutTexture[uv].r = signedDistance;

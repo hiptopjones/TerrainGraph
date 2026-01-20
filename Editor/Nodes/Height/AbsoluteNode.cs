@@ -20,7 +20,7 @@ namespace Indiecat.TerrainGraph.Editor
         }
 
         // Options
-    
+
         // Inputs
         private const string NODE_INPUT_GRID_ID = "grid_input";
         private const string NODE_INPUT_GRID_TITLE = "Grid";

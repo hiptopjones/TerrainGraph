@@ -1,7 +1,6 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using static Indiecat.TerrainGraph.Editor.ArithmeticNode;
 
 namespace Indiecat.TerrainGraph.Editor
 {

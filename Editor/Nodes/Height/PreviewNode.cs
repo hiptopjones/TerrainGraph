@@ -161,7 +161,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
                 Graphics.Blit(inputTexture, outputTexture);
-                
+
                 var outputGrid = new HeightGrid(size);
 
                 outputGrid.RenderTexture = outputTexture;

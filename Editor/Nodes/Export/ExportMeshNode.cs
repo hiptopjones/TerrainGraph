@@ -2,7 +2,6 @@
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
-using static Indiecat.TerrainGraph.Editor.ArithmeticNode;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -147,7 +146,7 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 var size = renderTexture.width;
-                
+
                 var rawHeights = new float[size * size];
                 var heights = new float[size, size];
 

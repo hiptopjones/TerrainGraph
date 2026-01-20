@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
@@ -183,7 +181,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var vertexCount = inputValues.VertexCount;
 
                 var inputSpline = inputSplineWrapper.Spline;
-                
+
                 var outputSpline = SplineHelpers.ResampleSpline(inputSpline, vertexCount);
 
                 var outputSplineWrapper = new SplineWrapper

@@ -8,7 +8,7 @@ namespace Indiecat.TerrainGraph.Editor
     public abstract class ExecutableNode<T> : Node,
         IValidatableNode,
         IExecutableNode,
-        IEvaluatableNode<T>, 
+        IEvaluatableNode<T>,
         ICacheableNode<T>,
         IPreviewableNode
         where T : IVersionedObject

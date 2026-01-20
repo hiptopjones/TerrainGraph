@@ -57,7 +57,7 @@ namespace Indiecat.TerrainGraph.Editor
                     if (x < size - 1 && y < size - 1)
                     {
                         // If zero values are ignored, do not output triangles when all vertices are zero
-                        if (!ignoreZero || 
+                        if (!ignoreZero ||
                             heights[x, y] > 0 ||
                             heights[x + 1, y] > 0 ||
                             heights[x + 1, y + 1] > 0 ||

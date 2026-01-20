@@ -26,7 +26,7 @@ namespace Indiecat.TerrainGraph.Editor
         private bool TryExecuteGraph(TerrainEditorGraph graph)
         {
             var nonPreviewableNodes = graph.GetNodes().OfType<IExecutableNode>().Where(x => x is not IPreviewableNode);
-        
+
             foreach (var node in nonPreviewableNodes)
             {
                 node.TryExecuteNode();

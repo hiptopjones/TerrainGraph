@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.AdaptivePerformance.Provider;
-using UnityEngine.Splines;
 
 namespace Indiecat.TerrainGraph.Editor
 {

@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Indiecat.UnityCommon.Runtime;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Splines;
-using Indiecat.UnityCommon.Runtime;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -236,7 +236,6 @@ namespace Indiecat.TerrainGraph.Editor
             catch (Exception ex)
             {
                 Debug.LogException(ex);
-
 
                 splines = null;
                 return false;
