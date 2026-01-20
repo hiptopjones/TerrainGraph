@@ -1,0 +1,89 @@
+﻿#pragma kernel CSMain
+
+RWTexture2D<float> _InHeightTexture;
+RWTexture2D<float> _InWaterTexture;
+RWTexture2D<float> _InSedimentTexture;
+int _Size;
+
+float _DeltaTime; // Allows finer resolution on each step
+float _Rain;
+float _Evaporation;
+float _Capacity;
+float _Erosion;
+float _Deposition;
+float _Gravity;
+
+RWTexture2D<float> _OutHeightTexture;
+RWTexture2D<float> _OutWaterTexture;
+RWTexture2D<float> _OutSedimentTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Size || id.y >= _Size)
+    {
+        return;
+    }
+    
+    uint2 uv = id.xy;
+
+    float height = _InHeightTexture[uv];
+    float water = _InWaterTexture[uv];
+    float sediment = _InSedimentTexture[uv];
+
+    float currentSurface = height + water;
+
+    // Add more rain to the system
+    water += _Rain * _DeltaTime;
+
+    // Get height of neighbors (including water)
+    int2 uvL = uv + int2(-1, 0);
+    int2 uvR = uv + int2(1, 0);
+    int2 uvD = uv + int2(0, -1);
+    int2 uvU = uv + int2(0, 1);
+    
+    float hL = _InHeightTexture[uvL] + _InWaterTexture[uvL];
+    float hR = _InHeightTexture[uvR] + _InWaterTexture[uvR];
+    float hD = _InHeightTexture[uvD] + _InWaterTexture[uvD];
+    float hU = _InHeightTexture[uvU] + _InWaterTexture[uvU];
+
+    // Total the downhill components    
+    float dL = max(0, currentSurface - hL);
+    float dR = max(0, currentSurface - hR);
+    float dD = max(0, currentSurface - hD);
+    float dU = max(0, currentSurface - hD);
+    float flow = dL + dR + dD + dU;
+
+    // Adjust water from this cell, based on slope
+    water -= flow * _Gravity * _DeltaTime;
+    water = max(water, 0);
+
+    // More flow means more capacity
+    float capacity = flow * _Capacity;
+    capacity = max(capacity, 0.0001);
+    
+    if (sediment < capacity)
+    {
+        // Water has space, so erode
+        float erode = (capacity - sediment) * _Erosion * _DeltaTime;
+        erode = min(erode, height);
+        
+        height -= erode;
+        sediment += erode;
+    }
+    else
+    {
+        // Water is saturated, so deposit
+        float deposit = (sediment - capacity) * _Deposition * _DeltaTime;
+        
+        height += deposit;
+        sediment -= deposit;
+    }
+
+    //// Remove water from the system
+    //water *= (1.0 - _Evaporation);
+
+    _OutHeightTexture[uv] = height;
+    _OutWaterTexture[uv] = water;
+    _OutSedimentTexture[uv] = sediment;
+}
