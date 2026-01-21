@@ -14,13 +14,45 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var port = node.GetInputPortByName(portId);
 
-                // Sanity check, since I keep wasting time finding these mismatches
-                if (typeof(T) != port.dataType)
+                var fromType = port.dataType;
+                var toType = typeof(T);
+
+                // Sanity check, since I keep wasting time finding type mismatches on ports
+                if (fromType != toType)
                 {
+                    var wrapperType = typeof(WrappedParameter<T>);
+
+                    // Is this a wrapper type?
+                    if (fromType == wrapperType || fromType.IsSubclassOf(wrapperType))
+                    {
+                        // Make the request with the wrapper, and get the desired type after
+                        if (TryEvaluateInputPortInternal(node, port, out WrappedParameter<T> wrapper))
+                        {
+                            value = wrapper.Value;
+                            return true;
+                        }
+                    }
+
                     Debug.Log($"Type mismatch on {node} input port {portId}: {typeof(T).Name} != {port.dataType}");
                     return false;
                 }
 
+                // Types check out, so forward the request
+                return TryEvaluateInputPortInternal(node, port, out value);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+
+        private static bool TryEvaluateInputPortInternal<T>(INode node, IPort port, out T value)
+        {
+            value = default;
+
+            try
+            {
                 if (!port.isConnected)
                 {
                     // If no connection exists, try to get the port's embedded value (returns type default if unavailable)
@@ -31,14 +63,14 @@ namespace Indiecat.TerrainGraph.Editor
                 var connectedNode = connectedPort.GetNode();
                 if (connectedNode == null)
                 {
-                    Debug.Log($"Missing node on {node} input port {portId}: check for orphaned portals");
+                    Debug.Log($"Missing node on {node} input port {port.name}: check for orphaned portals");
                     return false;
                 }
 
                 switch (connectedNode)
                 {
-                    case IConstantNode contstantNode:
-                        return contstantNode.TryGetValue(out value);
+                    case IConstantNode constantNode:
+                        return constantNode.TryGetValue(out value);
 
                     case IVariableNode variableNode:
                         return variableNode.variable.TryGetDefaultValue(out value);
