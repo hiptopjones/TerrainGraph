@@ -53,6 +53,10 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDisplayName(NODE_OPTION_ZERO_TITLE)
                 .WithDefaultValue(false)
                 .Build();
+            context.AddOption<bool>(NODE_OPTION_DISABLE_ID)
+                .WithDisplayName(NODE_OPTION_DISABLE_TITLE)
+                .WithDefaultValue(false)
+                .Build();
         }
 
         protected override void OnDefinePorts(IPortDefinitionContext context)
@@ -74,6 +78,12 @@ namespace Indiecat.TerrainGraph.Editor
 
         public bool TryValidateNode(GraphLogger graphLogger = null)
         {
+            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
+            if (isNodeSkipped)
+            {
+                return true;
+            }
+
             return TryGetValidatedInputValues(out _, graphLogger);
         }
 
@@ -127,6 +137,13 @@ namespace Indiecat.TerrainGraph.Editor
 
         public bool TryExecuteNode()
         {
+            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeDisabled);
+            if (isNodeDisabled)
+            {
+                // Execution skipped
+                return true;
+            }
+
             if (!TryGetValidatedInputValues(out var inputValues))
             {
                 // Not in valid state

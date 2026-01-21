@@ -6,8 +6,8 @@ using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 using static Indiecat.TerrainGraph.Editor.NodeConstants;
+using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -43,6 +43,14 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_INPUT_PATH_TITLE = "Path";
 
         // Outputs
+        
+        protected override void OnDefineOptions(IOptionDefinitionContext context)
+        {
+            context.AddOption<bool>(NODE_OPTION_DISABLE_ID)
+                .WithDisplayName(NODE_OPTION_DISABLE_TITLE)
+                .WithDefaultValue(false)
+                .Build();
+        }
 
         protected override void OnDefinePorts(IPortDefinitionContext context)
         {
@@ -64,6 +72,12 @@ namespace Indiecat.TerrainGraph.Editor
 
         public bool TryValidateNode(GraphLogger graphLogger = null)
         {
+            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
+            if (isNodeSkipped)
+            {
+                return true;
+            }
+
             return TryGetValidatedInputValues(out _, graphLogger);
         }
 
@@ -116,6 +130,13 @@ namespace Indiecat.TerrainGraph.Editor
 
         public bool TryExecuteNode()
         {
+            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeDisabled);
+            if (isNodeDisabled)
+            {
+                // Execution skipped
+                return true;
+            }
+
             if (!TryGetValidatedInputValues(out var inputValues))
             {
                 // Not in valid state
