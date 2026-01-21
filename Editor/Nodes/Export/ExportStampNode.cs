@@ -50,11 +50,11 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDisplayName(NODE_INPUT_GRID_TITLE)
                 .Build();
 
-            context.AddInputPort<string>(NODE_INPUT_NAME_ID)
+            context.AddInputPort<AdaptiveStringParameter>(NODE_INPUT_NAME_ID)
                 .WithDisplayName(NODE_INPUT_NAME_TITLE)
                 .WithDefaultValue("Height Stamp")
                 .Build();
-            context.AddInputPort<string>(NODE_INPUT_PATH_ID)
+            context.AddInputPort<LongStringParameter>(NODE_INPUT_PATH_ID)
                 .WithDisplayName(NODE_INPUT_PATH_TITLE)
                 .WithDefaultValue("Assets/Textures/ExportedStamp.png")
                 .Build();

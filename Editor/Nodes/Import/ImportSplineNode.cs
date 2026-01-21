@@ -43,7 +43,7 @@ namespace Indiecat.TerrainGraph.Editor
             GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
 
             // Input
-            context.AddInputPort<string>(NODE_INPUT_NAME_ID)
+            context.AddInputPort<AdaptiveLengthStringParameter>(NODE_INPUT_NAME_ID)
                 .WithDisplayName(NODE_INPUT_NAME_TITLE)
                 .WithDefaultValue("My Spline")
                 .Build();

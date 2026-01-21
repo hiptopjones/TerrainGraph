@@ -42,7 +42,7 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
                 .WithDisplayName(NODE_INPUT_GRID_TITLE)
                 .Build();
-            context.AddInputPort<string>(NODE_INPUT_NAME_ID)
+            context.AddInputPort<AdaptiveLengthStringParameter>(NODE_INPUT_NAME_ID)
                 .WithDisplayName(NODE_INPUT_NAME_TITLE)
                 .WithDefaultValue("My Terrain Data")
                 .Build();

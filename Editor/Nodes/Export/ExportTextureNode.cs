@@ -41,7 +41,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDisplayName(NODE_INPUT_GRID_TITLE)
                 .Build();
 
-            context.AddInputPort<string>(NODE_INPUT_PATH_ID)
+            context.AddInputPort<AdaptiveLengthStringParameter>(NODE_INPUT_PATH_ID)
                 .WithDisplayName(NODE_INPUT_PATH_TITLE)
                 .WithDefaultValue("Assets/Textures/ExportedTexture.png")
                 .Build();

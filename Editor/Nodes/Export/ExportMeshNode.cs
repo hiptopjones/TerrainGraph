@@ -64,7 +64,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDisplayName(NODE_INPUT_SCALE_TITLE)
                 .WithDefaultValue(DEFAULT_SCALE)
                 .Build();
-            context.AddInputPort<string>(NODE_INPUT_PATH_ID)
+            context.AddInputPort<AdaptiveLengthStringParameter>(NODE_INPUT_PATH_ID)
                 .WithDisplayName(NODE_INPUT_PATH_TITLE)
                 .WithDefaultValue("Assets/Models/ExportedMesh.obj")
                 .Build();
