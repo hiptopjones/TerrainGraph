@@ -110,14 +110,14 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (input.FromRange.x == input.FromRange.y)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_FROM_TITLE} value invalid (x != y)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_FROM_TITLE} value invalid (x != y)", this);
+                input.FromRange = new Vector2(input.FromRange.x, input.FromRange.x + 0.00001f);
             }
 
             if (input.ToRange.x == input.ToRange.y)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_TO_TITLE} value invalid (x != y)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_TO_TITLE} value invalid (x != y)", this);
+                input.ToRange = new Vector2(input.ToRange.x, input.ToRange.x + 0.00001f);
             }
 
             if (isValid)

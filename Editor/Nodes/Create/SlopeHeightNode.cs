@@ -29,8 +29,6 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
-        private const int MIN_SAMPLES = 10;
-
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)

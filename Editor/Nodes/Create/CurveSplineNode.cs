@@ -42,7 +42,12 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
         private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
+        // Other
+        private const int MIN_SIZE = 16;
+        private const int DEFAULT_SIZE = 256;
+
         private const int MIN_VERTEX_COUNT = 10;
+        private const int DEFAULT_VERTEX_COUNT = 10;
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -63,11 +68,11 @@ namespace Indiecat.TerrainGraph.Editor
             // Input
             context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
                 .WithDisplayName(NODE_INPUT_SIZE_TITLE)
-                .WithDefaultValue(256)
+                .WithDefaultValue(DEFAULT_SIZE)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
                 .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-                .WithDefaultValue(10)
+                .WithDefaultValue(DEFAULT_VERTEX_COUNT)
                 .Build();
 
             if (isPreviewEnabled)
@@ -106,16 +111,16 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Size <= 0)
+            if (input.Size < MIN_SIZE)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: {MIN_SIZE} <= n)", this);
+                input.Size = MIN_SIZE;
             }
 
             if (input.VertexCount < MIN_VERTEX_COUNT)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
+                input.VertexCount = MIN_VERTEX_COUNT;
             }
 
             if (isValid)

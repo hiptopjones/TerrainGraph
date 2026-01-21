@@ -11,13 +11,13 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public HeightGrid Grid;
             public HeightGrid MaskGrid;
-            public int Iterations;
+            public int IterationCount;
 
             public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, MaskGrid?.VersionHash, Iterations);
+                return HashCode.Combine(Grid?.VersionHash, MaskGrid?.VersionHash, IterationCount);
             }
         }
 
@@ -38,7 +38,9 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
         // Other
-        private const int MAX_ITERATIONS = 1000;
+        private const int MIN_ITERATION_COUNT = 1;
+        private const int MAX_ITERATION_COUNT = 1000;
+        private const int DEFAULT_ITERATION_COUNT = 100;
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -65,7 +67,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_ITERATIONS_ID)
                 .WithDisplayName(NODE_INPUT_ITERATIONS_TITLE)
-                .WithDefaultValue(500)
+                .WithDefaultValue(DEFAULT_ITERATION_COUNT)
                 .Build();
 
             if (isPreviewEnabled)
@@ -116,10 +118,10 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Iterations <= 0 || input.Iterations > MAX_ITERATIONS)
+            if (input.IterationCount < MIN_ITERATION_COUNT || input.IterationCount > MAX_ITERATION_COUNT)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.Iterations} (valid: 0 < n < {MAX_ITERATIONS})", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: {MIN_ITERATION_COUNT} <= n <= {MAX_ITERATION_COUNT})", this);
+                input.IterationCount = Mathf.Clamp(input.IterationCount, MIN_ITERATION_COUNT, MAX_ITERATION_COUNT);
             }
 
             if (isValid)
@@ -138,7 +140,7 @@ namespace Indiecat.TerrainGraph.Editor
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_MASK_ID, out temp.MaskGrid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.Iterations);
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.IterationCount);
 
             if (success)
             {
@@ -206,7 +208,7 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputGrid = inputValues.Grid;
                 var maskGrid = inputValues.MaskGrid;
-                var iterations = inputValues.Iterations;
+                var iterationCount = inputValues.IterationCount;
 
                 var size = inputGrid.Size;
 
@@ -230,7 +232,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 Graphics.Blit(inputTexture, tempTexture1);
 
-                for (int i = 0; i < iterations; i++)
+                for (int i = 0; i < iterationCount; i++)
                 {
                     shader.SetTexture(kernel, "_InTexture", tempTexture1);
                     shader.SetTexture(kernel, "_MaskTexture", maskTexture);

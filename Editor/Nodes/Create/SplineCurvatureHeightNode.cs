@@ -44,6 +44,15 @@ public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
     private const string NODE_OUTPUT_GRID_ID = "grid_output";
     private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
+    // Other
+    private const int MIN_SIZE = 16;
+    private const int DEFAULT_SIZE = 256;
+
+    private const int MIN_SAMPLE_COUNT = 10;
+    private const int DEFAULT_SAMPLE_COUNT = 100;
+
+    private const float DEFAULT_THRESHOLD = 0.1f;
+
     protected override void OnDefineOptions(IOptionDefinitionContext context)
     {
         context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
@@ -62,15 +71,15 @@ public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
             .Build();
         context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
             .WithDisplayName(NODE_INPUT_SIZE_TITLE)
-            .WithDefaultValue(256)
+            .WithDefaultValue(DEFAULT_SIZE)
             .Build();
         context.AddInputPort<int>(NODE_INPUT_SAMPLES_ID)
             .WithDisplayName(NODE_INPUT_SAMPLES_TITLE)
-            .WithDefaultValue(100)
+            .WithDefaultValue(DEFAULT_SAMPLE_COUNT)
             .Build();
         context.AddInputPort<float>(NODE_INPUT_THRESHOLD_ID)
             .WithDisplayName(NODE_INPUT_THRESHOLD_TITLE)
-            .WithDefaultValue(0.1f)
+            .WithDefaultValue(DEFAULT_THRESHOLD)
             .Build();
 
         if (isPreviewEnabled)
@@ -109,10 +118,16 @@ public class SplineCurvatureHeightNode : ExecutableNode<HeightGrid>
             isValid = false;
         }
 
-        if (input.Size <= 0)
+        if (input.Size < MIN_SIZE)
         {
-            if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
-            isValid = false;
+            if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: {MIN_SIZE} <= n)", this);
+            input.Size = MIN_SIZE;
+        }
+
+        if (input.SampleCount < MIN_SAMPLE_COUNT)
+        {
+            if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_SAMPLES_TITLE} value invalid: {input.SampleCount} (valid: {MIN_SAMPLE_COUNT} <= n)", this);
+            input.SampleCount = MIN_SAMPLE_COUNT;
         }
 
         if (isValid)

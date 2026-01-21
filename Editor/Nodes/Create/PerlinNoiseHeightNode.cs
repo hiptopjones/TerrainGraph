@@ -43,6 +43,13 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
+        // Other
+        private const int MIN_SIZE = 16;
+        private const int DEFAULT_SIZE = 256;
+
+        private const float MIN_FREQUENCY = 16;
+        private const float DEFAULT_FREQUENCY = 0.05f;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
@@ -61,14 +68,14 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_FREQUENCY_ID)
                 .WithDisplayName(NODE_INPUT_FREQUENCY_TITLE)
-                .WithDefaultValue(0.05f)
+                .WithDefaultValue(DEFAULT_FREQUENCY)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_SEED_ID)
                 .WithDisplayName(NODE_INPUT_SEED_TITLE)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
                 .WithDisplayName(NODE_INPUT_SIZE_TITLE)
-                .WithDefaultValue(256)
+                .WithDefaultValue(DEFAULT_SIZE)
                 .Build();
 
             if (isPreviewEnabled)
@@ -101,10 +108,10 @@ namespace Indiecat.TerrainGraph.Editor
 
             var isValid = true;
 
-            if (input.Size <= 0)
+            if (input.Size < MIN_SIZE)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: {MIN_SIZE} <= n)", this);
+                input.Size = MIN_SIZE;
             }
 
             if (isValid)

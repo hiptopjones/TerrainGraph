@@ -33,7 +33,9 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
         private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
+        // Other
         private const int MIN_VERTEX_COUNT = 10;
+        private const int DEFAULT_VERTEX_COUNT = 100;
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -47,13 +49,6 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
         }
 
-        private enum DisplacementAxis
-        {
-            Horizontal,
-            Vertical,
-            Both
-        }
-
         protected override void OnDefinePorts(IPortDefinitionContext context)
         {
             GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
@@ -64,7 +59,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
                 .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-                .WithDefaultValue(100)
+                .WithDefaultValue(DEFAULT_VERTEX_COUNT)
                 .Build();
 
             if (isPreviewEnabled)
@@ -111,8 +106,8 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (input.VertexCount < MIN_VERTEX_COUNT)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
+                input.VertexCount = MIN_VERTEX_COUNT;
             }
 
             if (isValid)

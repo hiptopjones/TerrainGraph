@@ -37,6 +37,10 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
+        // Other
+        private const float DEFAULT_FROM_HEIGHT = 1f;
+        private const float DEFAULT_TO_HEIGHT = 0.5f;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
@@ -59,11 +63,11 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_FROM_ID)
                 .WithDisplayName(NODE_INPUT_FROM_TITLE)
-                .WithDefaultValue(1f)
+                .WithDefaultValue(DEFAULT_FROM_HEIGHT)
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_TO_ID)
                 .WithDisplayName(NODE_INPUT_TO_TITLE)
-                .WithDefaultValue(0.5f)
+                .WithDefaultValue(DEFAULT_TO_HEIGHT)
                 .Build();
 
             if (isPreviewEnabled)

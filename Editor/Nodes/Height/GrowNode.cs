@@ -33,6 +33,9 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
+        // Other
+        private const int DEFAULT_RADIUS = 1;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
@@ -55,7 +58,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_RADIUS_ID)
                 .WithDisplayName(NODE_INPUT_RADIUS_TITLE)
-                .WithDefaultValue(1)
+                .WithDefaultValue(DEFAULT_RADIUS)
                 .Build();
 
             if (isPreviewEnabled)

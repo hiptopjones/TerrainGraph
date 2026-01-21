@@ -44,7 +44,16 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
         private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
+        // Other
+        private const float MIN_START = 0;
+        private const float DEFAULT_START = 0;
+
+        private const float MIN_END = 0;
+        private const float DEFAULT_END = 0.5f;
+
         private const int MIN_VERTEX_COUNT = 10;
+        private const int DEFAULT_VERTEX_COUNT = 100;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
@@ -67,15 +76,15 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_START_ID)
                 .WithDisplayName(NODE_INPUT_START_TITLE)
-                .WithDefaultValue(0)
+                .WithDefaultValue(DEFAULT_START)
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_END_ID)
                 .WithDisplayName(NODE_INPUT_END_TITLE)
-                .WithDefaultValue(0.5f)
+                .WithDefaultValue(DEFAULT_END)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
                 .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-                .WithDefaultValue(100)
+                .WithDefaultValue(DEFAULT_VERTEX_COUNT)
                 .Build();
 
             if (isPreviewEnabled)
@@ -120,28 +129,28 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Start < 0)
+            if (input.Start < MIN_START)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_START_TITLE} value invalid: {input.Start} (valid: 0 <= n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_START_TITLE} value invalid: {input.Start} (valid: {MIN_START} <= n)", this);
+                input.Start = MIN_START;
             }
 
-            if (input.End < 0)
+            if (input.End < MIN_END)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_END_TITLE} value invalid: {input.End} (valid: 0 <= n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_END_TITLE} value invalid: {input.End} (valid: {MIN_END} <= n)", this);
+                input.End = MIN_END;
             }
 
             if (input.Start >= input.End)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_END_TITLE} value invalid: {input.End} (valid: start > end)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_END_TITLE} value invalid: {input.End} (valid: start > end)", this);
+                input.End = input.Start + 0.001f;
             }
 
             if (input.VertexCount < MIN_VERTEX_COUNT)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
+                input.VertexCount = MIN_VERTEX_COUNT;
             }
 
             if (isValid)

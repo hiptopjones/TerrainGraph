@@ -55,6 +55,9 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
+        // Other
+        private const float DEFAULT_VALUE = 0.5f;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<ArithmeticOperator>(NODE_OPTION_OPERATOR_ID)
@@ -88,7 +91,7 @@ namespace Indiecat.TerrainGraph.Editor
                     .Build(),
                 () => context.AddInputPort<float>(NODE_INPUT_VALUE_ID)
                     .WithDisplayName(NODE_INPUT_VALUE_TITLE)
-                    .WithDefaultValue(0.5f)
+                    .WithDefaultValue(DEFAULT_VALUE)
                     .Build(),
             };
 

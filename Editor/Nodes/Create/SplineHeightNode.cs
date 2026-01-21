@@ -45,7 +45,12 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
-        private const int MIN_SAMPLES = 10;
+        // Other
+        private const int MIN_SIZE = 16;
+        private const int DEFAULT_SIZE = 256;
+
+        private const int MIN_SAMPLE_COUNT = 10;
+        private const int DEFAULT_SAMPLE_COUNT = 100;
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -65,7 +70,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_SAMPLES_ID)
                 .WithDisplayName(NODE_INPUT_SAMPLES_TITLE)
-                .WithDefaultValue(100)
+                .WithDefaultValue(DEFAULT_SAMPLE_COUNT)
                 .Build();
             context.AddInputPort<bool>(NODE_INPUT_CENTER_ID)
                 .WithDisplayName(NODE_INPUT_CENTER_TITLE)
@@ -77,7 +82,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
                 .WithDisplayName(NODE_INPUT_SIZE_TITLE)
-                .WithDefaultValue(256)
+                .WithDefaultValue(DEFAULT_SIZE)
                 .Build();
 
             if (isPreviewEnabled)
@@ -116,16 +121,16 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Samples < MIN_SAMPLES)
+            if (input.Samples < MIN_SAMPLE_COUNT)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SAMPLES_TITLE} value invalid: {input.Samples} (valid: n < {MIN_SAMPLES})", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_SAMPLES_TITLE} value invalid: {input.Samples} (valid: {MIN_SAMPLE_COUNT} <= n)", this);
+                input.Samples = MIN_SAMPLE_COUNT;
             }
 
-            if (input.Size <= 0)
+            if (input.Size < MIN_SIZE)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: 0 < n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: {MIN_SIZE} <= n)", this);
+                input.Size = MIN_SIZE;
             }
 
             if (isValid)

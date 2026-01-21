@@ -43,6 +43,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         // Outputs
 
+        // Other
+        private const float DEFAULT_SCALE = 100;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<bool>(NODE_OPTION_ZERO_ID)
@@ -59,7 +62,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_SCALE_ID)
                 .WithDisplayName(NODE_INPUT_SCALE_TITLE)
-                .WithDefaultValue(100)
+                .WithDefaultValue(DEFAULT_SCALE)
                 .Build();
             context.AddInputPort<string>(NODE_INPUT_PATH_ID)
                 .WithDisplayName(NODE_INPUT_PATH_TITLE)

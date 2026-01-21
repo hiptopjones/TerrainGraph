@@ -41,7 +41,14 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
         private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
+        // Other
+        private const float DEFAULT_HEIGHT = 0.3f;
+
         private const int MIN_VERTEX_COUNT = 10;
+        private const int DEFAULT_VERTEX_COUNT = 10;
+
+        private const int MIN_CONTOUR_INDEX = 0;
+        private const int DEFAULT_CONTOUR_INDEX = 0;
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -61,15 +68,15 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_HEIGHT_ID)
                 .WithDisplayName(NODE_INPUT_HEIGHT_TITLE)
-                .WithDefaultValue(0.3f)
+                .WithDefaultValue(DEFAULT_HEIGHT)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_INDEX_ID)
                 .WithDisplayName(NODE_INPUT_INDEX_TITLE)
-                .WithDefaultValue(0)
+                .WithDefaultValue(DEFAULT_CONTOUR_INDEX)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
                 .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-                .WithDefaultValue(100)
+                .WithDefaultValue(DEFAULT_VERTEX_COUNT)
                 .Build();
 
             if (isPreviewEnabled)
@@ -108,16 +115,16 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.ContourIndex < 0)
+            if (input.ContourIndex < MIN_CONTOUR_INDEX)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_INDEX_TITLE} value invalid: {input.ContourIndex} (valid: 0 <= n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_INDEX_TITLE} value invalid: {input.ContourIndex} (valid: {MIN_CONTOUR_INDEX} <= n)", this);
+                input.ContourIndex = MIN_CONTOUR_INDEX;
             }
 
             if (input.VertexCount < MIN_VERTEX_COUNT)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
+                input.VertexCount = MIN_VERTEX_COUNT;
             }
 
             if (isValid)

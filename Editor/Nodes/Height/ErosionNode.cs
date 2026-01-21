@@ -10,7 +10,7 @@ namespace Indiecat.TerrainGraph.Editor
         private class InputValues
         {
             public HeightGrid Grid;
-            public int Iterations;
+            public int IterationCount;
             public float Rain;
             public float Evaporation;
             public float Capacity;
@@ -23,7 +23,7 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    Grid?.VersionHash, Iterations, Rain, Evaporation,
+                    Grid?.VersionHash, IterationCount, Rain, Evaporation,
                     Capacity, Erosion, Deposition, Gravity);
             }
         }
@@ -60,8 +60,9 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
         // Other
-        private const int MIN_ITERATIONS = 1;
-        private const int DEFAULT_ITERATIONS = 100;
+        private const int MIN_ITERATION_COUNT = 1;
+        private const int MAX_ITERATION_COUNT = 1000;
+        private const int DEFAULT_ITERATION_COUNT = 100;
 
         private const float MIN_RAIN = 0.0001f;
         private const float DEFAULT_RAIN = 0.2f;
@@ -103,7 +104,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_ITERATIONS_ID)
                 .WithDisplayName(NODE_INPUT_ITERATIONS_TITLE)
-                .WithDefaultValue(DEFAULT_ITERATIONS)
+                .WithDefaultValue(DEFAULT_ITERATION_COUNT)
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_RAIN_ID)
                 .WithDisplayName(NODE_INPUT_RAIN_TITLE)
@@ -172,10 +173,10 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Iterations < MIN_ITERATIONS)
+            if (input.IterationCount < MIN_ITERATION_COUNT || input.IterationCount > MAX_ITERATION_COUNT)
             {
-                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.Iterations} (valid: {MIN_ITERATIONS} <= n)", this);
-                input.Iterations = MIN_ITERATIONS;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: {MIN_ITERATION_COUNT} <= n <= {MAX_ITERATION_COUNT})", this);
+                input.IterationCount = Mathf.Clamp(input.IterationCount, MIN_ITERATION_COUNT, MAX_ITERATION_COUNT);
             }
 
             if (input.Rain < MIN_RAIN)
@@ -202,13 +203,13 @@ namespace Indiecat.TerrainGraph.Editor
                 input.Erosion = MIN_EROSION;
             }
 
-            if (input.Deposition <= MIN_DEPOSITION)
+            if (input.Deposition < MIN_DEPOSITION)
             {
                 if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_DEPOSITION_TITLE} value invalid: {input.Deposition} (valid: {MIN_DEPOSITION} <= n)", this);
                 input.Deposition = MIN_DEPOSITION;
             }
 
-            if (input.Gravity <= MIN_GRAVITY)
+            if (input.Gravity < MIN_GRAVITY)
             {
                 if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_GRAVITY_TITLE} value invalid: {input.Gravity} (valid: {MIN_GRAVITY} <= n)", this);
                 input.Gravity = MIN_GRAVITY;
@@ -229,7 +230,7 @@ namespace Indiecat.TerrainGraph.Editor
             var temp = new InputValues();
             var success =
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.Iterations) &&
+                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.IterationCount) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_RAIN_ID, out temp.Rain) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_EVAPORATION_ID, out temp.Evaporation) &&
                 PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_CAPACITY_ID, out temp.Capacity) &&
@@ -306,7 +307,7 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var inputGrid = inputValues.Grid;
-                var iterations = inputValues.Iterations;
+                var iterationCount = inputValues.IterationCount;
                 var rain = inputValues.Rain;
                 var evaporation = inputValues.Evaporation;
                 var capacity = inputValues.Capacity;
@@ -339,7 +340,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 Graphics.Blit(inputTexture, tempHeightTexture1);
 
-                for (int i = 0; i < iterations; i++)
+                for (int i = 0; i < iterationCount; i++)
                 {
                     shader.SetTexture(kernel, "_InHeightTexture", tempHeightTexture1);
                     shader.SetTexture(kernel, "_OutHeightTexture", tempHeightTexture2);

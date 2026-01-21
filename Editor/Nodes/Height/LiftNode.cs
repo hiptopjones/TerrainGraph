@@ -53,6 +53,9 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
+        // Other
+        private const float DEFAULT_STRENGTH = 1;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<EasingType>(NODE_OPTION_TYPE_ID)
@@ -82,7 +85,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_STRENGTH_ID)
                 .WithDisplayName(NODE_INPUT_STRENGTH_TITLE)
-                .WithDefaultValue(1)
+                .WithDefaultValue(DEFAULT_STRENGTH)
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_MARGIN_ID)
                 .WithDisplayName(NODE_INPUT_MARGIN_TITLE)

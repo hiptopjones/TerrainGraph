@@ -64,7 +64,17 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
         private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
+        // Other
+        private const float DEFAULT_FREQUENCY = 2;
+
+        private const float DEFAULT_AMPLITUDE = 30;
+
+        private const int MIN_ITERATION_COUNT = 1;
+        private const int MAX_ITERATION_COUNT = 10;
+        private const int DEFAULT_ITERATION_COUNT = 1;
+
         private const int MIN_VERTEX_COUNT = 10;
+        private const int DEFAULT_VERTEX_COUNT = 100;
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -95,22 +105,22 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_FREQUENCY_ID)
                 .WithDisplayName(NODE_INPUT_FREQUENCY_TITLE)
-                .WithDefaultValue(2f)
+                .WithDefaultValue(DEFAULT_FREQUENCY)
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
                 .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
-                .WithDefaultValue(30f)
+                .WithDefaultValue(DEFAULT_AMPLITUDE)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_SEED_ID)
                 .WithDisplayName(NODE_INPUT_SEED_TITLE)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_ITERATIONS_ID)
                 .WithDisplayName(NODE_INPUT_ITERATIONS_TITLE)
-                .WithDefaultValue(1)
+                .WithDefaultValue(DEFAULT_ITERATION_COUNT)
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
                 .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-                .WithDefaultValue(100)
+                .WithDefaultValue(DEFAULT_VERTEX_COUNT)
                 .Build();
 
             if (isPreviewEnabled)
@@ -161,28 +171,16 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.Frequency <= 0)
+            if (input.IterationCount < MIN_ITERATION_COUNT || input.IterationCount > MAX_ITERATION_COUNT)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_FREQUENCY_TITLE} value invalid: {input.Frequency} (valid: 0 < n)", this);
-                isValid = false;
-            }
-
-            if (input.Amplitude <= 0)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_AMPLITUDE_TITLE} value invalid: {input.Amplitude} (valid: 0 < n)", this);
-                isValid = false;
-            }
-
-            if (input.IterationCount <= 0)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: 0 < n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: {MIN_ITERATION_COUNT} <= n <= {MAX_ITERATION_COUNT})", this);
+                input.IterationCount = Mathf.Clamp(input.IterationCount, MIN_ITERATION_COUNT, MAX_ITERATION_COUNT);
             }
 
             if (input.VertexCount < MIN_VERTEX_COUNT)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
+                input.VertexCount = MIN_VERTEX_COUNT;
             }
 
             if (isValid)

@@ -33,6 +33,10 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
         private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
 
+        // Other
+        private const int MIN_SPLINE_INDEX = 0;
+        private const int DEFAULT_SPLINE_INDEX = 0;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
@@ -51,7 +55,7 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<int>(NODE_INPUT_INDEX_ID)
                 .WithDisplayName(NODE_INPUT_INDEX_TITLE)
-                .WithDefaultValue(0)
+                .WithDefaultValue(DEFAULT_SPLINE_INDEX)
                 .Build();
 
             if (isPreviewEnabled)
@@ -90,10 +94,10 @@ namespace Indiecat.TerrainGraph.Editor
                 isValid = false;
             }
 
-            if (input.SplineIndex < 0)
+            if (input.SplineIndex < MIN_SPLINE_INDEX)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_INDEX_TITLE} value invalid: {input.SplineIndex} (valid: 0 <= n)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_INDEX_TITLE} value invalid: {input.SplineIndex} (valid: {MIN_SPLINE_INDEX} <= n)", this);
+                input.SplineIndex = MIN_SPLINE_INDEX;
             }
 
             if (isValid)

@@ -42,6 +42,10 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
+        // Other
+        private const float DEFAULT_FLOOR_VALUE = 0;
+        private const float DEFAULT_CEILING_VALUE = 1;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<RebaseType>(NODE_OPTION_TYPE_ID)
@@ -70,7 +74,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             context.AddInputPort<float>(NODE_INPUT_VALUE_ID)
                 .WithDisplayName(NODE_INPUT_VALUE_TITLE)
-                .WithDefaultValue(rebaseType == RebaseType.Floor ? 0 : 1)
+                .WithDefaultValue(rebaseType == RebaseType.Floor ? DEFAULT_FLOOR_VALUE : DEFAULT_CEILING_VALUE)
                 .Build();
 
             if (isPreviewEnabled)

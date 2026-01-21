@@ -37,6 +37,10 @@ namespace Indiecat.TerrainGraph.Editor
         private const string NODE_OUTPUT_GRID_ID = "grid_output";
         private const string NODE_OUTPUT_GRID_TITLE = "Grid";
 
+        // Other
+        private const float DEFAULT_MINIMUM = 0f;
+        private const float DEFAULT_MAXIMUM = 1f;
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
@@ -59,11 +63,11 @@ namespace Indiecat.TerrainGraph.Editor
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_MINIMUM_ID)
                 .WithDisplayName(NODE_INPUT_MINIMUM_TITLE)
-                .WithDefaultValue(0f)
+                .WithDefaultValue(DEFAULT_MINIMUM)
                 .Build();
             context.AddInputPort<float>(NODE_INPUT_MAXIMUM_ID)
                 .WithDisplayName(NODE_INPUT_MAXIMUM_TITLE)
-                .WithDefaultValue(1f)
+                .WithDefaultValue(DEFAULT_MAXIMUM)
                 .Build();
 
             if (isPreviewEnabled)
@@ -110,9 +114,9 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (input.Minimum >= input.Maximum)
             {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_MINIMUM_TITLE} value invalid: {input.Minimum} (valid: n < maximum)", this);
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_MAXIMUM_TITLE} value invalid: {input.Maximum} (valid: 0 > minimum)", this);
-                isValid = false;
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_MINIMUM_TITLE} value invalid: {input.Minimum} (valid: n < maximum)", this);
+                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_MAXIMUM_TITLE} value invalid: {input.Maximum} (valid: n > minimum)", this);
+                input.Minimum = input.Maximum;
             }
 
             if (isValid)
