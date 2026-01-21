@@ -5,6 +5,7 @@
     {
         public T Value;
 
+        #region Implicit Operators
         public static implicit operator T(WrappedParameter<T> wrapper)
         {
             return wrapper.Value;
@@ -14,6 +15,7 @@
         {
             return new WrappedParameter<T>(value);
         }
+        #endregion
 
         public WrappedParameter(T value)
         {
