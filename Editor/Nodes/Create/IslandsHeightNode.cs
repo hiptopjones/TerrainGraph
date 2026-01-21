@@ -2,6 +2,7 @@
 using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using static Indiecat.TerrainGraph.Editor.NodeConstants;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor

@@ -2,6 +2,7 @@
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
+using static Indiecat.TerrainGraph.Editor.NodeConstants;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -13,15 +14,6 @@ namespace Indiecat.TerrainGraph.Editor
         IPreviewableNode
         where T : IVersionedObject
     {
-        protected const string NODE_OPTION_PREVIEW_ID = "preview_option";
-        protected const string NODE_OPTION_PREVIEW_TITLE = "Enable Preview";
-
-        protected const string NODE_OPTION_DISABLE_ID = "disable_option";
-        protected const string NODE_OPTION_DISABLE_TITLE = "Disable Node";
-
-        protected const string NODE_INPUT_PREVIEW_ID = "preview_input";
-        protected const string NODE_INPUT_PREVIEW_TITLE = "Preview";
-
         public CacheData<T> CacheData { get; set; } = new();
 
         public abstract bool TryExecuteNode();

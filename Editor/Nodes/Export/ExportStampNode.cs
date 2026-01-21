@@ -7,6 +7,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using static Indiecat.TerrainGraph.Editor.NodeConstants;
 
 namespace Indiecat.TerrainGraph.Editor
 {

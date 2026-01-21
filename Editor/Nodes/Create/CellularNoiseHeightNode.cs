@@ -1,6 +1,7 @@
 using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
+using static Indiecat.TerrainGraph.Editor.NodeConstants;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -47,8 +48,8 @@ namespace Indiecat.TerrainGraph.Editor
         private const int MIN_SIZE = 16;
         private const int DEFAULT_SIZE = 256;
 
-        private const int MIN_CELL_SIZE= 5;
-        private const int DEFAULT_CELL_SIZE= 20;
+        private const int MIN_CELL_SIZE = 5;
+        private const int DEFAULT_CELL_SIZE = 20;
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
