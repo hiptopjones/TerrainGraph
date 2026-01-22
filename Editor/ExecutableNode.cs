@@ -141,7 +141,10 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (texture == null || texture.width != size)
             {
-                if (texture != null) TextureMemoryManager.Unregister(texture);
+                if (texture != null)
+                {
+                    TextureMemoryManager.Unregister(texture);
+                }
 
                 texture = TextureHelpers.CreateRenderTexture(size, RenderTextureFormat.RFloat);
                 TextureMemoryManager.Register(this, texture);

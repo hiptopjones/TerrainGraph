@@ -8,7 +8,9 @@
         public const string NODE_OPTION_DISABLE_ID = "disable_option";
         public const string NODE_OPTION_DISABLE_TITLE = "Disable Node";
 
-        // TODO: Put the preview in the option area so it doesn't show with a port
+        public const string NODE_OPTION_WARNING_ID = "warning_option";
+        public const string NODE_OPTION_WARNING_TITLE = "Warning";
+
         public const string NODE_INPUT_PREVIEW_ID = "preview_input";
         public const string NODE_INPUT_PREVIEW_TITLE = "Preview";
     }

@@ -71,6 +71,9 @@ namespace Indiecat.TerrainGraph.Editor
                 .WithDisplayName(NODE_OPTION_DISABLE_TITLE)
                 .WithDefaultValue(false)
                 .Build();
+            context.AddOption<WarningBanner>(NODE_OPTION_WARNING_ID)
+                .WithDisplayName(NODE_OPTION_WARNING_TITLE)
+                .Build();
         }
 
         protected override void OnDefinePorts(IPortDefinitionContext context)
@@ -109,6 +112,7 @@ namespace Indiecat.TerrainGraph.Editor
         public override bool TryValidateNode(GraphLogger graphLogger = null)
         {
             GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
+            this.TrySetWarningBanner(isNodeSkipped ? "DISABLED" : null);
             if (isNodeSkipped)
             {
                 return true;
