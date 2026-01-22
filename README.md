@@ -102,7 +102,7 @@ These nodes modify splines:
 
 ---
 
-## EXPORT (5 nodes)
+## EXPORT
 
 Output nodes for final results:
 
