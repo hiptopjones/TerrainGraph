@@ -60,7 +60,7 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
                 .WithDisplayName(NODE_INPUT_GRID_TITLE)
                 .Build();
-            context.AddInputPort<NormalizedFloatParameter>(NODE_INPUT_THRESHOLD_ID)
+            context.AddInputPort<float>(NODE_INPUT_THRESHOLD_ID)
                 .WithDisplayName(NODE_INPUT_THRESHOLD_TITLE)
                 .WithDefaultValue(DEFAULT_THRESHOLD)
                 .Build();

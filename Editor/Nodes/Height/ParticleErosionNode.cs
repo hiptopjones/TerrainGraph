@@ -71,6 +71,8 @@ namespace Indiecat.TerrainGraph.Editor
         private const float MAX_EVAPORATION = 0.1f;
         private const float DEFAULT_EVAPORATION = 0.02f;
 
+        private PortRangeManager _rangeManager = new();
+
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
@@ -94,7 +96,8 @@ namespace Indiecat.TerrainGraph.Editor
             context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
                 .WithDisplayName(NODE_INPUT_GRID_TITLE)
                 .Build();
-            context.AddInputPort<int>(NODE_INPUT_DROPLETS_ID)
+            context.AddInputPort<RangedIntParameter>(NODE_INPUT_DROPLETS_ID)
+                .WithRange(NODE_INPUT_DROPLETS_ID, _rangeManager, MIN_DROPLETS, MAX_DROPLETS)
                 .WithDisplayName(NODE_INPUT_DROPLETS_TITLE)
                 .WithDefaultValue(DEFAULT_DROPLETS)
                 .Build();
@@ -136,6 +139,8 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 return true;
             }
+
+            _rangeManager.UpdateRanges(this);
 
             return TryGetValidatedInputValues(out _, graphLogger);
         }
