@@ -94,7 +94,7 @@ namespace Indiecat.TerrainGraph.Editor
         public override bool TryValidateNode(GraphLogger graphLogger = null)
         {
             GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
-            this.TrySetWarningBanner(isNodeSkipped ? "DISABLED" : null);
+            NodeHelpers.TrySetWarningBanner(this, isNodeSkipped ? "DISABLED" : null);
             if (isNodeSkipped)
             {
                 return true;
