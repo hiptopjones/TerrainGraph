@@ -129,14 +129,12 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected virtual void OnDefineInputPorts(ICustomInputPortDefinitionContext<TInputValues> context)
         {
-            var inputValuesType = typeof(TInputValues);
-
             var bindingFlags =
                 BindingFlags.Public |
                 BindingFlags.Instance |
                 BindingFlags.DeclaredOnly; // No inherited members
 
-            var fields = inputValuesType.GetFields(bindingFlags);
+            var fields = typeof(TInputValues).GetFields(bindingFlags);
             foreach (var field in fields)
             {
                 var attribute = field.GetCustomAttribute<IgnoreIfOptionAttribute>();
@@ -627,10 +625,10 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void CallBuilderMethodWithExpression<TContext>(TContext context, string methodName, FieldInfo field)
         {
-            var parameterExpression = Expression.Parameter(typeof(TOptionValues), "x");
+            var parameterExpression = Expression.Parameter(field.DeclaringType, "x");
             var fieldExpression = Expression.Field(parameterExpression, field);
 
-            var funcType = typeof(Func<,>).MakeGenericType(typeof(TOptionValues), field.FieldType);
+            var funcType = typeof(Func<,>).MakeGenericType(field.DeclaringType, field.FieldType);
             var lambda = Expression.Lambda(funcType, fieldExpression, parameterExpression);
 
             var method = context.GetType()
