@@ -23,8 +23,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (fieldInfo != null)
             {
-                // TODO: This format should be provided by a helper shared by ExecutableNode
-                var name = $"{fieldInfo.Name}Option";
+                var name = NodeHelpers.GetOptionName(fieldInfo.Name);
 
                 var builder = new CustomOptionBuilder<TOption>(name, _originalContext);
 

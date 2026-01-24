@@ -15,7 +15,7 @@ namespace Indiecat.TerrainGraph.Editor
             public HeightGrid MaskGrid;
 
             [DisplayName("Iterations")]
-            [Range(1, 1000), DefaultValue(100)]
+            [RangeValue(1, 1000), DefaultValue(100)]
             public int IterationCount;
 
             public override int GetHashCode()

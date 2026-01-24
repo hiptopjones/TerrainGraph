@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using System.Reflection;
 using Unity.GraphToolkit.Editor;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -17,6 +19,16 @@ namespace Indiecat.TerrainGraph.Editor
             port = node.GetOutputPorts().Where(x => x.name == name).FirstOrDefault();
 
             return port != null;
+        }
+
+        public static string GetInputPortName(string fieldName)
+        {
+            return $"{fieldName}Input";
+        }
+
+        public static string GetOptionName(string fieldName)
+        {
+            return $"{fieldName}Option";
         }
     }
 }

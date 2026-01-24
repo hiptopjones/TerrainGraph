@@ -21,8 +21,7 @@ namespace Indiecat.TerrainGraph.Editor
             if (fieldExpression.Body is MemberExpression member &&
                 member.Member is FieldInfo fieldInfo)
             {
-                // TODO: This format should be provided by a helper shared by ExecutableNode
-                var name = $"{fieldInfo.Name}InputPort";
+                var name = NodeHelpers.GetInputPortName(fieldInfo.Name);
 
                 var builder = new CustomInputPortBuilder<TPort>(name, _originalContext);
 

@@ -101,7 +101,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (Options.IsPreviewEnabled)
             {
-                inputContext.AddInputPort(x => x.Preview).Build();
+                inputContext.BuildInputPort(x => x.Preview);
             }
 
             // Output
@@ -252,7 +252,7 @@ namespace Indiecat.TerrainGraph.Editor
                     continue;
                 }
 
-                var optionName = GetOptionName(field.Name);
+                var optionName = NodeHelpers.GetOptionName(field.Name);
                 var nodeOption = GetNodeOptionByName(optionName);
 
                 var fieldType = field.FieldType;
@@ -318,7 +318,7 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 var fieldType = field.FieldType;
-                var inputPortName = GetInputPortName(field.Name);
+                var inputPortName = NodeHelpers.GetInputPortName(field.Name);
 
                 if (fieldType.IsEnum)
                 {
@@ -399,7 +399,7 @@ namespace Indiecat.TerrainGraph.Editor
                     continue;
                 }
 
-                var inputPortName = GetInputPortName(field.Name);
+                var inputPortName = NodeHelpers.GetInputPortName(field.Name);
 
                 var fieldType = field.FieldType;
 
@@ -514,7 +514,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var previewPortName = GetInputPortName(nameof(InputValuesBase.Preview));
+                var previewPortName = NodeHelpers.GetInputPortName(nameof(InputValuesBase.Preview));
                 var previewPort = GetInputPortByName(previewPortName);
                 if (previewPort == null)
                 {
@@ -550,7 +550,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var warningOptionName = GetOptionName(nameof(OptionValuesBase.Warning));
+                var warningOptionName = NodeHelpers.GetOptionName(nameof(OptionValuesBase.Warning));
                 var warningOption = GetNodeOptionByName(warningOptionName);
                 if (warningOption == null)
                 {
@@ -600,16 +600,6 @@ namespace Indiecat.TerrainGraph.Editor
             CacheData.RenderTexture = texture;
 
             return texture;
-        }
-
-        private string GetOptionName(string fieldName)
-        {
-            return $"{fieldName}Option";
-        }
-
-        private string GetInputPortName(string fieldName)
-        {
-            return $"{fieldName}InputPort";
         }
 
         private object GetOptionValue(string optionName)

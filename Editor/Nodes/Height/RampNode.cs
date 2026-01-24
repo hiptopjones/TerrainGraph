@@ -47,7 +47,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
         {
-            context.AddInputPort(x => x.Grid);
+            context.BuildInputPort(x => x.Grid);
 
             if (Options.RampType == RampType.Gradient)
             {
