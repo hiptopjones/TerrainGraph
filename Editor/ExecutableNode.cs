@@ -352,31 +352,37 @@ namespace Indiecat.TerrainGraph.Editor
 
                 if (fieldType == typeof(float) || fieldType == typeof(int))
                 {
-                    var minAttribute = field.GetCustomAttribute<MinAttribute>();
+                    var minAttribute = field.GetCustomAttribute<MinValueAttribute>();
                     if (minAttribute != null)
                     {
-                        var value = (float)field.GetValue(inputs);
-                        var clampedValue = Mathf.Max(value, minAttribute.min);
+                        var rawValue = field.GetValue(inputs);
 
-                        if (value != clampedValue)
+                        // Use float for both int and float cases, accepting limitations
+                        var floatValue = (float)Convert.ChangeType(field.GetValue(inputs), typeof(float));
+                        var clampedValue = Mathf.Max(floatValue, minAttribute.Min);
+
+                        if (floatValue != clampedValue)
                         {
-                            graphLogger?.LogWarning($"{inputDisplayName} input invalid: {value} (valid: {minAttribute.min} <= n)", this);
-                            field.SetValue(inputs, clampedValue);
+                            graphLogger?.LogWarning($"{inputDisplayName} input invalid: {rawValue} (valid: n >= {minAttribute.Min})", this);
+                            field.SetValue(inputs, Convert.ChangeType(clampedValue, fieldType));
 
                             // No failure, just clamp
                         }
                     }
 
-                    var rangeAttribute = field.GetCustomAttribute<RangeAttribute>();
+                    var rangeAttribute = field.GetCustomAttribute<RangeValueAttribute>();
                     if (rangeAttribute != null)
                     {
-                        var value = (float)field.GetValue(inputs);
-                        var clampedValue = Mathf.Clamp(value, rangeAttribute.min, rangeAttribute.max);
+                        var rawValue = field.GetValue(inputs);
 
-                        if (value != clampedValue)
+                        // Use float for both int and float cases, accepting limitations
+                        var floatValue = (float)Convert.ChangeType(field.GetValue(inputs), typeof(float));
+                        var clampedValue = Mathf.Clamp(floatValue, rangeAttribute.Min, rangeAttribute.Max);
+
+                        if (floatValue != clampedValue)
                         {
-                            graphLogger?.LogWarning($"{inputDisplayName} input invalid: {value} (valid: {rangeAttribute.min} <= n <= {rangeAttribute.max})", this);
-                            field.SetValue(inputs, clampedValue);
+                            graphLogger?.LogWarning($"{inputDisplayName} input invalid: {rawValue} (valid: n >= {rangeAttribute.Min} && n <= {rangeAttribute.Max})", this);
+                            field.SetValue(inputs, Convert.ChangeType(clampedValue, fieldType));
 
                             // No failure, just clamp
                         }
@@ -532,6 +538,7 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var previewPortName = NodeHelpers.GetInputPortName(nameof(InputValuesBase.Preview));
+
                 var previewPort = GetInputPortByName(previewPortName);
                 if (previewPort == null)
                 {
@@ -568,6 +575,7 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var warningOptionName = NodeHelpers.GetOptionName(nameof(OptionValuesBase.Warning));
+
                 var warningOption = GetNodeOptionByName(warningOptionName);
                 if (warningOption == null)
                 {
