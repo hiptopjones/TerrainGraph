@@ -47,11 +47,20 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool TryExecuteGraph(TerrainEditorGraph graph)
         {
-            var nonPreviewableNodes = graph.GetNodes().OfType<IExecutableNode>().Where(x => x is not IPreviewableNode);
+            // Always update nodes in dependency order
+            //  - Validation of one node must not look for values in an unvalidated node
+            //  - Nodes providing values have always gone through validation before they are queried
+            var orderedNodes = GraphHelpers.GetOrderedNodes(graph);
 
-            foreach (var node in nonPreviewableNodes)
+            foreach (var node in orderedNodes.OfType<IValidatableNode>())
             {
-                node.TryExecuteNode();
+                node.TryValidateNode(null);
+            }
+
+            var exportableNodes = orderedNodes.OfType<IExportableNode>();
+            foreach (var node in exportableNodes)
+            {
+                node.TryExportNode();
             }
 
             return true;

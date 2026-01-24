@@ -9,7 +9,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportStampNode
-        : ExecutableNode<OptionValuesBase, ExportStampNode.InputValues, NullOutput>
+        : ExecutableNode<OptionValuesBase, ExportStampNode.InputValues, NullOutput>, IExportableNode
     {
         public class InputValues : InputValuesBase
         {
@@ -33,6 +33,17 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected override bool TryExecuteNodeInternal()
         {
+            return true;
+        }
+
+        public bool TryExportNode()
+        {
+            if (Inputs == null)
+            {
+                // Node is not in valid state
+                return false;
+            }
+
             var inputGrid = Inputs.Grid;
             var stampName = Inputs.StampName;
             var exportFilePath = Inputs.FilePath;

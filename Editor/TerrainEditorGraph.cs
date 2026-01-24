@@ -32,7 +32,7 @@ namespace Indiecat.TerrainGraph.Editor
             // Always update nodes in dependency order
             //  - Validation of one node must not look for values in an unvalidated node
             //  - Nodes providing values have always gone through validation before they are queried
-            var orderedNodes = GetOrderedNodes();
+            var orderedNodes = GraphHelpers.GetOrderedNodes(this);
 
             foreach (var node in orderedNodes.OfType<IValidatableNode>())
             {
@@ -59,87 +59,6 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             return true;
-        }
-
-        private List<INode> GetOrderedNodes()
-        {
-            var nodes = GetNodes().ToList();
-            var orderedNodes = TopologicalSort(nodes);
-
-            return orderedNodes;
-        }
-
-        public static List<INode> TopologicalSort(List<INode> nodes)
-        {
-            // Count dependencies (in-degree)
-            var inDegree = new Dictionary<INode, int>();
-            var graph = new Dictionary<INode, List<INode>>();
-
-            foreach (var node in nodes)
-            {
-                if (node == null)
-                {
-                    continue;
-                }
-
-                inDegree[node] = 0;
-                graph[node] = new List<INode>();
-            }
-
-            // Build graph
-            foreach (var node in nodes)
-            {
-                if (node == null)
-                {
-                    continue;
-                }
-
-                var inputPorts = node.GetInputPorts();
-                foreach (var inputPort in inputPorts)
-                {
-                    var connectedPorts = new List<IPort>();
-                    inputPort.GetConnectedPorts(connectedPorts);
-
-                    foreach (var connectedPort in connectedPorts)
-                    {
-                        var connectedNode = connectedPort.GetNode();
-                        if (connectedNode == null)
-                        {
-                            continue;
-                        }
-
-                        graph[connectedNode].Add(node);
-                        inDegree[node]++;
-                    }
-                }
-            }
-
-            // Start with nodes that have no dependencies
-            var queue = new Queue<INode>(inDegree.Where(p => p.Value == 0).Select(p => p.Key));
-            var result = new List<INode>();
-
-            while (queue.Count > 0)
-            {
-                var current = queue.Dequeue();
-                result.Add(current);
-
-                foreach (var dependent in graph[current])
-                {
-                    inDegree[dependent]--;
-                    if (inDegree[dependent] == 0)
-                    {
-                        queue.Enqueue(dependent);
-                    }
-                }
-
-                // Optional safety check (should never happen if no cycles)
-                if (result.Count > nodes.Count)
-                {
-                    throw new System.Exception("Cycle detected in node graph!");
-                }
-            }
-
-            return result;
         }
     }
 }

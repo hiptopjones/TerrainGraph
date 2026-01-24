@@ -8,7 +8,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportTerrainNode
-        : ExecutableNode<OptionValuesBase, ExportTerrainNode.InputValues, NullOutput>
+        : ExecutableNode<OptionValuesBase, ExportTerrainNode.InputValues, NullOutput>, IExportableNode
     {
         public class InputValues : InputValuesBase
         {
@@ -29,6 +29,17 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected override bool TryExecuteNodeInternal()
         {
+            return true;
+        }
+
+        public bool TryExportNode()
+        {
+            if (Inputs == null)
+            {
+                // Node is not in valid state
+                return false;
+            }
+
             Texture2D workingTexture = null;
 
             try

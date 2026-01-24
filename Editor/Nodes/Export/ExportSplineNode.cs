@@ -9,7 +9,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportSplineNode
-        : ExecutableNode<ExportSplineNode.OptionValues, ExportSplineNode.InputValues, NullOutput>
+        : ExecutableNode<ExportSplineNode.OptionValues, ExportSplineNode.InputValues, NullOutput>, IExportableNode
     {
         public class OptionValues : OptionValuesBase
         {
@@ -44,6 +44,17 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected override bool TryExecuteNodeInternal()
         {
+            return true;
+        }
+
+        public bool TryExportNode()
+        {
+            if (Inputs == null)
+            {
+                // Node is not in valid state
+                return false;
+            }
+
             var isFlattened = Options.IsFlattened;
             var inputSplineWrapper = Inputs.SplineWrapper;
             var inputTargetName = Inputs.TargetObjectName;
