@@ -121,6 +121,10 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 displayName = "Spline";
             }
+            else if (typeof(TResult) == typeof(SplineListWrapper))
+            {
+                displayName = "Spline List";
+            }
 
             context.AddOutputPort<TResult>(NODE_OUTPUT_VALUE_ID)
                 .WithDisplayName(displayName)
@@ -345,7 +349,16 @@ namespace Indiecat.TerrainGraph.Editor
                     var spline = (SplineWrapper)field.GetValue(inputs);
                     if (spline == null || !spline.IsValid)
                     {
-                        graphLogger?.LogError($"{inputPortName} value missing", this);
+                        graphLogger?.LogError($"{inputDisplayName} input missing", this);
+                        isValid = false;
+                    }
+                }
+
+                if (fieldType == typeof(SplineListWrapper))
+                {
+                    var splineList = (SplineListWrapper)field.GetValue(inputs);
+                    if (splineList == null || !splineList.IsValid)
+                    {
                         graphLogger?.LogError($"{inputDisplayName} input missing", this);
                         isValid = false;
                     }
