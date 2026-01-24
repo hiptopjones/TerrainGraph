@@ -318,14 +318,14 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 var fieldType = field.FieldType;
-                var inputPortName = NodeHelpers.GetInputPortName(field.Name);
+                var inputDisplayName = NodeHelpers.GetDisplayName(field);
 
                 if (fieldType.IsEnum)
                 {
                     var value = field.GetValue(inputs);
                     if (Enum.IsDefined(fieldType, value))
                     {
-                        graphLogger?.LogError($"{inputPortName} value invalid", this);
+                        graphLogger?.LogError($"{inputDisplayName} input invalid", this);
                         isValid = false;
                     }
                 }
@@ -335,7 +335,7 @@ namespace Indiecat.TerrainGraph.Editor
                     var grid = (HeightGrid)field.GetValue(inputs);
                     if (grid == null || !grid.IsValid)
                     {
-                        graphLogger?.LogError($"{inputPortName} value missing", this);
+                        graphLogger?.LogError($"{inputDisplayName} input missing", this);
                         isValid = false;
                     }
                 }
@@ -346,6 +346,7 @@ namespace Indiecat.TerrainGraph.Editor
                     if (spline == null || !spline.IsValid)
                     {
                         graphLogger?.LogError($"{inputPortName} value missing", this);
+                        graphLogger?.LogError($"{inputDisplayName} input missing", this);
                         isValid = false;
                     }
                 }
@@ -360,7 +361,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                         if (value != clampedValue)
                         {
-                            graphLogger?.LogWarning($"{inputPortName} value invalid: {value} (valid: {minAttribute.min} <= n)", this);
+                            graphLogger?.LogWarning($"{inputDisplayName} input invalid: {value} (valid: {minAttribute.min} <= n)", this);
                             field.SetValue(inputs, clampedValue);
                         }
                     }
@@ -373,7 +374,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                         if (value != clampedValue)
                         {
-                            graphLogger?.LogWarning($"{inputPortName} value invalid: {value} (valid: {rangeAttribute.min} <= n <= {rangeAttribute.max})", this);
+                            graphLogger?.LogWarning($"{inputDisplayName} input invalid: {value} (valid: {rangeAttribute.min} <= n <= {rangeAttribute.max})", this);
                             field.SetValue(inputs, clampedValue);
                         }
                     }

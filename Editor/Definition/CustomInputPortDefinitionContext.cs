@@ -42,9 +42,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void AddDisplayName<TPort>(ICustomInputPortBuilder<TPort> builder, FieldInfo fieldInfo)
         {
-            var attribute = fieldInfo.GetCustomAttribute<DisplayNameAttribute>();
-            var displayName = attribute?.DisplayName ?? StringHelpers.TitleCaseToWords(fieldInfo.Name);
-
+            var displayName = NodeHelpers.GetDisplayName(fieldInfo);
             builder.WithDisplayName(displayName);
         }
 
@@ -55,8 +53,6 @@ namespace Indiecat.TerrainGraph.Editor
             if (attribute != null)
             {
                 var defaultValue = attribute.Value;
-
-                Debug.Log($"{defaultValue?.GetType().Name} == {typeof(TPort)} --> {defaultValue}");
 
                 builder.WithDefaultValue((TPort)Convert.ChangeType(defaultValue, typeof(TPort)));
             }

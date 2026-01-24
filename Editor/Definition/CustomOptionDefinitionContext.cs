@@ -45,9 +45,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void AddDisplayName<TOption>(ICustomOptionBuilder<TOption> builder, FieldInfo fieldInfo)
         {
-            var attribute = fieldInfo.GetCustomAttribute<DisplayNameAttribute>();
-            var displayName = attribute?.DisplayName ?? StringHelpers.TitleCaseToWords(fieldInfo.Name);
-
+            var displayName = NodeHelpers.GetDisplayName(fieldInfo);
             builder.WithDisplayName(displayName);
         }
 
