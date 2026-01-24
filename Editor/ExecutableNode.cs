@@ -638,13 +638,13 @@ namespace Indiecat.TerrainGraph.Editor
 
         private object GetOptionValue(string optionName)
         {
-            var field = Options.GetType().GetField(optionName, BindingFlags.Instance | BindingFlags.Public);
-            if (field != null)
+            var fieldInfo = Options.GetType().GetField(optionName, BindingFlags.Instance | BindingFlags.Public);
+            if (fieldInfo != null)
             {
-                return field.GetValue(Options);
+                return fieldInfo.GetValue(Options);
             }
 
-            throw new Exception($"Missing ignore option field: {optionName}");
+            throw new Exception($"Missing an ignore option field: {optionName}");
         }
 
         private void CallBuilderMethodWithExpression<TContext>(TContext context, string methodName, FieldInfo field)
