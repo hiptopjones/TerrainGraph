@@ -3,7 +3,7 @@
     public interface IVersionedObject
     {
         bool IsValid { get; }
-        float ExecutionTime { get; }
-        int VersionHash { get; }
+        float ExecutionTime { get; set; }
+        int VersionHash { get; set; }
     }
 }

@@ -1,231 +1,77 @@
 ﻿using System;
 using System.Linq;
-using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using UnityEngine.Splines;
-using static Indiecat.TerrainGraph.Editor.NodeConstants;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class OpenClosedSplineNode : ExecutableNode<SplineWrapper>
+    public class OpenClosedSplineNode
+        : ExecutableNode<OpenClosedSplineNode.OptionValues, OpenClosedSplineNode.InputValues, SplineWrapper>
     {
-        private enum OpenCloseOperation
+        public enum OpenCloseOperation
         {
             OpenSpline,
             CloseSpline
         }
 
-        private class InputValues
+        public class OptionValues : OptionValuesBase
         {
+            [DefaultValue(OpenCloseOperation.OpenSpline)]
             public OpenCloseOperation Operation;
-            public SplineWrapper SplineWrapper;
-            public bool AddLastVertex;
-            public bool RemoveLastVertex;
-
-            public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Operation, SplineWrapper?.VersionHash, AddLastVertex, RemoveLastVertex);
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    Operation
+                );
             }
         }
 
-        // Options
-        private const string NODE_OPTION_OPERATION_ID = "operation_input";
-        private const string NODE_OPTION_OPERATION_TITLE = "Operation";
-
-        // Inputs
-        private const string NODE_INPUT_SPLINE_ID = "spline_input";
-        private const string NODE_INPUT_SPLINE_TITLE = "Spline";
-
-        private const string NODE_INPUT_ADD_ID = "add_input";
-        private const string NODE_INPUT_ADD_TITLE = "Add Last Vertex";
-
-        private const string NODE_INPUT_REMOVE_ID = "remove_input";
-        private const string NODE_INPUT_REMOVE_TITLE = "Remove Last Vertex";
-
-        // Outputs
-        private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
-        private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
-
-        protected override void OnDefineOptions(IOptionDefinitionContext context)
+        public class InputValues : InputValuesBase
         {
-            context.AddOption<OpenCloseOperation>(NODE_OPTION_OPERATION_ID)
-                .WithDisplayName(NODE_OPTION_OPERATION_TITLE)
-                .WithDefaultValue(OpenCloseOperation.OpenSpline)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-                .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
-                .WithDefaultValue(true)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_DISABLE_ID)
-                .WithDisplayName(NODE_OPTION_DISABLE_TITLE)
-                .WithDefaultValue(false)
-                .Build();
-            context.AddOption<WarningBanner>(NODE_OPTION_WARNING_ID)
-                .WithDisplayName(NODE_OPTION_WARNING_TITLE)
-                .Build();
+            [DisplayName("Spline")]
+            public SplineWrapper SplineWrapper;
+
+            [DefaultValue(true)]
+            public bool AddLastVertex;
+
+            [DefaultValue(true)]
+            public bool RemoveLastVertex;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    SplineWrapper?.VersionHash, AddLastVertex, RemoveLastVertex
+                );
+            }
         }
 
-        protected override void OnDefinePorts(IPortDefinitionContext context)
+        protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
         {
-            GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-            GetNodeOptionByName(NODE_OPTION_OPERATION_ID).TryGetValue<OpenCloseOperation>(out var operation);
+            context.BuildInputPort(x => x.SplineWrapper);
 
-            // Input
-            context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
-                .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
-                .Build();
 
-            if (operation == OpenCloseOperation.OpenSpline)
+            if (Options.Operation == OpenCloseOperation.OpenSpline)
             {
-                context.AddInputPort<bool>(NODE_INPUT_ADD_ID)
-                    .WithDisplayName(NODE_INPUT_ADD_TITLE)
-                    .WithDefaultValue(true)
-                    .Build();
+                context.BuildInputPort(x => x.AddLastVertex);
             }
             else
             {
-                context.AddInputPort<bool>(NODE_INPUT_REMOVE_ID)
-                    .WithDisplayName(NODE_INPUT_REMOVE_TITLE)
-                    .WithDefaultValue(true)
-                    .Build();
+                context.BuildInputPort(x => x.RemoveLastVertex);
             }
-
-            if (isPreviewEnabled)
-            {
-                context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                    .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
-                    .Build();
-            }
-
-            // Output
-            context.AddOutputPort<SplineWrapper>(NODE_OUTPUT_SPLINE_ID)
-                .WithDisplayName(NODE_OUTPUT_SPLINE_TITLE)
-                .Build();
         }
 
-        public override bool TryValidateNode(GraphLogger graphLogger = null)
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
-            NodeHelpers.TrySetWarningBanner(this, isNodeSkipped ? "DISABLED" : null);
-            if (isNodeSkipped)
-            {
-                return true;
-            }
-
-            return TryGetValidatedInputValues(out _, graphLogger);
-        }
-
-        private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
-        {
-            validatedInput = null;
-
-            if (!TryGetInputValues(out var input))
-            {
-                if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
-                return false;
-            }
-
-            var isValid = true;
-
-            if (!Enum.IsDefined(typeof(OpenCloseOperation), input.Operation))
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_OPERATION_ID} option invalid", this);
-                isValid = false;
-            }
-
-            if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
-                isValid = false;
-            }
-
-            if (isValid)
-            {
-                validatedInput = input;
-            }
-
-            return isValid;
-        }
-
-        private bool TryGetInputValues(out InputValues input)
-        {
-            input = null;
-
-            var temp = new InputValues();
-            var success =
-                GetNodeOptionByName(NODE_OPTION_OPERATION_ID).TryGetValue(out temp.Operation) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
-                (temp.Operation != OpenCloseOperation.OpenSpline || PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ADD_ID, out temp.AddLastVertex)) &&
-                (temp.Operation != OpenCloseOperation.CloseSpline || PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_REMOVE_ID, out temp.RemoveLastVertex));
-
-            if (success)
-            {
-                temp.VersionHash = temp.GetHashCode();
-
-                input = temp;
-                return true;
-            }
-
-            return false;
-        }
-
-        public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeDisabled);
-            if (isNodeDisabled)
-            {
-                return PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out value);
-            }
-
-            if (!TryExecuteNode())
-            {
-                value = null;
-                return false;
-            }
-
-            value = CacheData.Output;
-            return true;
-        }
-
-        public override bool TryExecuteNode()
-        {
-            if (!TryGetValidatedInputValues(out var inputValues))
-            {
-                // Not in valid state
-                CacheData.Output = null;
-                return false;
-            }
-
-            if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
-            {
-                // Node is already up-to-date
-                return true;
-            }
-
-            // Clear the cached values in case there's an early exit below
-            CacheData.Output = null;
-
-            var startTime = DateTime.Now;
-            if (TryExecuteNodeInternal(inputValues))
-            {
-                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool TryExecuteNodeInternal(InputValues inputValues)
+        protected override bool TryExecuteNodeInternal()
         {
             try
             {
-                var inputSplineWrapper = inputValues.SplineWrapper;
-                var isClosingSpline = inputValues.Operation == OpenCloseOperation.CloseSpline;
-                var addLastVertex = inputValues.AddLastVertex;
-                var removeLastVertex = inputValues.RemoveLastVertex;
+                var isClosingSpline = Options.Operation == OpenCloseOperation.CloseSpline;
+                var inputSplineWrapper = Inputs.SplineWrapper;
+                var addLastVertex = Inputs.AddLastVertex;
+                var removeLastVertex = Inputs.RemoveLastVertex;
 
                 var inputSpline = inputSplineWrapper.Spline;
 
@@ -272,7 +118,7 @@ namespace Indiecat.TerrainGraph.Editor
                     Spline = outputSpline
                 };
 
-                outputSplineWrapper.VersionHash = inputValues.VersionHash;
+                outputSplineWrapper.VersionHash = Inputs.VersionHash;
 
                 CacheData.Output = outputSplineWrapper;
                 return true;

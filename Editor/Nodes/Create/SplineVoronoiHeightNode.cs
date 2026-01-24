@@ -1,218 +1,59 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using static Indiecat.TerrainGraph.Editor.NodeConstants;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class SplineVoronoiHeightNode : ExecutableNode<HeightGrid>
+    public class SplineVoronoiHeightNode
+        : ExecutableNode<SplineVoronoiHeightNode.OptionValues, SplineVoronoiHeightNode.InputValues, HeightGrid>
     {
-        private class InputValues
+        public class OptionValues : OptionValuesBase
         {
+            [DisplayName("Use Sampled Points")]
             public bool IsSamplingEnabled;
-            public SplineWrapper SplineWrapper;
-            public int SampleCount;
-            public int Size;
-
-            public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(SplineWrapper?.VersionHash, IsSamplingEnabled, SampleCount, Size);
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    IsSamplingEnabled
+                );
             }
         }
-
-        // Options
-        private const string NODE_OPTION_SAMPLING_ID = "sample_option";
-        private const string NODE_OPTION_SAMPLING_TITLE = "Use Sampled Points";
-
-        // Inputs
-        private const string NODE_INPUT_SPLINE_ID = "spline_input";
-        private const string NODE_INPUT_SPLINE_TITLE = "Spline";
-
-        private const string NODE_INPUT_SAMPLES_ID = "samples_input";
-        private const string NODE_INPUT_SAMPLES_TITLE = "Sample Count";
-
-        private const string NODE_INPUT_SIZE_ID = "size_input";
-        private const string NODE_INPUT_SIZE_TITLE = "Size";
-
-        // Outputs
-        private const string NODE_OUTPUT_GRID_ID = "grid_output";
-        private const string NODE_OUTPUT_GRID_TITLE = "Grid";
-
-        // Other
-        private const int MIN_SIZE = 16;
-        private const int DEFAULT_SIZE = 256;
-
-        private const int MIN_SAMPLE_COUNT = 10;
-        private const int DEFAULT_SAMPLE_COUNT = 100;
-
-        protected override void OnDefineOptions(IOptionDefinitionContext context)
+        public class InputValues : InputValuesBase
         {
-            context.AddOption<bool>(NODE_OPTION_SAMPLING_ID)
-                .WithDisplayName(NODE_OPTION_SAMPLING_TITLE)
-                .WithDefaultValue(true)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-                .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
-                .WithDefaultValue(true)
-                .Build();
+            [DisplayName("Spline")]
+            public SplineWrapper SplineWrapper;
+
+            [DisplayName("Samples")]
+            [MinValue(10), DefaultValue(100)]
+            [IgnoreIfOption(nameof(OptionValues.IsSamplingEnabled), true)]
+            public int SampleCount;
+
+            [MinValue(16), DefaultValue(256)]
+            public int Size;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    SplineWrapper?.VersionHash, SampleCount, Size
+                );
+            }
         }
 
-        protected override void OnDefinePorts(IPortDefinitionContext context)
-        {
-            GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-            GetNodeOptionByName(NODE_OPTION_SAMPLING_ID).TryGetValue<bool>(out var isSamplingEnabled);
-
-            // Input
-            context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
-                .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
-                .Build();
-
-            if (isSamplingEnabled)
-            {
-                context.AddInputPort<int>(NODE_INPUT_SAMPLES_ID)
-                    .WithDisplayName(NODE_INPUT_SAMPLES_TITLE)
-                    .WithDefaultValue(DEFAULT_SAMPLE_COUNT)
-                    .Build();
-            }
-
-            context.AddInputPort<int>(NODE_INPUT_SIZE_ID)
-                .WithDisplayName(NODE_INPUT_SIZE_TITLE)
-                .WithDefaultValue(DEFAULT_SIZE)
-                .Build();
-
-            if (isPreviewEnabled)
-            {
-                context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                    .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
-                    .Build();
-            }
-
-            // Output
-            context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
-                .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
-                .Build();
-        }
-
-        public override bool TryValidateNode(GraphLogger graphLogger = null)
-        {
-            return TryGetValidatedInputValues(out _, graphLogger);
-        }
-
-        private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
-        {
-            validatedInput = null;
-
-            if (!TryGetInputValues(out var input))
-            {
-                if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
-                return false;
-            }
-
-            var isValid = true;
-
-            if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
-                isValid = false;
-            }
-
-            if (input.IsSamplingEnabled && input.SampleCount < MIN_SAMPLE_COUNT)
-            {
-                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_SAMPLES_TITLE} value invalid: {input.SampleCount} (valid: {MIN_SAMPLE_COUNT} <= n)", this);
-                input.SampleCount = MIN_SAMPLE_COUNT;
-            }
-
-            if (input.Size < MIN_SIZE)
-            {
-                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_SIZE_TITLE} value invalid: {input.Size} (valid: {MIN_SIZE} <= n)", this);
-                input.Size = MIN_SIZE;
-            }
-
-            if (isValid)
-            {
-                validatedInput = input;
-            }
-
-            return isValid;
-        }
-
-        private bool TryGetInputValues(out InputValues input)
-        {
-            input = null;
-
-            var temp = new InputValues();
-            var success =
-                GetNodeOptionByName(NODE_OPTION_SAMPLING_ID).TryGetValue(out temp.IsSamplingEnabled) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
-                (!temp.IsSamplingEnabled || PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SAMPLES_ID, out temp.SampleCount)) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SIZE_ID, out temp.Size);
-
-            if (success)
-            {
-                temp.VersionHash = temp.GetHashCode();
-
-                input = temp;
-                return true;
-            }
-
-            return false;
-        }
-
-        public override bool TryGetOutputValue(IPort _, out HeightGrid value)
-        {
-            if (!TryExecuteNode())
-            {
-                value = null;
-                return false;
-            }
-
-            value = CacheData.Output;
-            return true;
-        }
-
-        public override bool TryExecuteNode()
-        {
-            if (!TryGetValidatedInputValues(out var inputValues))
-            {
-                // Not in valid state
-                CacheData.Output = null;
-                return false;
-            }
-
-            if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
-            {
-                // Node is already up-to-date
-                return true;
-            }
-
-            // Clear the cached values in case there's an early exit below
-            CacheData.Output = null;
-
-            var startTime = DateTime.Now;
-            if (TryExecuteNodeInternal(inputValues))
-            {
-                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool TryExecuteNodeInternal(InputValues inputValues)
+        protected override bool TryExecuteNodeInternal()
         {
             ComputeBuffer pointsBuffer = null;
 
             try
             {
-                var inputSplineWrapper = inputValues.SplineWrapper;
-                var isSamplingEnabled = inputValues.IsSamplingEnabled;
-                var sampleCount = inputValues.SampleCount;
-                var size = inputValues.Size;
+                var isSamplingEnabled = Options.IsSamplingEnabled;
+                var inputSplineWrapper = Inputs.SplineWrapper;
+                var sampleCount = Inputs.SampleCount;
+                var size = Inputs.Size;
 
                 var inputSpline = inputSplineWrapper.Spline;
 
@@ -250,7 +91,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var outputGrid = new HeightGrid(size);
 
                 outputGrid.RenderTexture = outputTexture;
-                outputGrid.VersionHash = inputValues.VersionHash;
+                outputGrid.VersionHash = Inputs.VersionHash;
 
                 CacheData.Output = outputGrid;
                 return true;

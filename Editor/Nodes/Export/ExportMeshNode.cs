@@ -1,167 +1,56 @@
 ﻿using System;
-using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
-using static Indiecat.TerrainGraph.Editor.NodeConstants;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class ExportMeshNode : Node,
-        IValidatableNode,
-        IExecutableNode
+    public class ExportMeshNode
+        : ExecutableNode<ExportMeshNode.OptionValues, ExportMeshNode.InputValues, NullOutput>
     {
-        private class InputValues
+        public class OptionValues : OptionValuesBase
         {
-            public HeightGrid Grid;
             public bool IgnoreZero;
-            public float HeightScale;
-            public string ExportPath;
-
-            public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Grid?.VersionHash, IgnoreZero, HeightScale, ExportPath);
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    IgnoreZero
+                );
             }
         }
 
-        // Options
-
-        // Inputs
-        private const string NODE_INPUT_GRID_ID = "grid_input";
-        private const string NODE_INPUT_GRID_TITLE = "Grid";
-
-        private const string NODE_OPTION_ZERO_ID = "zero_option";
-        private const string NODE_OPTION_ZERO_TITLE = "Ignore Zero";
-
-        private const string NODE_INPUT_SCALE_ID = "scale_input";
-        private const string NODE_INPUT_SCALE_TITLE = "Height Scale";
-
-        private const string NODE_INPUT_PATH_ID = "path_input";
-        private const string NODE_INPUT_PATH_TITLE = "Path";
-
-        // Outputs
-
-        // Other
-        private const float DEFAULT_SCALE = 100;
-
-        protected override void OnDefineOptions(IOptionDefinitionContext context)
+        public class InputValues : InputValuesBase
         {
-            context.AddOption<bool>(NODE_OPTION_ZERO_ID)
-                .WithDisplayName(NODE_OPTION_ZERO_TITLE)
-                .WithDefaultValue(false)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_DISABLE_ID)
-                .WithDisplayName(NODE_OPTION_DISABLE_TITLE)
-                .WithDefaultValue(false)
-                .Build();
-            context.AddOption<WarningBanner>(NODE_OPTION_WARNING_ID)
-                .WithDisplayName(NODE_OPTION_WARNING_TITLE)
-                .Build();
+            public HeightGrid Grid;
+
+            [DefaultValue(100)]
+            public float HeightScale;
+
+            [DefaultValue("Assets/Models/ExportedMesh.obj")]
+            public string ExportPath;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    Grid?.VersionHash, HeightScale, ExportPath
+                );
+            }
         }
 
-        protected override void OnDefinePorts(IPortDefinitionContext context)
+        protected override bool TryExecuteNodeInternal()
         {
-            // Input
-            context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
-                .WithDisplayName(NODE_INPUT_GRID_TITLE)
-                .Build();
-            context.AddInputPort<float>(NODE_INPUT_SCALE_ID)
-                .WithDisplayName(NODE_INPUT_SCALE_TITLE)
-                .WithDefaultValue(DEFAULT_SCALE)
-                .Build();
-            context.AddInputPort<AdaptiveLengthStringParameter>(NODE_INPUT_PATH_ID)
-                .WithDisplayName(NODE_INPUT_PATH_TITLE)
-                .WithDefaultValue("Assets/Models/ExportedMesh.obj")
-                .Build();
-        }
-
-
-        public bool TryValidateNode(GraphLogger graphLogger = null)
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
-            NodeHelpers.TrySetWarningBanner(this, isNodeSkipped ? "DISABLED" : null);
-            if (isNodeSkipped)
-            {
-                return true;
-            }
-
-            return TryGetValidatedInputValues(out _, graphLogger);
-        }
-
-        private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
-        {
-            validatedInput = null;
-
-            if (!TryGetInputValues(out var input))
-            {
-                if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
-                return false;
-            }
-
-            var isValid = true;
-
-            if (input.Grid == null || !input.Grid.IsValid)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} value missing", this);
-                isValid = false;
-            }
-
-            if (isValid)
-            {
-                validatedInput = input;
-            }
-
-            return isValid;
-        }
-
-        private bool TryGetInputValues(out InputValues input)
-        {
-            input = null;
-
-            var temp = new InputValues();
-            var success =
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                GetNodeOptionByName(NODE_OPTION_ZERO_ID).TryGetValue(out temp.IgnoreZero) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SCALE_ID, out temp.HeightScale) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_PATH_ID, out temp.ExportPath);
-
-            if (success)
-            {
-                temp.VersionHash = temp.GetHashCode();
-
-                input = temp;
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool TryExecuteNode()
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeDisabled);
-            if (isNodeDisabled)
-            {
-                // Execution skipped
-                return true;
-            }
-
-            if (!TryGetValidatedInputValues(out var inputValues))
-            {
-                // Not in valid state
-                return false;
-            }
-
             Texture2D workingTexture = null;
 
             try
             {
-                var inputGrid = inputValues.Grid;
-                var ignoreZero = inputValues.IgnoreZero;
-                var heightScale = inputValues.HeightScale;
-                var exportPath = inputValues.ExportPath;
+                var ignoreZero = Options.IgnoreZero;
+                var inputGrid = Inputs.Grid;
+                var heightScale = Inputs.HeightScale;
+                var exportPath = Inputs.ExportPath;
 
                 var renderTexture = inputGrid.RenderTexture;
 

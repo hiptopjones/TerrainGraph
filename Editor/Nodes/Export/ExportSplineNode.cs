@@ -1,196 +1,69 @@
 ﻿using System;
 using System.Linq;
-using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
-using static Indiecat.TerrainGraph.Editor.NodeConstants;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class ExportSplineNode : Node,
-        IValidatableNode,
-        IExecutableNode
+    public class ExportSplineNode
+        : ExecutableNode<ExportSplineNode.OptionValues, ExportSplineNode.InputValues, NullOutput>
     {
-        private class InputValues
+        public class OptionValues : OptionValuesBase
         {
+            [DisplayName("Flatten")]
             public bool IsFlattened;
-            public SplineWrapper SplineWrapper;
-            public string TargetObjectName;
-
-            public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(IsFlattened, SplineWrapper?.VersionHash, TargetObjectName);
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    IsFlattened
+                );
             }
         }
 
-        // Options
-        private const string NODE_OPTION_FLATTEN_ID = "flatten_option";
-        private const string NODE_OPTION_FLATTEN_TITLE = "Flatten";
-
-        // Inputs
-        private const string NODE_INPUT_SPLINE_ID = "spline_input";
-        private const string NODE_INPUT_SPLINE_TITLE = "Spline";
-
-        private const string NODE_INPUT_NAME_ID = "name_input";
-        private const string NODE_INPUT_NAME_TITLE = "Target Object";
-
-        // Outputs
-
-        protected override void OnDefineOptions(IOptionDefinitionContext context)
+        public class InputValues : InputValuesBase
         {
-            context.AddOption<bool>(NODE_OPTION_FLATTEN_ID)
-                .WithDisplayName(NODE_OPTION_FLATTEN_TITLE)
-                .WithDefaultValue(true)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_DISABLE_ID)
-                .WithDisplayName(NODE_OPTION_DISABLE_TITLE)
-                .WithDefaultValue(false)
-                .Build();
-            context.AddOption<WarningBanner>(NODE_OPTION_WARNING_ID)
-                .WithDisplayName(NODE_OPTION_WARNING_TITLE)
-                .Build();
+            [DisplayName("Spline")]
+            public SplineWrapper SplineWrapper;
+
+            [DefaultValue("My Spline")]
+            public string TargetObjectName;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    SplineWrapper?.VersionHash, TargetObjectName
+                );
+            }
         }
 
-        protected override void OnDefinePorts(IPortDefinitionContext context)
+        protected override bool TryExecuteNodeInternal()
         {
-            // Input
-            context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
-                .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
-                .Build();
-            context.AddInputPort<AdaptiveLengthStringParameter>(NODE_INPUT_NAME_ID)
-                .WithDisplayName(NODE_INPUT_NAME_TITLE)
-                .WithDefaultValue("My Spline")
-                .Build();
-        }
+            var isFlattened = Options.IsFlattened;
+            var inputSplineWrapper = Inputs.SplineWrapper;
+            var inputTargetName = Inputs.TargetObjectName;
 
-        public bool TryValidateNode(GraphLogger graphLogger = null)
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
-            NodeHelpers.TrySetWarningBanner(this, isNodeSkipped ? "DISABLED" : null);
-            if (isNodeSkipped)
+            var inputSpline = inputSplineWrapper.Spline;
+
+            Spline outputSpline = inputSpline;
+            if (isFlattened)
             {
-                return true;
+                var vertices = inputSpline.Knots.Select(k => new float3(k.Position.x, 0, k.Position.z));
+                outputSpline = new Spline(vertices);
+                outputSpline.Closed = inputSpline.Closed;
             }
 
-            return TryGetValidatedInputValues(out _, graphLogger);
-        }
+            var splineContainer = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .Single(x => x.name == inputTargetName);
 
-        private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
-        {
-            validatedInput = null;
+            splineContainer.Spline = outputSpline;
 
-            if (!TryGetInputValues(out var input))
-            {
-                if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
-                return false;
-            }
-
-            var isValid = true;
-
-            if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
-                isValid = false;
-            }
-
-            if (string.IsNullOrEmpty(input.TargetObjectName))
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_NAME_TITLE} value missing", this);
-                isValid = false;
-            }
-            else
-            {
-                var count = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                    .Count(x => x.name == input.TargetObjectName);
-                if (count == 0)
-                {
-                    if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_NAME_TITLE} value invalid", this);
-                    isValid = false;
-                }
-                else if (count > 1)
-                {
-                    if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_NAME_TITLE} value ambiguous", this);
-                    isValid = false;
-                }
-            }
-
-            if (isValid)
-            {
-                validatedInput = input;
-            }
-
-            return isValid;
-        }
-
-        private bool TryGetInputValues(out InputValues input)
-        {
-            input = null;
-
-            var temp = new InputValues();
-            var success =
-                GetNodeOptionByName(NODE_OPTION_FLATTEN_ID).TryGetValue<bool>(out temp.IsFlattened) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_NAME_ID, out temp.TargetObjectName);
-
-            if (success)
-            {
-                temp.VersionHash = temp.GetHashCode();
-
-                input = temp;
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool TryExecuteNode()
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeDisabled);
-            if (isNodeDisabled)
-            {
-                // Execution skipped
-                return true;
-            }
-
-            if (!TryGetValidatedInputValues(out var inputValues))
-            {
-                // Not in valid state
-                return false;
-            }
-
-            try
-            {
-                var isFlattened = inputValues.IsFlattened;
-                var inputSplineWrapper = inputValues.SplineWrapper;
-                var inputTargetName = inputValues.TargetObjectName;
-
-                var inputSpline = inputSplineWrapper.Spline;
-
-                Spline outputSpline = inputSpline;
-                if (isFlattened)
-                {
-                    var vertices = inputSpline.Knots.Select(k => new float3(k.Position.x, 0, k.Position.z));
-                    outputSpline = new Spline(vertices);
-                    outputSpline.Closed = inputSpline.Closed;
-                }
-
-                var splineContainer = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                    .Single(x => x.name == inputTargetName);
-
-                splineContainer.Spline = outputSpline;
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
+            return true;
         }
     }
 }

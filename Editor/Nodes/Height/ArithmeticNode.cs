@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using static Indiecat.TerrainGraph.Editor.NodeConstants;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class ArithmeticNode : ExecutableNode<HeightGrid>
+    public class ArithmeticNode
+        : ExecutableNode<ArithmeticNode.OptionValues, ArithmeticNode.InputValues, HeightGrid>
     {
         public enum ArithmeticOperator
         {
@@ -23,222 +20,62 @@ namespace Indiecat.TerrainGraph.Editor
             Power = 2000,
         }
 
-        private class InputValues
+        public class OptionValues : OptionValuesBase
         {
+            [DefaultValue(ArithmeticOperator.Multiply)]
+            [DisplayName("Operation")]
             public ArithmeticOperator ArithmeticOperator;
-            public bool IsFlipped;
-            public HeightGrid Grid;
-            public float Value;
 
-            public int VersionHash;
+            [DisplayName("Flip Inputs")]
+            public bool IsFlipped;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(ArithmeticOperator, IsFlipped, Grid?.VersionHash, Value);
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    ArithmeticOperator, IsFlipped
+                );
             }
         }
 
-        // Options
-        private const string NODE_OPTION_OPERATOR_ID = "operator_option";
-        private const string NODE_OPTION_OPERATOR_TITLE = "Operation";
-
-        private const string NODE_OPTION_FLIP_ID = "flipped_option";
-        private const string NODE_OPTION_FLIP_TITLE = "Flip Inputs";
-
-        // Inputs
-        private const string NODE_INPUT_GRID_ID = "grid_input";
-        private const string NODE_INPUT_GRID_TITLE = "Grid";
-
-        private const string NODE_INPUT_VALUE_ID = "value_input";
-        private const string NODE_INPUT_VALUE_TITLE = "Value";
-
-        // Outputs
-        private const string NODE_OUTPUT_GRID_ID = "grid_output";
-        private const string NODE_OUTPUT_GRID_TITLE = "Grid";
-
-        // Other
-        private const float DEFAULT_VALUE = 0.5f;
-
-        protected override void OnDefineOptions(IOptionDefinitionContext context)
+        public class InputValues : InputValuesBase
         {
-            context.AddOption<ArithmeticOperator>(NODE_OPTION_OPERATOR_ID)
-                .WithDisplayName(NODE_OPTION_OPERATOR_TITLE)
-                .WithDefaultValue(ArithmeticOperator.Multiply)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_FLIP_ID)
-                .WithDisplayName(NODE_OPTION_FLIP_TITLE)
-                .WithDefaultValue(false)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-                .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
-                .WithDefaultValue(true)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_DISABLE_ID)
-                .WithDisplayName(NODE_OPTION_DISABLE_TITLE)
-                .WithDefaultValue(false)
-                .Build();
-            context.AddOption<WarningBanner>(NODE_OPTION_WARNING_ID)
-                .WithDisplayName(NODE_OPTION_WARNING_TITLE)
-                .Build();
+            public HeightGrid Grid;
+
+            [DefaultValue(0.5f)]
+            public float Value;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    Grid?.VersionHash, Value
+                );
+            }
         }
 
-        protected override void OnDefinePorts(IPortDefinitionContext context)
+        protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
         {
-            GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-            GetNodeOptionByName(NODE_OPTION_FLIP_ID).TryGetValue<bool>(out var isFlipped);
-
-            // Input
-            var actions = new List<Action>
+            if (Options.IsFlipped)
             {
-                () => context.AddInputPort<HeightGrid>(NODE_INPUT_GRID_ID)
-                    .WithDisplayName(NODE_INPUT_GRID_TITLE)
-                    .Build(),
-                () => context.AddInputPort<float>(NODE_INPUT_VALUE_ID)
-                    .WithDisplayName(NODE_INPUT_VALUE_TITLE)
-                    .WithDefaultValue(DEFAULT_VALUE)
-                    .Build(),
-            };
-
-            // All this to avoid duplicating the port definitions
-            actions = isFlipped ? actions.AsEnumerable().Reverse().ToList() : actions;
-            foreach (var action in actions)
-            {
-                action.Invoke();
+                context.BuildInputPort(x => x.Value);
+                context.BuildInputPort(x => x.Grid);
             }
-
-            if (isPreviewEnabled)
+            else
             {
-                context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                    .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
-                    .Build();
+                context.BuildInputPort(x => x.Grid);
+                context.BuildInputPort(x => x.Value);
             }
-
-            // Output
-            context.AddOutputPort<HeightGrid>(NODE_OUTPUT_GRID_ID)
-                .WithDisplayName(NODE_OUTPUT_GRID_TITLE)
-                .Build();
         }
 
-        public override bool TryValidateNode(GraphLogger graphLogger = null)
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
-            NodeHelpers.TrySetWarningBanner(this, isNodeSkipped ? "DISABLED" : null);
-            if (isNodeSkipped)
-            {
-                return true;
-            }
-
-            return TryGetValidatedInputValues(out _, graphLogger);
-        }
-
-        private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
-        {
-            validatedInput = null;
-
-            if (!TryGetInputValues(out var input))
-            {
-                if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
-                return false;
-            }
-
-            var isValid = true;
-
-            if (!Enum.IsDefined(typeof(ArithmeticOperator), input.ArithmeticOperator))
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_OPERATOR_TITLE} option invalid", this);
-                isValid = false;
-            }
-
-            if (input.Grid == null || !input.Grid.IsValid)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_GRID_TITLE} input missing", this);
-                isValid = false;
-            }
-
-            if (isValid)
-            {
-                validatedInput = input;
-            }
-
-            return isValid;
-        }
-
-        private bool TryGetInputValues(out InputValues input)
-        {
-            input = null;
-
-            var temp = new InputValues();
-            var success =
-                GetNodeOptionByName(NODE_OPTION_OPERATOR_ID).TryGetValue(out temp.ArithmeticOperator) &&
-                GetNodeOptionByName(NODE_OPTION_FLIP_ID).TryGetValue(out temp.IsFlipped) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VALUE_ID, out temp.Value);
-
-            if (success)
-            {
-                temp.VersionHash = temp.GetHashCode();
-
-                input = temp;
-                return true;
-            }
-
-            return false;
-        }
-
-        public override bool TryGetOutputValue(IPort _, out HeightGrid value)
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeDisabled);
-            if (isNodeDisabled)
-            {
-                return PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out value);
-            }
-
-            if (!TryExecuteNode())
-            {
-                value = null;
-                return false;
-            }
-
-            value = CacheData.Output;
-            return true;
-        }
-
-        public override bool TryExecuteNode()
-        {
-            if (!TryGetValidatedInputValues(out var inputValues))
-            {
-                // Not in valid state
-                CacheData.Output = null;
-                return false;
-            }
-
-            if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
-            {
-                // Node is already up-to-date
-                return true;
-            }
-
-            // Clear the cached values in case there's an early exit below
-            CacheData.Output = null;
-
-            var startTime = DateTime.Now;
-            if (TryExecuteNodeInternal(inputValues))
-            {
-                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool TryExecuteNodeInternal(InputValues inputValues)
+        protected override bool TryExecuteNodeInternal()
         {
             try
             {
-                var arithmeticOperator = inputValues.ArithmeticOperator;
-                var isFlipped = inputValues.IsFlipped;
-                var inputGrid = inputValues.Grid;
-                var value = inputValues.Value;
+                var arithmeticOperator = Options.ArithmeticOperator;
+                var isFlipped = Options.IsFlipped;
+                var inputGrid = Inputs.Grid;
+                var value = Inputs.Value;
 
                 var size = inputGrid.Size;
 
@@ -268,7 +105,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var outputGrid = new HeightGrid(size);
 
                 outputGrid.RenderTexture = outputTexture;
-                outputGrid.VersionHash = inputValues.VersionHash;
+                outputGrid.VersionHash = Inputs.VersionHash;
 
                 CacheData.Output = outputGrid;
                 return true;

@@ -1,285 +1,81 @@
 ﻿using System;
 using System.Collections.Generic;
-using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using UnityEngine.Splines;
-using static Indiecat.TerrainGraph.Editor.NodeConstants;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class DisplaceSplineNode : ExecutableNode<SplineWrapper>
+    public class DisplaceSplineNode
+        : ExecutableNode<DisplaceSplineNode.OptionValues, DisplaceSplineNode.InputValues, SplineWrapper>
     {
-        private enum DisplacementAxis
+        public enum DisplacementAxis
         {
             Horizontal,
             Vertical
         }
 
-        private class InputValues
+        public class OptionValues : OptionValuesBase
         {
+            [DisplayName("Axis")]
+            [DefaultValue(DisplacementAxis.Horizontal)]
             public DisplacementAxis DisplacementAxis;
-            public SplineWrapper SplineWrapper;
-            public float LinearOffset;
-            public float Frequency;
-            public float Amplitude;
-            public int Seed;
-            public int IterationCount;
-            public int VertexCount;
-
-            public int VersionHash;
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(DisplacementAxis, SplineWrapper?.VersionHash, LinearOffset, Frequency, Amplitude, Seed, IterationCount, VertexCount);
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    DisplacementAxis
+                );
             }
         }
 
-        // Options
-        private const string NODE_OPTION_AXIS_ID = "axis_input";
-        private const string NODE_OPTION_AXIS_TITLE = "Axis";
-
-        // Inputs
-        private const string NODE_INPUT_SPLINE_ID = "spline_input";
-        private const string NODE_INPUT_SPLINE_TITLE = "Spline";
-
-        private const string NODE_INPUT_OFFSET_ID = "offset_input";
-        private const string NODE_INPUT_OFFSET_TITLE = "Offset";
-
-        private const string NODE_INPUT_FREQUENCY_ID = "frequency_input";
-        private const string NODE_INPUT_FREQUENCY_TITLE = "Frequency";
-
-        private const string NODE_INPUT_AMPLITUDE_ID = "amplitude_input";
-        private const string NODE_INPUT_AMPLITUDE_TITLE = "Amplitude";
-
-        private const string NODE_INPUT_SEED_ID = "seed_input";
-        private const string NODE_INPUT_SEED_TITLE = "Seed";
-
-        private const string NODE_INPUT_ITERATIONS_ID = "iterations_input";
-        private const string NODE_INPUT_ITERATIONS_TITLE = "Iterations";
-
-        private const string NODE_INPUT_VERTICES_ID = "vertices_input";
-        private const string NODE_INPUT_VERTICES_TITLE = "Vertices";
-
-        // Outputs
-        private const string NODE_OUTPUT_SPLINE_ID = "spline_output";
-        private const string NODE_OUTPUT_SPLINE_TITLE = "Spline";
-
-        // Other
-        private const float DEFAULT_FREQUENCY = 2;
-
-        private const float DEFAULT_AMPLITUDE = 30;
-
-        private const int MIN_ITERATION_COUNT = 1;
-        private const int MAX_ITERATION_COUNT = 10;
-        private const int DEFAULT_ITERATION_COUNT = 1;
-
-        private const int MIN_VERTEX_COUNT = 10;
-        private const int DEFAULT_VERTEX_COUNT = 100;
-
-        protected override void OnDefineOptions(IOptionDefinitionContext context)
+        public class InputValues : InputValuesBase
         {
-            context.AddOption<DisplacementAxis>(NODE_OPTION_AXIS_ID)
-                .WithDisplayName(NODE_OPTION_AXIS_TITLE)
-                .WithDefaultValue(DisplacementAxis.Horizontal)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_PREVIEW_ID)
-                .WithDisplayName(NODE_OPTION_PREVIEW_TITLE)
-                .WithDefaultValue(true)
-                .Build();
-            context.AddOption<bool>(NODE_OPTION_DISABLE_ID)
-                .WithDisplayName(NODE_OPTION_DISABLE_TITLE)
-                .WithDefaultValue(false)
-                .Build();
-            context.AddOption<WarningBanner>(NODE_OPTION_WARNING_ID)
-                .WithDisplayName(NODE_OPTION_WARNING_TITLE)
-                .Build();
+            [DisplayName("Spline")]
+            public SplineWrapper SplineWrapper;
+
+            [DisplayName("Offset")]
+            public float LinearOffset;
+
+            [DefaultValue(2)]
+            public float Frequency;
+
+            [DefaultValue(30)]
+            public float Amplitude;
+
+            public int Seed;
+
+            [DisplayName("Iterations")]
+            [RangeValue(1, 10), DefaultValue(1)]
+            public int IterationCount;
+
+            [DisplayName("Vertices")]
+            [MinValue(10), DefaultValue(100)]
+            public int VertexCount;
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(
+                    base.GetHashCode(),
+                    HashCode.Combine(SplineWrapper?.VersionHash, LinearOffset, Frequency),
+                    Amplitude, Seed, IterationCount, VertexCount
+                );
+            }
         }
 
-        protected override void OnDefinePorts(IPortDefinitionContext context)
-        {
-            GetNodeOptionByName(NODE_OPTION_PREVIEW_ID).TryGetValue<bool>(out var isPreviewEnabled);
-
-            // Input
-            context.AddInputPort<SplineWrapper>(NODE_INPUT_SPLINE_ID)
-                .WithDisplayName(NODE_INPUT_SPLINE_TITLE)
-                .Build();
-            context.AddInputPort<float>(NODE_INPUT_OFFSET_ID)
-                .WithDisplayName(NODE_INPUT_OFFSET_TITLE)
-                .Build();
-            context.AddInputPort<float>(NODE_INPUT_FREQUENCY_ID)
-                .WithDisplayName(NODE_INPUT_FREQUENCY_TITLE)
-                .WithDefaultValue(DEFAULT_FREQUENCY)
-                .Build();
-            context.AddInputPort<float>(NODE_INPUT_AMPLITUDE_ID)
-                .WithDisplayName(NODE_INPUT_AMPLITUDE_TITLE)
-                .WithDefaultValue(DEFAULT_AMPLITUDE)
-                .Build();
-            context.AddInputPort<int>(NODE_INPUT_SEED_ID)
-                .WithDisplayName(NODE_INPUT_SEED_TITLE)
-                .Build();
-            context.AddInputPort<int>(NODE_INPUT_ITERATIONS_ID)
-                .WithDisplayName(NODE_INPUT_ITERATIONS_TITLE)
-                .WithDefaultValue(DEFAULT_ITERATION_COUNT)
-                .Build();
-            context.AddInputPort<int>(NODE_INPUT_VERTICES_ID)
-                .WithDisplayName(NODE_INPUT_VERTICES_TITLE)
-                .WithDefaultValue(DEFAULT_VERTEX_COUNT)
-                .Build();
-
-            if (isPreviewEnabled)
-            {
-                context.AddInputPort<PreviewImage>(NODE_INPUT_PREVIEW_ID)
-                    .WithDisplayName(NODE_INPUT_PREVIEW_TITLE)
-                    .Build();
-            }
-
-            // Output
-            context.AddOutputPort<SplineWrapper>(NODE_OUTPUT_SPLINE_ID)
-                .WithDisplayName(NODE_OUTPUT_SPLINE_TITLE)
-                .Build();
-        }
-
-        public override bool TryValidateNode(GraphLogger graphLogger = null)
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeSkipped);
-            NodeHelpers.TrySetWarningBanner(this, isNodeSkipped ? "DISABLED" : null);
-            if (isNodeSkipped)
-            {
-                return true;
-            }
-
-            return TryGetValidatedInputValues(out _, graphLogger);
-        }
-
-        private bool TryGetValidatedInputValues(out InputValues validatedInput, GraphLogger graphLogger = null)
-        {
-            validatedInput = null;
-
-            if (!TryGetInputValues(out var input))
-            {
-                if (graphLogger != null) graphLogger.LogError("Upstream failure", this);
-                return false;
-            }
-
-            var isValid = true;
-
-            if (!Enum.IsDefined(typeof(DisplacementAxis), input.DisplacementAxis))
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_OPTION_AXIS_TITLE} option invalid", this);
-                isValid = false;
-            }
-
-            if (input.SplineWrapper == null || !input.SplineWrapper.IsValid)
-            {
-                if (graphLogger != null) graphLogger.LogError($"{NODE_INPUT_SPLINE_TITLE} value missing", this);
-                isValid = false;
-            }
-
-            if (input.IterationCount < MIN_ITERATION_COUNT || input.IterationCount > MAX_ITERATION_COUNT)
-            {
-                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_ITERATIONS_TITLE} value invalid: {input.IterationCount} (valid: {MIN_ITERATION_COUNT} <= n <= {MAX_ITERATION_COUNT})", this);
-                input.IterationCount = Mathf.Clamp(input.IterationCount, MIN_ITERATION_COUNT, MAX_ITERATION_COUNT);
-            }
-
-            if (input.VertexCount < MIN_VERTEX_COUNT)
-            {
-                if (graphLogger != null) graphLogger.LogWarning($"{NODE_INPUT_VERTICES_TITLE} value invalid: {input.VertexCount} (valid: {MIN_VERTEX_COUNT} <= n)", this);
-                input.VertexCount = MIN_VERTEX_COUNT;
-            }
-
-            if (isValid)
-            {
-                validatedInput = input;
-            }
-
-            return isValid;
-        }
-
-        private bool TryGetInputValues(out InputValues input)
-        {
-            input = null;
-
-            var temp = new InputValues();
-            var success =
-                GetNodeOptionByName(NODE_OPTION_AXIS_ID).TryGetValue(out temp.DisplacementAxis) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out temp.SplineWrapper) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_OFFSET_ID, out temp.LinearOffset) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_FREQUENCY_ID, out temp.Frequency) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_AMPLITUDE_ID, out temp.Amplitude) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SEED_ID, out temp.Seed) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_ITERATIONS_ID, out temp.IterationCount) &&
-                PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_VERTICES_ID, out temp.VertexCount);
-
-            if (success)
-            {
-                temp.VersionHash = temp.GetHashCode();
-
-                input = temp;
-                return true;
-            }
-
-            return false;
-        }
-
-        public override bool TryGetOutputValue(IPort _, out SplineWrapper value)
-        {
-            GetNodeOptionByName(NODE_OPTION_DISABLE_ID).TryGetValue(out bool isNodeDisabled);
-            if (isNodeDisabled)
-            {
-                return PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_SPLINE_ID, out value);
-            }
-
-            if (!TryExecuteNode())
-            {
-                value = null;
-                return false;
-            }
-
-            value = CacheData.Output;
-            return true;
-        }
-
-        public override bool TryExecuteNode()
-        {
-            if (!TryGetValidatedInputValues(out var inputValues))
-            {
-                // Not in valid state
-                CacheData.Output = null;
-                return false;
-            }
-
-            if (CacheData.Output != null && CacheData.Output.VersionHash == inputValues.VersionHash)
-            {
-                // Node is already up-to-date
-                return true;
-            }
-
-            // Clear the cached values in case there's an early exit below
-            CacheData.Output = null;
-
-            var startTime = DateTime.Now;
-            if (TryExecuteNodeInternal(inputValues))
-            {
-                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool TryExecuteNodeInternal(InputValues inputValues)
+        protected override bool TryExecuteNodeInternal()
         {
             try
             {
-                var displacementAxis = inputValues.DisplacementAxis;
-                var inputSplineWrapper = inputValues.SplineWrapper;
-                var offset = inputValues.LinearOffset;
-                var frequency = inputValues.Frequency;
-                var amplitude = inputValues.Amplitude;
-                var seed = inputValues.Seed;
-                var iterationCount = inputValues.IterationCount;
-                var vertexCount = inputValues.VertexCount;
+                var displacementAxis = Options.DisplacementAxis;
+                var inputSplineWrapper = Inputs.SplineWrapper;
+                var offset = Inputs.LinearOffset;
+                var frequency = Inputs.Frequency;
+                var amplitude = Inputs.Amplitude;
+                var seed = Inputs.Seed;
+                var iterationCount = Inputs.IterationCount;
+                var vertexCount = Inputs.VertexCount;
 
                 var start = NoiseHelpers.GetOffsetPositionInternal(Vector2.zero, seed);
 
@@ -336,7 +132,7 @@ namespace Indiecat.TerrainGraph.Editor
                     Spline = outputSpline
                 };
 
-                outputSplineWrapper.VersionHash = inputValues.VersionHash;
+                outputSplineWrapper.VersionHash = Inputs.VersionHash;
 
                 CacheData.Output = outputSplineWrapper;
                 return true;
