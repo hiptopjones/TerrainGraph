@@ -2,7 +2,7 @@
 
 namespace Indiecat.TerrainGraph.Editor
 {
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Field)]
     public class DisplayNameAttribute : Attribute
     {
         public readonly string DisplayName;

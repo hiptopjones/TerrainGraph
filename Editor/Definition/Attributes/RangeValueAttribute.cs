@@ -2,7 +2,7 @@
 
 namespace Indiecat.TerrainGraph.Editor
 {
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Field)]
     public class RangeValueAttribute : Attribute
     {
         public readonly float Min;
