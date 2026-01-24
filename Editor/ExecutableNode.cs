@@ -380,7 +380,27 @@ namespace Indiecat.TerrainGraph.Editor
                     }
                 }
 
-                // TODO: Custom validation (e.g. grid sizes match)
+                var validatorAttributes = field.GetCustomAttributes<ValidatorAttribute>();
+                foreach (var validatorAttribute in validatorAttributes)
+                {
+                    var bindingFlags =
+                        BindingFlags.DeclaredOnly |
+                        BindingFlags.Instance |
+                        BindingFlags.Public |
+                        BindingFlags.NonPublic;
+
+                    var method = GetType().GetMethod(validatorAttribute.MethodName, bindingFlags);
+                    if (method == null)
+                    {
+                        throw new Exception($"missing validator method: {validatorAttribute.MethodName}");
+                    }
+
+                    var parameters = new object[] { inputs, graphLogger };
+                    if (!(bool)method.Invoke(this, parameters))
+                    {
+                        isValid = false;
+                    }
+                }
             }
 
             return isValid;
