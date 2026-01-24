@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Unity.GraphToolkit.Editor;
@@ -141,8 +140,8 @@ namespace Indiecat.TerrainGraph.Editor
             var fields = typeof(TInputValues).GetFields(bindingFlags);
             foreach (var field in fields)
             {
-                var attribute = field.GetCustomAttribute<IgnoreIfOptionAttribute>();
-                if (attribute != null && GetOptionValue(attribute.OptionName) == attribute.Value)
+                var ignoreIfAttribute = field.GetCustomAttribute<IgnoreIfAttribute>();
+                if (ignoreIfAttribute != null && IsPredicateTrue(ignoreIfAttribute.PredicateName))
                 {
                     continue;
                 }
@@ -166,13 +165,6 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             TrySetWarningBanner(null);
-
-            if (Inputs != null)
-            {
-                // Cascading updates has updated input already e.g. TryGetOutputValue()
-                return true;
-            }
-
             return TryUpdateInputValues(graphLogger);
         }
 
@@ -183,12 +175,6 @@ namespace Indiecat.TerrainGraph.Editor
                 // No output port is generated for this type of node
                 // This should never be called because there should be no connections
                 throw new Exception("Invalid operation - no output port");
-            }
-
-            if (Options == null)
-            {
-                value = null;
-                return false;
             }
 
             if (Options.IsNodeDisabled)
@@ -315,8 +301,8 @@ namespace Indiecat.TerrainGraph.Editor
                     continue;
                 }
 
-                var attribute = field.GetCustomAttribute<IgnoreIfOptionAttribute>();
-                if (attribute != null && GetOptionValue(attribute.OptionName) == attribute.Value)
+                var ignoreIfAttribute = field.GetCustomAttribute<IgnoreIfAttribute>();
+                if (ignoreIfAttribute != null && IsPredicateTrue(ignoreIfAttribute.PredicateName))
                 {
                     continue;
                 }
@@ -376,6 +362,8 @@ namespace Indiecat.TerrainGraph.Editor
                         {
                             graphLogger?.LogWarning($"{inputDisplayName} input invalid: {value} (valid: {minAttribute.min} <= n)", this);
                             field.SetValue(inputs, clampedValue);
+
+                            // No failure, just clamp
                         }
                     }
 
@@ -389,27 +377,16 @@ namespace Indiecat.TerrainGraph.Editor
                         {
                             graphLogger?.LogWarning($"{inputDisplayName} input invalid: {value} (valid: {rangeAttribute.min} <= n <= {rangeAttribute.max})", this);
                             field.SetValue(inputs, clampedValue);
+
+                            // No failure, just clamp
                         }
                     }
                 }
 
-                var validatorAttributes = field.GetCustomAttributes<ValidatorAttribute>();
-                foreach (var validatorAttribute in validatorAttributes)
+                var validIfAttributes = field.GetCustomAttributes<ValidIfAttribute>();
+                foreach (var validIfAttribute in validIfAttributes)
                 {
-                    var bindingFlags =
-                        BindingFlags.DeclaredOnly |
-                        BindingFlags.Instance |
-                        BindingFlags.Public |
-                        BindingFlags.NonPublic;
-
-                    var method = GetType().GetMethod(validatorAttribute.MethodName, bindingFlags);
-                    if (method == null)
-                    {
-                        throw new Exception($"missing validator method: {validatorAttribute.MethodName}");
-                    }
-
-                    var parameters = new object[] { inputs, graphLogger };
-                    if (!(bool)method.Invoke(this, parameters))
+                    if (!IsPredicateTrue(validIfAttribute.PredicateName, inputs, graphLogger))
                     {
                         isValid = false;
                     }
@@ -429,6 +406,12 @@ namespace Indiecat.TerrainGraph.Editor
             foreach (var field in fields)
             {
                 if (field.GetCustomAttribute<IgnoreAttribute>() != null)
+                {
+                    continue;
+                }
+
+                var ignoreIfAttribute = field.GetCustomAttribute<IgnoreIfAttribute>();
+                if (ignoreIfAttribute != null && IsPredicateTrue(ignoreIfAttribute.PredicateName))
                 {
                     continue;
                 }
@@ -636,17 +619,6 @@ namespace Indiecat.TerrainGraph.Editor
             return texture;
         }
 
-        private object GetOptionValue(string optionName)
-        {
-            var fieldInfo = Options.GetType().GetField(optionName, BindingFlags.Instance | BindingFlags.Public);
-            if (fieldInfo != null)
-            {
-                return fieldInfo.GetValue(Options);
-            }
-
-            throw new Exception($"Missing an ignore option field: {optionName}");
-        }
-
         private void CallBuilderMethodWithExpression<TContext>(TContext context, string methodName, FieldInfo field)
         {
             var parameterExpression = Expression.Parameter(field.DeclaringType, "x");
@@ -660,6 +632,23 @@ namespace Indiecat.TerrainGraph.Editor
                 .MakeGenericMethod(field.FieldType);
 
             method.Invoke(context, new object[] { lambda });
+        }
+
+        private bool IsPredicateTrue(string predicateName, params object[] parameters)
+        {
+            var bindingFlags =
+                BindingFlags.DeclaredOnly |
+                BindingFlags.Instance |
+                BindingFlags.Public |
+                BindingFlags.NonPublic;
+
+            var method = GetType().GetMethod(predicateName, bindingFlags);
+            if (method == null)
+            {
+                throw new Exception($"missing predicate method: {predicateName}");
+            }
+
+            return (bool)method.Invoke(this, parameters);
         }
     }
 }

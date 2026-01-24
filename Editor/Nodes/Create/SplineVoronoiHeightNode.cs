@@ -29,7 +29,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DisplayName("Samples")]
             [MinValue(10), DefaultValue(100)]
-            [IgnoreIfOption(nameof(OptionValues.IsSamplingEnabled), true)]
+            [IgnoreIf(nameof(IsSamplingEnabled))]
             public int SampleCount;
 
             [MinValue(16), DefaultValue(256)]
@@ -43,6 +43,8 @@ namespace Indiecat.TerrainGraph.Editor
                 );
             }
         }
+
+        private bool IsSamplingEnabled() => Options.IsSamplingEnabled;
 
         protected override bool TryExecuteNodeInternal()
         {

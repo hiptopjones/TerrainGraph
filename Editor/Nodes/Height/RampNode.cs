@@ -32,8 +32,10 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public HeightGrid Grid;
 
+            [IgnoreIf(nameof(IsRampTypeGradient))]
             public AnimationCurve Curve;
 
+            [IgnoreIf(nameof(IsRampTypeCurve))]
             public Gradient Gradient;
 
             public override int GetHashCode()
@@ -44,6 +46,9 @@ namespace Indiecat.TerrainGraph.Editor
                 );
             }
         }
+
+        private bool IsRampTypeCurve() => Options.RampType == RampType.Curve;
+        private bool IsRampTypeGradient() => Options.RampType == RampType.Gradient;
 
         protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
         {

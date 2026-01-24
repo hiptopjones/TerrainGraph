@@ -14,7 +14,7 @@ namespace Indiecat.TerrainGraph.Editor
         public class InputValues : InputValuesBase
         {
             [DefaultValue("My Spline")]
-            [Validator(nameof(IsSplineFound))]
+            [ValidIf(nameof(IsSplineFound))]
             public string TargetObjectName;
 
             public override int GetHashCode()
