@@ -103,6 +103,10 @@ namespace Indiecat.TerrainGraph.Editor
                     foreach (var connectedPort in connectedPorts)
                     {
                         var connectedNode = connectedPort.GetNode();
+                        if (connectedNode == null)
+                        {
+                            continue;
+                        }
 
                         graph[connectedNode].Add(node);
                         inDegree[node]++;
