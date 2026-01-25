@@ -32,10 +32,10 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public HeightGrid Grid;
 
-            [IgnoreIf(nameof(IsRampTypeGradient))]
+            [IncludeIf(nameof(IsRampTypeCurve))]
             public AnimationCurve Curve;
 
-            [IgnoreIf(nameof(IsRampTypeCurve))]
+            [IncludeIf(nameof(IsRampTypeGradient))]
             public Gradient Gradient;
 
             public override int GetHashCode()
@@ -47,14 +47,11 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private bool IsRampTypeCurve() => Options.RampType == RampType.Curve;
-        private bool IsRampTypeGradient() => Options.RampType == RampType.Gradient;
-
         protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
         {
             context.BuildInputPort(x => x.Grid);
 
-            if (Options.RampType == RampType.Gradient)
+            if (IsRampTypeGradient())
             {
                 context.AddInputPort(x => x.Gradient)
                     .WithDefaultValue(GradientHelpers.GetDefaultGradient())
@@ -67,6 +64,9 @@ namespace Indiecat.TerrainGraph.Editor
                     .Build();
             }
         }
+
+        private bool IsRampTypeCurve() => Options.RampType == RampType.Curve;
+        private bool IsRampTypeGradient() => Options.RampType == RampType.Gradient;
 
         protected override bool TryExecuteNodeInternal()
         {

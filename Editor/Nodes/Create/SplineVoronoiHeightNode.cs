@@ -29,7 +29,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DisplayName("Samples")]
             [MinValue(10), DefaultValue(100)]
-            [IgnoreIf(nameof(IsSamplingEnabled))]
+            [IncludeIf("IsSamplingEnabled")]
             public int SampleCount;
 
             [MinValue(16), DefaultValue(256)]

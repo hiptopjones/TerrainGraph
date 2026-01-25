@@ -11,7 +11,7 @@ namespace Indiecat.TerrainGraph.Editor
     public class OptionValuesBase
     {
         [DefaultValue(true)]
-        [IgnoreIf("!HasOutputPort")]
+        [IncludeIf("HasOutputPort")]
         public bool IsPreviewEnabled;
 
         public bool IsNodeDisabled;
@@ -131,8 +131,8 @@ namespace Indiecat.TerrainGraph.Editor
             var fields = typeof(TInputValues).GetFields(bindingFlags);
             foreach (var field in fields)
             {
-                var ignoreIfAttribute = field.GetCustomAttribute<IgnoreIfAttribute>();
-                if (ignoreIfAttribute != null && IsPredicateTrue(ignoreIfAttribute.PredicateName))
+                var includeIfAttribute = field.GetCustomAttribute<IncludeIfAttribute>();
+                if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
                 {
                     continue;
                 }
@@ -240,8 +240,8 @@ namespace Indiecat.TerrainGraph.Editor
                     continue;
                 }
 
-                var ignoreIfAttribute = field.GetCustomAttribute<IgnoreIfAttribute>();
-                if (ignoreIfAttribute != null && IsPredicateTrue(ignoreIfAttribute.PredicateName))
+                var includeIfAttribute = field.GetCustomAttribute<IncludeIfAttribute>();
+                if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
                 {
                     continue;
                 }
@@ -304,8 +304,8 @@ namespace Indiecat.TerrainGraph.Editor
                     continue;
                 }
 
-                var ignoreIfAttribute = field.GetCustomAttribute<IgnoreIfAttribute>();
-                if (ignoreIfAttribute != null && IsPredicateTrue(ignoreIfAttribute.PredicateName))
+                var includeIfAttribute = field.GetCustomAttribute<IncludeIfAttribute>();
+                if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
                 {
                     continue;
                 }
@@ -419,8 +419,8 @@ namespace Indiecat.TerrainGraph.Editor
                     continue;
                 }
 
-                var ignoreIfAttribute = field.GetCustomAttribute<IgnoreIfAttribute>();
-                if (ignoreIfAttribute != null && IsPredicateTrue(ignoreIfAttribute.PredicateName))
+                var includeIfAttribute = field.GetCustomAttribute<IncludeIfAttribute>();
+                if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
                 {
                     continue;
                 }

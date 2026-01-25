@@ -3,11 +3,11 @@
 namespace Indiecat.TerrainGraph.Editor
 {
     [AttributeUsage(AttributeTargets.Field)]
-    public class IgnoreIfAttribute : Attribute
+    public class IncludeIfAttribute : Attribute
     {
         public readonly string PredicateName;
 
-        public IgnoreIfAttribute(string predicateName)
+        public IncludeIfAttribute(string predicateName)
         {
             PredicateName = predicateName;
         }

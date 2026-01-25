@@ -35,9 +35,11 @@ namespace Indiecat.TerrainGraph.Editor
             public SplineWrapper SplineWrapper;
 
             [DefaultValue(true)]
+            [IncludeIf(nameof(IsOperationOpen))]
             public bool AddLastVertex;
 
             [DefaultValue(true)]
+            [IncludeIf(nameof(IsOperationClose))]
             public bool RemoveLastVertex;
 
             public override int GetHashCode()
@@ -53,8 +55,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             context.BuildInputPort(x => x.SplineWrapper);
 
-
-            if (Options.Operation == OpenCloseOperation.OpenSpline)
+            if (IsOperationOpen())
             {
                 context.BuildInputPort(x => x.AddLastVertex);
             }
@@ -63,6 +64,9 @@ namespace Indiecat.TerrainGraph.Editor
                 context.BuildInputPort(x => x.RemoveLastVertex);
             }
         }
+
+        private bool IsOperationOpen() => Options.Operation == OpenCloseOperation.OpenSpline;
+        private bool IsOperationClose() => Options.Operation == OpenCloseOperation.CloseSpline;
 
         protected override bool TryExecuteNodeInternal()
         {
