@@ -1,8 +1,7 @@
 ﻿#if __MICROVERSE__
 using JBooth.MicroVerseCore;
+#endif
 using System;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -36,6 +35,7 @@ namespace Indiecat.TerrainGraph.Editor
             return true;
         }
 
+#if __MICROVERSE__
         public bool TryExportNode()
         {
             if (Inputs == null)
@@ -119,6 +119,12 @@ namespace Indiecat.TerrainGraph.Editor
             Selection.activeObject = go;
             return go;
         }
+#else
+        public bool TryExportNode()
+        {
+            Debug.LogWarning($"{nameof(ExportStampNode)} requires MicroVerse to be installed");
+            return false;
+        }
+#endif
     }
 }
-#endif
