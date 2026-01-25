@@ -10,6 +10,7 @@ namespace Indiecat.TerrainGraph.Editor
     public class OptionValuesBase
     {
         [DefaultValue(true)]
+        [IgnoreIf("!HasOutputPort")]
         public bool IsPreviewEnabled;
 
         public bool IsNodeDisabled;
@@ -52,6 +53,7 @@ namespace Indiecat.TerrainGraph.Editor
         //   - TryPreviewNode - reads options, reads input
         //   - TryGetOutputValue - reads options, reads input
         //   - TryExecuteNode - reads options, reads input
+        //   - TryExportNode - reads options, reads input
 
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -65,7 +67,11 @@ namespace Indiecat.TerrainGraph.Editor
                 OnDefineOptions(customContext);
             }
 
-            customContext.BuildOption(x => x.IsPreviewEnabled);
+            if (HasOutputPort())
+            {
+                customContext.BuildOption(x => x.IsPreviewEnabled);
+            }
+
             customContext.BuildOption(x => x.IsNodeDisabled);
             customContext.BuildOption(x => x.Warning);
         }
@@ -98,36 +104,20 @@ namespace Indiecat.TerrainGraph.Editor
 
             OnDefineInputPorts(inputContext);
 
-            if (Options.IsPreviewEnabled)
+            if (HasOutputPort() && Options.IsPreviewEnabled)
             {
                 inputContext.BuildInputPort(x => x.Preview);
             }
 
             // Output
-            if (typeof(TResult) == typeof(NullOutput))
+            if (HasOutputPort())
             {
-                // Do not generate an output port for this type of node
-                return;
-            }
+                string displayName = GetOutputPortDisplayName();
 
-            string displayName = "Unknown";
-
-            if (typeof(TResult) == typeof(HeightGrid))
-            {
-                displayName = "Grid";
+                context.AddOutputPort<TResult>(NODE_OUTPUT_VALUE_ID)
+                    .WithDisplayName(displayName)
+                    .Build();
             }
-            else if (typeof(TResult) == typeof(SplineWrapper))
-            {
-                displayName = "Spline";
-            }
-            else if (typeof(TResult) == typeof(SplineListWrapper))
-            {
-                displayName = "Spline List";
-            }
-
-            context.AddOutputPort<TResult>(NODE_OUTPUT_VALUE_ID)
-                .WithDisplayName(displayName)
-                .Build();
         }
 
         protected virtual void OnDefineInputPorts(ICustomInputPortDefinitionContext<TInputValues> context)
@@ -150,6 +140,9 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
+        // Public makes it visible when reflecting subclasses
+        public bool HasOutputPort() => typeof(TResult) != typeof(NullOutput);
+
         public bool TryValidateNode(GraphLogger graphLogger = null)
         {
             if (Options == null)
@@ -170,7 +163,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public bool TryGetOutputValue(IPort _, out TResult value)
         {
-            if (typeof(TResult) == typeof(NullOutput))
+            if (!HasOutputPort())
             {
                 // No output port is generated for this type of node
                 // This should never be called because there should be no connections
@@ -238,6 +231,12 @@ namespace Indiecat.TerrainGraph.Editor
             foreach (var field in fields)
             {
                 if (field.GetCustomAttribute<IgnoreAttribute>() != null)
+                {
+                    continue;
+                }
+
+                var ignoreIfAttribute = field.GetCustomAttribute<IgnoreIfAttribute>();
+                if (ignoreIfAttribute != null && IsPredicateTrue(ignoreIfAttribute.PredicateName))
                 {
                     continue;
                 }
@@ -452,7 +451,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public bool TryUpdatePreview()
         {
-            if (typeof(TResult) == typeof(NullOutput))
+            if (!HasOutputPort())
             {
                 // No preview exists for this type of node, treat as up-to-date
                 return true;
@@ -642,16 +641,35 @@ namespace Indiecat.TerrainGraph.Editor
             method.Invoke(context, new object[] { lambda });
         }
 
+        private string GetOutputPortDisplayName()
+        {
+            string displayName = "Unknown";
+
+            if (typeof(TResult) == typeof(HeightGrid))
+            {
+                displayName = "Grid";
+            }
+            else if (typeof(TResult) == typeof(SplineWrapper))
+            {
+                displayName = "Spline";
+            }
+            else if (typeof(TResult) == typeof(SplineListWrapper))
+            {
+                displayName = "Spline List";
+            }
+
+            return displayName;
+        }
+
         private bool IsPredicateTrue(string predicateName, params object[] parameters)
         {
             var isInverted = predicateName.StartsWith("!");
             predicateName = predicateName.Trim('!');
 
             var bindingFlags =
-                BindingFlags.DeclaredOnly |
-                BindingFlags.Instance |
                 BindingFlags.Public |
-                BindingFlags.NonPublic;
+                BindingFlags.NonPublic |
+                BindingFlags.Instance;
 
             var method = GetType().GetMethod(predicateName, bindingFlags);
             if (method == null)
