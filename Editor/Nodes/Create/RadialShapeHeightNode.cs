@@ -31,7 +31,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public class InputValues : InputValuesBase
         {
-            [MinValue(1), DefaultValue(0.0001f)]
+            [MinValue(0.0001f), DefaultValue(0.5f)]
             public float RadiusPercent;
 
             [MinValue(16), DefaultValue(256)]
