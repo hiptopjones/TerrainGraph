@@ -644,6 +644,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool IsPredicateTrue(string predicateName, params object[] parameters)
         {
+            var isInverted = predicateName.StartsWith("!");
+            predicateName = predicateName.Trim('!');
+
             var bindingFlags =
                 BindingFlags.DeclaredOnly |
                 BindingFlags.Instance |
@@ -656,7 +659,8 @@ namespace Indiecat.TerrainGraph.Editor
                 throw new Exception($"missing predicate method: {predicateName}");
             }
 
-            return (bool)method.Invoke(this, parameters);
+            var result = (bool)method.Invoke(this, parameters);
+            return isInverted ? !result : result;
         }
     }
 }
