@@ -23,24 +23,40 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (fieldInfo != null)
             {
-                var name = NodeHelpers.GetOptionName(fieldInfo.Name);
-
-                var builder = new CustomOptionBuilder<TOption>(name, _originalContext);
-
-                // Try to add them all
-                AddDisplayName(builder, fieldInfo);
-                AddDefaultValue(builder, fieldInfo);
-                AddRange(builder, fieldInfo);
-
-                return builder;
+                return AddOptionFromFieldInfo<TOption>(fieldInfo);
             }
 
             throw new ArgumentException("Invalid expression");
         }
 
-        public INodeOption BuildOption<TPort>(Expression<Func<TOptionValues, TPort>> fieldExpression)
+        public ICustomOptionBuilder<TOption> AddOptionFromFieldInfo<TOption>(FieldInfo fieldInfo)
+        {
+            var name = NodeHelpers.GetOptionName(fieldInfo.Name);
+
+            var builder = new CustomOptionBuilder<TOption>(name, _originalContext);
+
+            AddDisplayName(builder, fieldInfo);
+            AddDefaultValue(builder, fieldInfo);
+            AddRange(builder, fieldInfo);
+
+            return builder;
+        }
+
+        public INodeOption BuildOption<TOption>(Expression<Func<TOptionValues, TOption>> fieldExpression)
         {
             return AddOption(fieldExpression).Build();
+        }
+
+        public INodeOption BuildOptionFromFieldInfo(FieldInfo fieldInfo)
+        {
+            var addOptionMethod = GetType()
+                .GetMethod(nameof(AddOptionFromFieldInfo))
+                .MakeGenericMethod(fieldInfo.FieldType);
+
+            var builder = addOptionMethod.Invoke(this, new object[] { fieldInfo });
+
+            var buildMethod = builder.GetType().GetMethod("Build");
+            return (INodeOption)buildMethod.Invoke(builder, new object[] { });
         }
 
         private void AddDisplayName<TOption>(ICustomOptionBuilder<TOption> builder, FieldInfo fieldInfo)

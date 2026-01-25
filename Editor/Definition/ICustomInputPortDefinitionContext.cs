@@ -8,6 +8,8 @@ namespace Indiecat.TerrainGraph.Editor
     public interface ICustomInputPortDefinitionContext<TInputValues>
     {
         ICustomInputPortBuilder<TPort> AddInputPort<TPort>(Expression<Func<TInputValues, TPort>> fieldExpression);
+        ICustomInputPortBuilder<TPort> AddInputPortFromFieldInfo<TPort>(FieldInfo fieldInfo);
         IPort BuildInputPort<TPort>(Expression<Func<TInputValues, TPort>> fieldExpression);
+        IPort BuildInputPortFromFieldInfo(FieldInfo fieldInfo);
     }
 }

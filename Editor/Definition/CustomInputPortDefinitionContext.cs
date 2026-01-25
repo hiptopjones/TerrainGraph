@@ -18,26 +18,45 @@ namespace Indiecat.TerrainGraph.Editor
 
         public ICustomInputPortBuilder<TPort> AddInputPort<TPort>(Expression<Func<TInputValues, TPort>> fieldExpression)
         {
-            if (fieldExpression.Body is MemberExpression member &&
-                member.Member is FieldInfo fieldInfo)
+            var member = fieldExpression.Body as MemberExpression;
+            var fieldInfo = member?.Member as FieldInfo;
+
+            if (fieldInfo != null)
             {
-                var name = NodeHelpers.GetInputPortName(fieldInfo.Name);
-
-                var builder = new CustomInputPortBuilder<TPort>(name, _originalContext);
-
-                AddDisplayName(builder, fieldInfo);
-                AddDefaultValue(builder, fieldInfo);
-                AddRange(builder, fieldInfo);
-
-                return builder;
+                return AddInputPortFromFieldInfo<TPort>(fieldInfo);
             }
 
             throw new ArgumentException("Invalid expression");
         }
 
+        public ICustomInputPortBuilder<TPort> AddInputPortFromFieldInfo<TPort>(FieldInfo fieldInfo)
+        {
+            var name = NodeHelpers.GetInputPortName(fieldInfo.Name);
+
+            var builder = new CustomInputPortBuilder<TPort>(name, _originalContext);
+
+            AddDisplayName(builder, fieldInfo);
+            AddDefaultValue(builder, fieldInfo);
+            AddRange(builder, fieldInfo);
+
+            return builder;
+        }
+
         public IPort BuildInputPort<TPort>(Expression<Func<TInputValues, TPort>> fieldExpression)
         {
             return AddInputPort(fieldExpression).Build();
+        }
+
+        public IPort BuildInputPortFromFieldInfo(FieldInfo fieldInfo)
+        {
+            var addInputPortMethod = GetType()
+                .GetMethod(nameof(AddInputPortFromFieldInfo))
+                .MakeGenericMethod(fieldInfo.FieldType);
+
+            var builder = addInputPortMethod.Invoke(this, new object[] { fieldInfo });
+
+            var buildMethod = builder.GetType().GetMethod("Build");
+            return (IPort)buildMethod.Invoke(builder, new object[] { });
         }
 
         private void AddDisplayName<TPort>(ICustomInputPortBuilder<TPort> builder, FieldInfo fieldInfo)

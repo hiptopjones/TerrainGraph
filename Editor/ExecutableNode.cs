@@ -86,7 +86,7 @@ namespace Indiecat.TerrainGraph.Editor
             var fields = typeof(TOptionValues).GetFields(bindingFlags);
             foreach (var field in fields)
             {
-                CallBuilderMethodWithExpression(context, nameof(context.BuildOption), field);
+                context.BuildOptionFromFieldInfo(field);
             }
         }
 
@@ -136,7 +136,7 @@ namespace Indiecat.TerrainGraph.Editor
                     continue;
                 }
 
-                CallBuilderMethodWithExpression(context, nameof(context.BuildInputPort), field);
+                context.BuildInputPortFromFieldInfo(field);
             }
         }
 
@@ -624,21 +624,6 @@ namespace Indiecat.TerrainGraph.Editor
             CacheData.RenderTexture = texture;
 
             return texture;
-        }
-
-        private void CallBuilderMethodWithExpression<TContext>(TContext context, string methodName, FieldInfo field)
-        {
-            var parameterExpression = Expression.Parameter(field.DeclaringType, "x");
-            var fieldExpression = Expression.Field(parameterExpression, field);
-
-            var funcType = typeof(Func<,>).MakeGenericType(field.DeclaringType, field.FieldType);
-            var lambda = Expression.Lambda(funcType, fieldExpression, parameterExpression);
-
-            var method = context.GetType()
-                .GetMethod(methodName)
-                .MakeGenericMethod(field.FieldType);
-
-            method.Invoke(context, new object[] { lambda });
         }
 
         private string GetOutputPortDisplayName()

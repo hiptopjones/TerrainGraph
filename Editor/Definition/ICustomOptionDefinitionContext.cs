@@ -8,6 +8,8 @@ namespace Indiecat.TerrainGraph.Editor
     public interface ICustomOptionDefinitionContext<TOptionValues>
     {
         ICustomOptionBuilder<TOption> AddOption<TOption>(Expression<Func<TOptionValues, TOption>> fieldExpression);
-        INodeOption BuildOption<TPort>(Expression<Func<TOptionValues, TPort>> fieldExpression);
+        ICustomOptionBuilder<TOption> AddOptionFromFieldInfo<TOption>(FieldInfo fieldInfo);
+        INodeOption BuildOption<TOption>(Expression<Func<TOptionValues, TOption>> fieldExpression);
+        INodeOption BuildOptionFromFieldInfo(FieldInfo fieldInfo);
     }
 }
