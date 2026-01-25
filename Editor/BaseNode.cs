@@ -83,10 +83,10 @@ namespace Indiecat.TerrainGraph.Editor
                 BindingFlags.Instance |
                 BindingFlags.DeclaredOnly; // No inherited members
 
-            var fields = typeof(TOptionValues).GetFields(bindingFlags);
-            foreach (var field in fields)
+            var fieldInfos = typeof(TOptionValues).GetFields(bindingFlags);
+            foreach (var fieldInfo in fieldInfos)
             {
-                context.BuildOptionFromFieldInfo(field);
+                context.BuildOptionFromFieldInfo(fieldInfo);
             }
         }
 
@@ -127,16 +127,16 @@ namespace Indiecat.TerrainGraph.Editor
                 BindingFlags.Instance |
                 BindingFlags.DeclaredOnly; // No inherited members
 
-            var fields = typeof(TInputValues).GetFields(bindingFlags);
-            foreach (var field in fields)
+            var fieldInfos = typeof(TInputValues).GetFields(bindingFlags);
+            foreach (var fieldInfo in fieldInfos)
             {
-                var includeIfAttribute = field.GetCustomAttribute<IncludeIfAttribute>();
+                var includeIfAttribute = fieldInfo.GetCustomAttribute<IncludeIfAttribute>();
                 if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
                 {
                     continue;
                 }
 
-                context.BuildInputPortFromFieldInfo(field);
+                context.BuildInputPortFromFieldInfo(fieldInfo);
             }
         }
 
@@ -231,24 +231,24 @@ namespace Indiecat.TerrainGraph.Editor
 
             var tempOptions = Activator.CreateInstance<TOptionValues>();
 
-            var fields = typeof(TOptionValues).GetFields(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var field in fields)
+            var fieldInfos = typeof(TOptionValues).GetFields(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var fieldInfo in fieldInfos)
             {
-                if (field.GetCustomAttribute<IgnoreAttribute>() != null)
+                if (fieldInfo.GetCustomAttribute<IgnoreAttribute>() != null)
                 {
                     continue;
                 }
 
-                var includeIfAttribute = field.GetCustomAttribute<IncludeIfAttribute>();
+                var includeIfAttribute = fieldInfo.GetCustomAttribute<IncludeIfAttribute>();
                 if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
                 {
                     continue;
                 }
 
-                var optionName = NodeHelpers.GetOptionName(field.Name);
+                var optionName = NodeHelpers.GetOptionName(fieldInfo.Name);
                 var nodeOption = GetNodeOptionByName(optionName);
 
-                var fieldType = field.FieldType;
+                var fieldType = fieldInfo.FieldType;
 
                 // nodeOption.TryGetValue<bool>(out var isPreviewEnabled)
                 var method = typeof(INodeOption)
@@ -265,7 +265,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var fieldValue = Convert.ChangeType(parameters[0], fieldType);
 
-                field.SetValue(tempOptions, fieldValue);
+                fieldInfo.SetValue(tempOptions, fieldValue);
             }
 
             options = tempOptions;
@@ -295,26 +295,26 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var isValid = true;
 
-            var fields = typeof(TInputValues).GetFields(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var field in fields)
+            var fieldInfos = typeof(TInputValues).GetFields(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var fieldInfo in fieldInfos)
             {
-                if (field.GetCustomAttribute<IgnoreAttribute>() != null)
+                if (fieldInfo.GetCustomAttribute<IgnoreAttribute>() != null)
                 {
                     continue;
                 }
 
-                var includeIfAttribute = field.GetCustomAttribute<IncludeIfAttribute>();
+                var includeIfAttribute = fieldInfo.GetCustomAttribute<IncludeIfAttribute>();
                 if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
                 {
                     continue;
                 }
 
-                var fieldType = field.FieldType;
-                var inputDisplayName = NodeHelpers.GetDisplayName(field);
+                var fieldType = fieldInfo.FieldType;
+                var inputDisplayName = NodeHelpers.GetDisplayName(fieldInfo);
 
                 if (fieldType.IsEnum)
                 {
-                    var value = field.GetValue(inputs);
+                    var value = fieldInfo.GetValue(inputs);
                     if (Enum.IsDefined(fieldType, value))
                     {
                         graphLogger?.LogError($"{inputDisplayName} input invalid", this);
@@ -324,7 +324,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 if (fieldType == typeof(HeightGrid))
                 {
-                    var grid = (HeightGrid)field.GetValue(inputs);
+                    var grid = (HeightGrid)fieldInfo.GetValue(inputs);
                     if (grid == null || !grid.IsValid)
                     {
                         graphLogger?.LogError($"{inputDisplayName} input missing", this);
@@ -334,7 +334,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 if (fieldType == typeof(SplineWrapper))
                 {
-                    var spline = (SplineWrapper)field.GetValue(inputs);
+                    var spline = (SplineWrapper)fieldInfo.GetValue(inputs);
                     if (spline == null || !spline.IsValid)
                     {
                         graphLogger?.LogError($"{inputDisplayName} input missing", this);
@@ -344,7 +344,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 if (fieldType == typeof(SplineListWrapper))
                 {
-                    var splineList = (SplineListWrapper)field.GetValue(inputs);
+                    var splineList = (SplineListWrapper)fieldInfo.GetValue(inputs);
                     if (splineList == null || !splineList.IsValid)
                     {
                         graphLogger?.LogError($"{inputDisplayName} input missing", this);
@@ -354,44 +354,44 @@ namespace Indiecat.TerrainGraph.Editor
 
                 if (fieldType == typeof(float) || fieldType == typeof(int))
                 {
-                    var minAttribute = field.GetCustomAttribute<MinValueAttribute>();
+                    var minAttribute = fieldInfo.GetCustomAttribute<MinValueAttribute>();
                     if (minAttribute != null)
                     {
-                        var rawValue = field.GetValue(inputs);
+                        var rawValue = fieldInfo.GetValue(inputs);
 
                         // Use float for both int and float cases, accepting limitations
-                        var floatValue = (float)Convert.ChangeType(field.GetValue(inputs), typeof(float));
+                        var floatValue = (float)Convert.ChangeType(fieldInfo.GetValue(inputs), typeof(float));
                         var clampedValue = Mathf.Max(floatValue, minAttribute.Min);
 
                         if (floatValue != clampedValue)
                         {
                             graphLogger?.LogWarning($"{inputDisplayName} input invalid: {rawValue} (valid: n >= {minAttribute.Min})", this);
-                            field.SetValue(inputs, Convert.ChangeType(clampedValue, fieldType));
+                            fieldInfo.SetValue(inputs, Convert.ChangeType(clampedValue, fieldType));
 
                             // No failure, just clamp
                         }
                     }
 
-                    var rangeAttribute = field.GetCustomAttribute<RangeValueAttribute>();
+                    var rangeAttribute = fieldInfo.GetCustomAttribute<RangeValueAttribute>();
                     if (rangeAttribute != null)
                     {
-                        var rawValue = field.GetValue(inputs);
+                        var rawValue = fieldInfo.GetValue(inputs);
 
                         // Use float for both int and float cases, accepting limitations
-                        var floatValue = (float)Convert.ChangeType(field.GetValue(inputs), typeof(float));
+                        var floatValue = (float)Convert.ChangeType(fieldInfo.GetValue(inputs), typeof(float));
                         var clampedValue = Mathf.Clamp(floatValue, rangeAttribute.Min, rangeAttribute.Max);
 
                         if (floatValue != clampedValue)
                         {
                             graphLogger?.LogWarning($"{inputDisplayName} input invalid: {rawValue} (valid: n >= {rangeAttribute.Min} && n <= {rangeAttribute.Max})", this);
-                            field.SetValue(inputs, Convert.ChangeType(clampedValue, fieldType));
+                            fieldInfo.SetValue(inputs, Convert.ChangeType(clampedValue, fieldType));
 
                             // No failure, just clamp
                         }
                     }
                 }
 
-                var validIfAttributes = field.GetCustomAttributes<ValidIfAttribute>();
+                var validIfAttributes = fieldInfo.GetCustomAttributes<ValidIfAttribute>();
                 foreach (var validIfAttribute in validIfAttributes)
                 {
                     if (!IsPredicateTrue(validIfAttribute.PredicateName, inputs, graphLogger))
@@ -410,23 +410,23 @@ namespace Indiecat.TerrainGraph.Editor
 
             var tempInputs = Activator.CreateInstance<TInputValues>();
 
-            var fields = typeof(TInputValues).GetFields(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var field in fields)
+            var fieldInfos = typeof(TInputValues).GetFields(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var fieldInfo in fieldInfos)
             {
-                if (field.GetCustomAttribute<IgnoreAttribute>() != null)
+                if (fieldInfo.GetCustomAttribute<IgnoreAttribute>() != null)
                 {
                     continue;
                 }
 
-                var includeIfAttribute = field.GetCustomAttribute<IncludeIfAttribute>();
+                var includeIfAttribute = fieldInfo.GetCustomAttribute<IncludeIfAttribute>();
                 if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
                 {
                     continue;
                 }
 
-                var inputPortName = NodeHelpers.GetInputPortName(field.Name);
+                var inputPortName = NodeHelpers.GetInputPortName(fieldInfo.Name);
 
-                var fieldType = field.FieldType;
+                var fieldType = fieldInfo.FieldType;
 
                 // PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid)
                 var method = typeof(PortEvaluator)
@@ -443,7 +443,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var fieldValue = Convert.ChangeType(parameters[2], fieldType);
 
-                field.SetValue(tempInputs, fieldValue);
+                fieldInfo.SetValue(tempInputs, fieldValue);
             }
 
             tempInputs.VersionHash = HashCode.Combine(tempInputs.GetHashCode(), Options.GetHashCode());
@@ -676,10 +676,10 @@ namespace Indiecat.TerrainGraph.Editor
                 BindingFlags.Instance |
                 BindingFlags.DeclaredOnly; // No inherited members
 
-            var fields = typeof(TInputValues).GetFields(bindingFlags);
+            var fieldInfos = typeof(TInputValues).GetFields(bindingFlags);
 
             // Get the primary field input
-            fieldInfo = fields.FirstOrDefault(x => x.FieldType == typeof(TResult));
+            fieldInfo = fieldInfos.FirstOrDefault(x => x.FieldType == typeof(TResult));
             return fieldInfo != null;
         }
     }
