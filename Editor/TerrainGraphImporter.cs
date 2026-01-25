@@ -12,7 +12,8 @@ namespace Indiecat.TerrainGraph.Editor
     [ScriptedImporter(1, TerrainEditorGraph.ASSET_FILE_EXTENSION)]
     internal class TerrainGraphImporter : ScriptedImporter
     {
-        [SerializeField] private int _version = 2;
+        // Ensure the upgrade always runs the first time
+        [SerializeField] private int _version = 1;
 
         private const int CURRENT_VERSION = 2;
 
@@ -24,7 +25,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 _version = CURRENT_VERSION;
 
-                // IMPORTANT: mark importer dirty so Unity saves the meta
+                // Mark importer dirty so Unity saves the meta
                 EditorUtility.SetDirty(this);
 
                 // Delay reimport to avoid recursion
