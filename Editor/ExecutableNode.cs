@@ -285,7 +285,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (!TryValidateInputValues(tempInputs, graphLogger))
             {
-                graphLogger?.LogError("Validation failed", this);
                 return false;
             }
 

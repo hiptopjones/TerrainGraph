@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -22,6 +23,7 @@ namespace Indiecat.TerrainGraph.Editor
             public float Start;
 
             [MinValue(0), DefaultValue(0.5f)]
+            [ValidIf(nameof(IsValidEnd))]
             public float End;
 
             [DisplayName("Vertices")]
@@ -35,6 +37,19 @@ namespace Indiecat.TerrainGraph.Editor
                     SplineWrapper1?.VersionHash, SplineWrapper2?.VersionHash, Start, End, VertexCount
                 );
             }
+        }
+
+        private bool IsValidEnd(InputValues inputs, GraphLogger graphLogger)
+        {
+            var endDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.End));
+
+            if (inputs.Start >= inputs.End)
+            {
+                graphLogger?.LogWarning($"{endDisplayName} value invalid: {inputs.End} (valid: start > end)", this);
+                inputs.End = inputs.Start + 0.001f;
+            }
+
+            return true;
         }
 
         protected override bool TryExecuteNodeInternal()

@@ -14,7 +14,7 @@ namespace Indiecat.TerrainGraph.Editor
         public class InputValues : InputValuesBase
         {
             [DefaultValue("My Spline")]
-            [ValidIf(nameof(IsSplineFound))]
+            [ValidIf(nameof(IsValidTarget))]
             public string TargetObjectName;
 
             public override int GetHashCode()
@@ -26,16 +26,15 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private bool IsSplineFound(InputValues inputs, GraphLogger graphLogger)
+        private bool IsValidTarget(InputValues inputs, GraphLogger graphLogger)
         {
-            // For error messages
             var inputDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.TargetObjectName));
 
             var isValid = true;
 
             if (string.IsNullOrEmpty(inputs.TargetObjectName))
             {
-                if (graphLogger != null) graphLogger.LogError($"{inputDisplayName} value missing", this);
+                graphLogger?.LogError($"{inputDisplayName} value missing", this);
                 isValid = false;
             }
             else
@@ -46,12 +45,12 @@ namespace Indiecat.TerrainGraph.Editor
                 var namedSplineContainerCount = splineContainers.Count(x => x.name == inputs.TargetObjectName);
                 if (namedSplineContainerCount == 0)
                 {
-                    if (graphLogger != null) graphLogger.LogError($"{inputDisplayName} value invalid", this);
+                    graphLogger?.LogError($"{inputDisplayName} value invalid", this);
                     isValid = false;
                 }
                 else if (namedSplineContainerCount > 1)
                 {
-                    if (graphLogger != null) graphLogger.LogError($"{inputDisplayName} value ambiguous", this);
+                    graphLogger?.LogError($"{inputDisplayName} value ambiguous", this);
                     isValid = false;
                 }
                 else
@@ -59,7 +58,7 @@ namespace Indiecat.TerrainGraph.Editor
                     var splineContainer = splineContainers.First();
                     if (splineContainer.Spline == null)
                     {
-                        if (graphLogger != null) graphLogger.LogError($"{inputDisplayName} missing spline", this);
+                        graphLogger?.LogError($"{inputDisplayName} missing spline", this);
                         isValid = false;
                     }
                 }

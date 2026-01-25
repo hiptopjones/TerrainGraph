@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Windows;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -16,6 +18,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DisplayName("Terrain")]
             [DefaultValue("My Terrain Data")]
+            [ValidIf(nameof(IsValidTarget))]
             public string TargetAssetName;
 
             public override int GetHashCode()
@@ -25,6 +28,53 @@ namespace Indiecat.TerrainGraph.Editor
                     Grid?.VersionHash, TargetAssetName
                 );
             }
+        }
+
+        private bool IsValidTarget(InputValues inputs, GraphLogger graphLogger)
+        {
+            var inputDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.TargetAssetName));
+            var gridDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.Grid));
+
+            var isValid = true;
+
+            if (string.IsNullOrEmpty(inputs.TargetAssetName))
+            {
+                graphLogger?.LogError($"{inputDisplayName} value missing", this);
+                isValid = false;
+            }
+            else
+            {
+                var terrainDataGuids = AssetDatabase.FindAssets($"t:TerrainData {inputs.TargetAssetName}");
+
+                var terrainDataGuidCount = terrainDataGuids.Length;
+                if (terrainDataGuidCount == 0)
+                {
+                    graphLogger?.LogError($"{inputDisplayName} value invalid", this);
+                    isValid = false;
+                }
+                else if (terrainDataGuidCount > 1)
+                {
+                    graphLogger?.LogError($"{inputDisplayName} value ambiguous", this);
+                    isValid = false;
+                }
+                else
+                {
+                    var terrainDataGuid = terrainDataGuids.First();
+                    var assetFilePath = AssetDatabase.GUIDToAssetPath(terrainDataGuid);
+
+                    var terrainData = AssetDatabase.LoadAssetAtPath<TerrainData>(assetFilePath);
+
+                    var terrainSize = terrainData.heightmapResolution - 1;
+
+                    if (inputs.Grid.Size != terrainSize)
+                    {
+                        graphLogger?.LogError($"{gridDisplayName} and {inputDisplayName} heightmap resolution mismatch", this);
+                        isValid = false;
+                    }
+                }
+            }
+
+            return isValid;
         }
 
         protected override bool TryExecuteNodeInternal()
