@@ -6,7 +6,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class RampNode
-        : ExecutableNode<RampNode.OptionValues, RampNode.InputValues, HeightGrid>
+        : BaseNode<RampNode.OptionValues, RampNode.InputValues, HeightGrid>
     {
         public enum RampType
         {

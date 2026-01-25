@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class NormalizeNode
-        : ExecutableNode<OptionValuesBase, NormalizeNode.InputValues, HeightGrid>
+        : BaseNode<OptionValuesBase, NormalizeNode.InputValues, HeightGrid>
     {
         public class InputValues : InputValuesBase
         {

@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ArithmeticNode
-        : ExecutableNode<ArithmeticNode.OptionValues, ArithmeticNode.InputValues, HeightGrid>
+        : BaseNode<ArithmeticNode.OptionValues, ArithmeticNode.InputValues, HeightGrid>
     {
         public enum ArithmeticOperator
         {

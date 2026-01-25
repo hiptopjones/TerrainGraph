@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class VoronoiNoiseHeightNode
-        : ExecutableNode<OptionValuesBase, VoronoiNoiseHeightNode.InputValues, HeightGrid>
+        : BaseNode<OptionValuesBase, VoronoiNoiseHeightNode.InputValues, HeightGrid>
     {
         public class InputValues : InputValuesBase
         {

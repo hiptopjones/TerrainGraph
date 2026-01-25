@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
@@ -26,7 +25,7 @@ namespace Indiecat.TerrainGraph.Editor
         [Ignore] public int VersionHash;
     }
 
-    public abstract class ExecutableNode<TOptionValues, TInputValues, TResult> : Node,
+    public abstract class BaseNode<TOptionValues, TInputValues, TResult> : Node,
         IValidatableNode,
         IExecutableNode,
         IEvaluatableNode<TResult>,

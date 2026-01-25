@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class ContourMultiSplineNode : ExecutableNode<OptionValuesBase, ContourMultiSplineNode.InputValues, SplineListWrapper>
+    public class ContourMultiSplineNode : BaseNode<OptionValuesBase, ContourMultiSplineNode.InputValues, SplineListWrapper>
     {
         public class InputValues : InputValuesBase
         {

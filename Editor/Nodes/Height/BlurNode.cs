@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class BlurNode
-        : ExecutableNode<OptionValuesBase, BlurNode.InputValues, HeightGrid>
+        : BaseNode<OptionValuesBase, BlurNode.InputValues, HeightGrid>
     {
         public class InputValues : InputValuesBase
         {

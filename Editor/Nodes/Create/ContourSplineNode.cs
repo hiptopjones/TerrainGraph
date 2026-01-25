@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ContourSplineNode
-        : ExecutableNode<OptionValuesBase, ContourSplineNode.InputValues, SplineWrapper>
+        : BaseNode<OptionValuesBase, ContourSplineNode.InputValues, SplineWrapper>
     {
         public class InputValues : InputValuesBase
         {

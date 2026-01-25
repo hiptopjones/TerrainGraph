@@ -7,7 +7,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class BlendNode
-        : ExecutableNode<BlendNode.OptionValues, BlendNode.InputValues, HeightGrid>
+        : BaseNode<BlendNode.OptionValues, BlendNode.InputValues, HeightGrid>
     {
         public enum BlendOperator
         {

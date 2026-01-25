@@ -10,7 +10,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportStampNode
-        : ExecutableNode<OptionValuesBase, ExportStampNode.InputValues, NullOutput>, IExportableNode
+        : BaseNode<OptionValuesBase, ExportStampNode.InputValues, NullOutput>, IExportableNode
     {
         public class InputValues : InputValuesBase
         {

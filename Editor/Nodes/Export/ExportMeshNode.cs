@@ -7,7 +7,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportMeshNode
-        : ExecutableNode<ExportMeshNode.OptionValues, ExportMeshNode.InputValues, NullOutput>, IExportableNode
+        : BaseNode<ExportMeshNode.OptionValues, ExportMeshNode.InputValues, NullOutput>, IExportableNode
     {
         public class OptionValues : OptionValuesBase
         {

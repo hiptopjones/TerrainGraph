@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class SplineHeightNode
-        : ExecutableNode<OptionValuesBase, SplineHeightNode.InputValues, HeightGrid>
+        : BaseNode<OptionValuesBase, SplineHeightNode.InputValues, HeightGrid>
     {
         public class InputValues : InputValuesBase
         {

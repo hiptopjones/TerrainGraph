@@ -6,7 +6,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class GradientHeightNode
-        : ExecutableNode<OptionValuesBase, GradientHeightNode.InputValues, HeightGrid>
+        : BaseNode<OptionValuesBase, GradientHeightNode.InputValues, HeightGrid>
     {
         public class InputValues : InputValuesBase
         {

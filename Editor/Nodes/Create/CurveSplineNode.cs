@@ -11,7 +11,7 @@ namespace Indiecat.TerrainGraph.Editor
 
     [Serializable]
     public class CurveSplineNode
-        : ExecutableNode<CurveSplineNode.OptionValues, CurveSplineNode.InputValues, SplineWrapper>
+        : BaseNode<CurveSplineNode.OptionValues, CurveSplineNode.InputValues, SplineWrapper>
     {
         public class OptionValues : OptionValuesBase
         {

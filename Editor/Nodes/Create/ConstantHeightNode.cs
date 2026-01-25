@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class ConstantHeightNode : ExecutableNode<OptionValuesBase, ConstantHeightNode.InputValues, HeightGrid>
+    public class ConstantHeightNode : BaseNode<OptionValuesBase, ConstantHeightNode.InputValues, HeightGrid>
     {
         public class InputValues : InputValuesBase
         {

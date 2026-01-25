@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class MaskNode
-        : ExecutableNode<OptionValuesBase, MaskNode.InputValues, HeightGrid>
+        : BaseNode<OptionValuesBase, MaskNode.InputValues, HeightGrid>
     {
         public class InputValues : InputValuesBase
         {

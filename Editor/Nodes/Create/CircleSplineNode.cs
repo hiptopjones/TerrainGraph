@@ -6,7 +6,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class CircleSplineNode
-        : ExecutableNode<OptionValuesBase, CircleSplineNode.InputValues, SplineWrapper>
+        : BaseNode<OptionValuesBase, CircleSplineNode.InputValues, SplineWrapper>
     {
         public class InputValues : InputValuesBase
         {

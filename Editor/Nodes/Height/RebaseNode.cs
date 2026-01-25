@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class RebaseNode
-        : ExecutableNode<RebaseNode.OptionValues, RebaseNode.InputValues, HeightGrid>
+        : BaseNode<RebaseNode.OptionValues, RebaseNode.InputValues, HeightGrid>
     {
         public enum RebaseType
         {

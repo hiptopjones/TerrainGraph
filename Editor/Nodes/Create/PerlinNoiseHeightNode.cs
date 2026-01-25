@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class PerlinNoiseHeightNode
-        : ExecutableNode<OptionValuesBase, PerlinNoiseHeightNode.InputValues, HeightGrid>
+        : BaseNode<OptionValuesBase, PerlinNoiseHeightNode.InputValues, HeightGrid>
     {
         public class InputValues : InputValuesBase
         {

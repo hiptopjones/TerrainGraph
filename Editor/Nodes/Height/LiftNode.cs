@@ -6,7 +6,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class LiftNode
-        : ExecutableNode<LiftNode.OptionValues, LiftNode.InputValues, HeightGrid>
+        : BaseNode<LiftNode.OptionValues, LiftNode.InputValues, HeightGrid>
     {
         public enum EasingType
         {

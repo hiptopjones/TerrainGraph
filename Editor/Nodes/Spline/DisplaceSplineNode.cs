@@ -7,7 +7,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class DisplaceSplineNode
-        : ExecutableNode<DisplaceSplineNode.OptionValues, DisplaceSplineNode.InputValues, SplineWrapper>
+        : BaseNode<DisplaceSplineNode.OptionValues, DisplaceSplineNode.InputValues, SplineWrapper>
     {
         public enum DisplacementAxis
         {

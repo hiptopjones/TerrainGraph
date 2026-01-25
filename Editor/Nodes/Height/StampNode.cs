@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class StampNode
-        : ExecutableNode<StampNode.OptionValues, StampNode.InputValues, HeightGrid>
+        : BaseNode<StampNode.OptionValues, StampNode.InputValues, HeightGrid>
     {
         public enum EasingType
         {

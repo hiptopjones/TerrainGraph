@@ -7,7 +7,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class OpenClosedSplineNode
-        : ExecutableNode<OpenClosedSplineNode.OptionValues, OpenClosedSplineNode.InputValues, SplineWrapper>
+        : BaseNode<OpenClosedSplineNode.OptionValues, OpenClosedSplineNode.InputValues, SplineWrapper>
     {
         public enum OpenCloseOperation
         {

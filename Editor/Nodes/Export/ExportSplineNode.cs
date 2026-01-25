@@ -11,7 +11,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportSplineNode
-        : ExecutableNode<ExportSplineNode.OptionValues, ExportSplineNode.InputValues, NullOutput>, IExportableNode
+        : BaseNode<ExportSplineNode.OptionValues, ExportSplineNode.InputValues, NullOutput>, IExportableNode
     {
         public class OptionValues : OptionValuesBase
         {

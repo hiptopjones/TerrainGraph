@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class CellularNoiseHeightNode
-        : ExecutableNode<OptionValuesBase, CellularNoiseHeightNode.InputValues, HeightGrid>
+        : BaseNode<OptionValuesBase, CellularNoiseHeightNode.InputValues, HeightGrid>
     {
         public class InputValues : InputValuesBase
         {

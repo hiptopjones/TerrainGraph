@@ -5,7 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class RadialShapeHeightNode
-        : ExecutableNode<RadialShapeHeightNode.OptionValues, RadialShapeHeightNode.InputValues, HeightGrid>
+        : BaseNode<RadialShapeHeightNode.OptionValues, RadialShapeHeightNode.InputValues, HeightGrid>
     {
         public enum ShapeType
         {
