@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Unity.GraphToolkit.Editor;
@@ -172,8 +173,12 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (Options.IsNodeDisabled)
             {
-                // TODO: Fix this
-                //return PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out value);
+                if (TryGetPassthruInput(out var fieldInfo))
+                {
+                    var inputPortName = NodeHelpers.GetInputPortName(fieldInfo.Name);
+                    return PortEvaluator.TryEvaluateInputPort(this, inputPortName, out value);
+                }
+
                 value = null;
                 return false;
             }
@@ -434,7 +439,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 if (!(bool)method.Invoke(null, parameters))
                 {
-                    Debug.LogError($"Unable to get port value: {inputPortName}");
+                    // Too noisy to log here
                     return false;
                 }
 
@@ -664,6 +669,20 @@ namespace Indiecat.TerrainGraph.Editor
 
             var result = (bool)method.Invoke(this, parameters);
             return isInverted ? !result : result;
+        }
+
+        private bool TryGetPassthruInput(out FieldInfo fieldInfo)
+        {
+            var bindingFlags =
+                BindingFlags.Public |
+                BindingFlags.Instance |
+                BindingFlags.DeclaredOnly; // No inherited members
+
+            var fields = typeof(TInputValues).GetFields(bindingFlags);
+
+            // Get the primary field input
+            fieldInfo = fields.FirstOrDefault(x => x.FieldType == typeof(TResult));
+            return fieldInfo != null;
         }
     }
 }
