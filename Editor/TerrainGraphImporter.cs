@@ -123,6 +123,13 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var line = lines[i];
 
+                if (line.Contains("SplineCurvatureHeightNode"))
+                {
+                    // Add missing namespace
+                    line = line.Replace("ns: ,", "ns: Indiecat.TerrainGraph.Editor,");
+                    lines[i] = line;
+                }
+
                 // - rid: 6822668016261005868
                 var id = GetId(line, isCollection: true);
                 if (id != null)
@@ -274,7 +281,7 @@ namespace Indiecat.TerrainGraph.Editor
         private string GetClassName(string line)
         {
             // type: {class: ArithmeticNode, ns: Indiecat.TerrainGraph.Editor, asm: Indiecat.TerrainGraph.Editor}
-            var classPattern = @"\s+type: {class: (?<Class>\w+), ns: Indiecat"; // Include namespace to scope matches
+            var classPattern = @"\s+type: {class: (?<Class>\w+),.*Indiecat"; // Scope matches to just my types
 
             var classMatch = Regex.Match(line, classPattern);
             if (classMatch.Success)
