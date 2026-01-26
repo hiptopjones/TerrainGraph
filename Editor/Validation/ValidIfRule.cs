@@ -2,7 +2,7 @@
 
 namespace Indiecat.TerrainGraph.Editor
 {
-    public sealed class ValidIfRule : IValidationRule
+    public class ValidIfRule : IValidationRule
     {
         private readonly Func<object, object, ValidationResult> _validationDelegate;
 

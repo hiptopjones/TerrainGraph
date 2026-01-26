@@ -402,18 +402,24 @@ namespace Indiecat.TerrainGraph.Editor
                     }
                 }
 
-                foreach (var rule in fieldModel.Rules)
+                if (isValid)
                 {
-                    var result = rule.Validate(this, inputs);
-                    if (!result.IsValid)
+                    // Only run these rules if the above validation checked out
+                    // Otherwise validators may have to do redundant checks to avoid spurious errors
+
+                    foreach (var rule in fieldModel.Rules)
                     {
-                        graphLogger?.LogError(result.Message, this);
-                        isValid = false;
-                    }
-                    else if (!string.IsNullOrEmpty(result.Message))
-                    {
-                        // Probably corrected something for the user
-                        graphLogger?.LogWarning(result.Message, this);
+                        var result = rule.Validate(this, inputs);
+                        if (!result.IsValid)
+                        {
+                            graphLogger?.LogError(result.Message, this);
+                            isValid = false;
+                        }
+                        else if (!string.IsNullOrEmpty(result.Message))
+                        {
+                            // Probably corrected something for the user
+                            graphLogger?.LogWarning(result.Message, this);
+                        }
                     }
                 }
             }

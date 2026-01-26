@@ -72,8 +72,8 @@ namespace Indiecat.TerrainGraph.Editor
             var grid1FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid1));
             var grid2FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid2));
 
-            if (inputs.Grid1?.RenderTexture.width != inputs.Grid2?.RenderTexture.width ||
-                inputs.Grid1?.RenderTexture.height != inputs.Grid2?.RenderTexture.height)
+            if (inputs.Grid1.RenderTexture.width != inputs.Grid2.RenderTexture.width ||
+                inputs.Grid1.RenderTexture.height != inputs.Grid2.RenderTexture.height)
             {
                 return ValidationResult.Error($"{grid1FieldModel.DisplayName} and {grid2FieldModel.DisplayName} size mismatch");
             }
