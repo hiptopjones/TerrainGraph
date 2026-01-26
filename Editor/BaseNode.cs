@@ -120,9 +120,16 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void BuildOption(IOptionDefinitionContext context, FieldModel fieldModel)
         {
-            var builder = context.AddOption(fieldModel.PortName, fieldModel.FieldType);
-            builder.WithDisplayName(fieldModel.DisplayName);
-            builder.WithDefaultValue(fieldModel.DefaultValue ?? default);
+            var builder = context.AddOption(fieldModel.PortName, fieldModel.FieldType)
+                .WithDisplayName(fieldModel.DisplayName);
+
+            if (fieldModel.DefaultValue != null)
+            {
+                // Make sure it's the exact right type
+                var defaultValue = Convert.ChangeType(fieldModel.DefaultValue ?? default, fieldModel.FieldType);
+                builder.WithDefaultValue(defaultValue);
+            }
+
             builder.Build();
         }
 
@@ -199,11 +206,18 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void BuildInputPort(IPortDefinitionContext context, FieldModel fieldModel)
         {
-            context.AddInputPort(fieldModel.PortName)
+            var builder = context.AddInputPort(fieldModel.PortName)
                 .WithDataType(fieldModel.FieldType)
-                .WithDefaultValue(fieldModel.DefaultValue ?? default)
-                .WithDisplayName(fieldModel.DisplayName)
-                .Build();
+                .WithDisplayName(fieldModel.DisplayName);
+
+            if (fieldModel.DefaultValue != null)
+            {
+                // Make sure it's the exact right type
+                var defaultValue = Convert.ChangeType(fieldModel.DefaultValue ?? default, fieldModel.FieldType);
+                builder.WithDefaultValue(defaultValue);
+            }
+
+            builder.Build();
         }
 
         public bool TryValidateNode(GraphLogger graphLogger = null)
