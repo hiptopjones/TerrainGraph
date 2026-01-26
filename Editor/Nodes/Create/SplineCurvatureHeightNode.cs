@@ -9,8 +9,12 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class SplineCurvatureHeightNode
-        : BaseNode<OptionValuesBase, SplineCurvatureHeightNode.InputValues, HeightGrid>
+        : BaseNode<SplineCurvatureHeightNode.OptionValues, SplineCurvatureHeightNode.InputValues, HeightGrid>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
             [DisplayName("Spline")]

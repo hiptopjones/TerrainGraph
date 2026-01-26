@@ -1,16 +1,19 @@
 ﻿using System;
-using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.Windows;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class RangeNode
-        : BaseNode<OptionValuesBase, RangeNode.InputValues, HeightGrid>
+        : BaseNode<RangeNode.OptionValues, RangeNode.InputValues, HeightGrid>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
 
             [ValidIf(nameof(IsValidFromRange))]
@@ -28,43 +31,46 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
+        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
-            context.BuildInputPort(x => x.Grid);
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
 
-            context.AddInputPort(x => x.FromRange)
-                .WithDefaultValue(new Vector2(0, 1))
-                .Build();
+            var fromModel = classModel.GetFieldModel(nameof(InputValues.FromRange));
+            fromModel.DefaultValue = new Vector2(0, 1);
 
-            context.AddInputPort(x => x.ToRange)
-                .WithDefaultValue(new Vector2(0, 1))
-                .Build();
+            var toModel = classModel.GetFieldModel(nameof(InputValues.ToRange));
+            toModel.DefaultValue = new Vector2(0, 1);
+
+            // Build the ports automatically
+            base.OnDefineCustomInputPorts(context);
         }
 
-        private bool IsValidFromRange(InputValues inputs, GraphLogger graphLogger)
+        private ValidationResult IsValidFromRange(InputValues inputs)
         {
-            var fromRangeDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.FromRange));
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+            var fromModel = classModel.GetFieldModel(nameof(InputValues.FromRange));
 
             if (inputs.FromRange.x == inputs.FromRange.y)
             {
-                graphLogger?.LogWarning($"{fromRangeDisplayName} value invalid (x != y)", this);
                 inputs.FromRange = new Vector2(inputs.FromRange.x, inputs.FromRange.x + 0.00001f);
+                return ValidationResult.Warning($"{fromModel.DisplayName} input invalid (x != y)");
             }
 
-            return true;
+            return ValidationResult.Ok();
         }
 
-        private bool IsValidToRange(InputValues inputs, GraphLogger graphLogger)
+        private ValidationResult IsValidToRange(InputValues inputs)
         {
-            var toRangeDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.ToRange));
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+            var toModel = classModel.GetFieldModel(nameof(InputValues.ToRange));
 
             if (inputs.ToRange.x == inputs.ToRange.y)
             {
-                graphLogger?.LogWarning($"{toRangeDisplayName} value invalid (x != y)", this);
                 inputs.ToRange = new Vector2(inputs.ToRange.x, inputs.ToRange.x + 0.00001f);
+                return ValidationResult.Warning($"{toModel.DisplayName} input invalid (x != y)");
             }
 
-            return true;
+            return ValidationResult.Ok();
         }
 
         protected override bool TryExecuteNodeInternal()

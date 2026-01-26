@@ -5,11 +5,11 @@ namespace Indiecat.TerrainGraph.Editor
     [AttributeUsage(AttributeTargets.Field)]
     public class IncludeIfAttribute : Attribute
     {
-        public readonly string PredicateName;
+        public readonly string MethodName;
 
         public IncludeIfAttribute(string predicateName)
         {
-            PredicateName = predicateName;
+            MethodName = predicateName;
         }
     }
 }

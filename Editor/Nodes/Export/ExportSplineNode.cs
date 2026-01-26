@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Linq;
-using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
-using UnityEngine.Windows;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -45,16 +43,14 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private bool IsValidTarget(InputValues inputs, GraphLogger graphLogger)
+        private ValidationResult IsValidTarget(InputValues inputs)
         {
-            var inputDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.TargetObjectName));
-
-            var isValid = true;
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+            var targetModel = classModel.GetFieldModel(nameof(InputValues.TargetObjectName));
 
             if (string.IsNullOrEmpty(inputs.TargetObjectName))
             {
-                graphLogger?.LogError($"{inputDisplayName} value missing", this);
-                isValid = false;
+                return ValidationResult.Error($"{targetModel.DisplayName} input missing");
             }
             else
             {
@@ -64,17 +60,15 @@ namespace Indiecat.TerrainGraph.Editor
                 var namedSplineContainerCount = splineContainers.Count(x => x.name == inputs.TargetObjectName);
                 if (namedSplineContainerCount == 0)
                 {
-                    graphLogger?.LogError($"{inputDisplayName} value invalid", this);
-                    isValid = false;
+                    return ValidationResult.Error($"{targetModel.DisplayName} input invalid");
                 }
                 else if (namedSplineContainerCount > 1)
                 {
-                    graphLogger?.LogError($"{inputDisplayName} value ambiguous", this);
-                    isValid = false;
+                    return ValidationResult.Error($"{targetModel.DisplayName} input ambiguous");
                 }
             }
 
-            return isValid;
+            return ValidationResult.Ok();
         }
 
         protected override bool TryExecuteNodeInternal()

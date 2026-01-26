@@ -5,10 +5,15 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class InvertNode
-        : BaseNode<OptionValuesBase, InvertNode.InputValues, HeightGrid>
+        : BaseNode<InvertNode.OptionValues, InvertNode.InputValues, HeightGrid>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
             public float Pivot;
 

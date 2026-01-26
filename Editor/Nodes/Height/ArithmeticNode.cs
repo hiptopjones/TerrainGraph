@@ -40,6 +40,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
 
             [DefaultValue(0.5f)]
@@ -54,17 +55,17 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
+        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
             if (Options.IsFlipped)
             {
-                context.BuildInputPort(x => x.Value);
-                context.BuildInputPort(x => x.Grid);
+                BuildInputPort(context, x => x.Value);
+                BuildInputPort(context, x => x.Grid);
             }
             else
             {
-                context.BuildInputPort(x => x.Grid);
-                context.BuildInputPort(x => x.Value);
+                BuildInputPort(context, x => x.Grid);
+                BuildInputPort(context, x => x.Value);
             }
         }
 

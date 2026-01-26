@@ -32,6 +32,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
 
             [DisplayName("Spline")]

@@ -5,8 +5,12 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportTextureNode
-        : BaseNode<OptionValuesBase, ExportTextureNode.InputValues, NullOutput>, IExportableNode
+        : BaseNode<ExportTextureNode.OptionValues, ExportTextureNode.InputValues, NullOutput>, IExportableNode
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
             public HeightGrid Grid;

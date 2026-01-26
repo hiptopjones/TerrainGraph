@@ -10,11 +10,16 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class SliceSplineNode
-        : BaseNode<OptionValuesBase, SliceSplineNode.InputValues, SplineWrapper>
+        : BaseNode<SliceSplineNode.OptionValues, SliceSplineNode.InputValues, SplineWrapper>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
             [DisplayName("Spline")]
+            [Passthru]
             public SplineWrapper SplineWrapper;
 
             [MinValue(0), DefaultValue(0)]
@@ -37,17 +42,18 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private bool IsValidEnd(InputValues inputs, GraphLogger graphLogger)
+        private ValidationResult IsValidEnd(InputValues inputs)
         {
-            var endDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.End));
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+            var endModel = classModel.GetFieldModel(nameof(InputValues.End));
 
             if (inputs.Start >= inputs.End)
             {
-                graphLogger?.LogWarning($"{endDisplayName} value invalid: {inputs.End} (valid: start > end)", this);
                 inputs.End = inputs.Start + 0.001f;
+                ValidationResult.Warning($"{endModel.DisplayName} input invalid: {inputs.End} (valid: start > end)");
             }
 
-            return true;
+            return ValidationResult.Ok();
         }
 
         protected override bool TryExecuteNodeInternal()

@@ -5,10 +5,15 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class BlurNode
-        : BaseNode<OptionValuesBase, BlurNode.InputValues, HeightGrid>
+        : BaseNode<BlurNode.OptionValues, BlurNode.InputValues, HeightGrid>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
 
             [MinValue(1), DefaultValue(5)]

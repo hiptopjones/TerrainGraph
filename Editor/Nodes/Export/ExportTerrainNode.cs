@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Linq;
-using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Windows;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportTerrainNode
-        : BaseNode<OptionValuesBase, ExportTerrainNode.InputValues, NullOutput>, IExportableNode
+        : BaseNode<ExportTerrainNode.OptionValues, ExportTerrainNode.InputValues, NullOutput>, IExportableNode
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
             public HeightGrid Grid;
@@ -30,17 +32,15 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private bool IsValidTarget(InputValues inputs, GraphLogger graphLogger)
+        private ValidationResult IsValidTarget(InputValues inputs)
         {
-            var inputDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.TargetAssetName));
-            var gridDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.Grid));
-
-            var isValid = true;
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+            var targetModel = classModel.GetFieldModel(nameof(InputValues.TargetAssetName));
+            var gridModel = classModel.GetFieldModel(nameof(InputValues.Grid));
 
             if (string.IsNullOrEmpty(inputs.TargetAssetName))
             {
-                graphLogger?.LogError($"{inputDisplayName} value missing", this);
-                isValid = false;
+                return ValidationResult.Error($"{targetModel.DisplayName} input missing");
             }
             else
             {
@@ -49,13 +49,11 @@ namespace Indiecat.TerrainGraph.Editor
                 var terrainDataGuidCount = terrainDataGuids.Length;
                 if (terrainDataGuidCount == 0)
                 {
-                    graphLogger?.LogError($"{inputDisplayName} value invalid", this);
-                    isValid = false;
+                    return ValidationResult.Error($"{targetModel.DisplayName} input invalid");
                 }
                 else if (terrainDataGuidCount > 1)
                 {
-                    graphLogger?.LogError($"{inputDisplayName} value ambiguous", this);
-                    isValid = false;
+                    return ValidationResult.Error($"{targetModel.DisplayName} input ambiguous");
                 }
                 else
                 {
@@ -68,13 +66,13 @@ namespace Indiecat.TerrainGraph.Editor
 
                     if (inputs.Grid.Size != terrainSize)
                     {
-                        graphLogger?.LogError($"{gridDisplayName} and {inputDisplayName} heightmap resolution mismatch", this);
-                        isValid = false;
+                        return ValidationResult.Error(
+                            $"{gridModel.DisplayName} and {targetModel.DisplayName} heightmap resolution mismatch");
                     }
                 }
             }
 
-            return isValid;
+            return ValidationResult.Ok();
         }
 
         protected override bool TryExecuteNodeInternal()

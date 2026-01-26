@@ -5,10 +5,15 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class MaskNode
-        : BaseNode<OptionValuesBase, MaskNode.InputValues, HeightGrid>
+        : BaseNode<MaskNode.OptionValues, MaskNode.InputValues, HeightGrid>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
 
             public override int GetHashCode()

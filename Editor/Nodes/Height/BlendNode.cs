@@ -1,7 +1,5 @@
 ﻿using System;
-using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.Windows;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -41,6 +39,7 @@ namespace Indiecat.TerrainGraph.Editor
         public class InputValues : InputValuesBase
         {
             [ValidIf(nameof(IsMatchingSize))]
+            [Passthru]
             public HeightGrid Grid1;
             public HeightGrid Grid2;
 
@@ -53,36 +52,33 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
+        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
             if (Options.IsFlipped)
             {
-                context.BuildInputPort(x => x.Grid2);
-                context.BuildInputPort(x => x.Grid1);
+                BuildInputPort(context, x => x.Grid2);
+                BuildInputPort(context, x => x.Grid1);
             }
             else
             {
-                context.BuildInputPort(x => x.Grid1);
-                context.BuildInputPort(x => x.Grid2);
+                BuildInputPort(context, x => x.Grid1);
+                BuildInputPort(context, x => x.Grid2);
             }
         }
 
-        private bool IsMatchingSize(InputValues inputs, GraphLogger graphLogger)
+        private ValidationResult IsMatchingSize(InputValues inputs)
         {
-            var grid1DisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.Grid1));
-            var grid2DisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.Grid2));
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+            var grid1FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid1));
+            var grid2FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid2));
 
-            var isValid = true;
-
-            if (isValid &&
-                (inputs.Grid1.RenderTexture.width != inputs.Grid2.RenderTexture.width ||
-                inputs.Grid1.RenderTexture.height != inputs.Grid2.RenderTexture.height))
+            if (inputs.Grid1?.RenderTexture.width != inputs.Grid2?.RenderTexture.width ||
+                inputs.Grid1?.RenderTexture.height != inputs.Grid2?.RenderTexture.height)
             {
-                graphLogger?.LogError($"{grid1DisplayName} and {grid2DisplayName} size mismatch", this);
-                isValid = false;
+                return ValidationResult.Error($"{grid1FieldModel.DisplayName} and {grid2FieldModel.DisplayName} size mismatch");
             }
 
-            return isValid;
+            return ValidationResult.Ok();
         }
 
         protected override bool TryExecuteNodeInternal()

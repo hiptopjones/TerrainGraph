@@ -29,6 +29,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
 
             [DisplayName("Value")]
@@ -43,13 +44,15 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
+        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
-            context.BuildInputPort(x => x.Grid);
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
 
-            context.AddInputPort(x => x.TargetValue)
-                .WithDefaultValue(Options.RebaseType == RebaseType.Floor ? 0 : 1)
-                .Build();
+            var targetModel = classModel.GetFieldModel(nameof(InputValues.TargetValue));
+            targetModel.DefaultValue = (Options.RebaseType == RebaseType.Floor ? 0 : 1);
+
+            // Build the ports automatically
+            base.OnDefineCustomInputPorts(context);
         }
 
         protected override bool TryExecuteNodeInternal()

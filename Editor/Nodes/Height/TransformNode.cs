@@ -5,10 +5,15 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class TransformNode
-        : BaseNode<OptionValuesBase, TransformNode.InputValues, HeightGrid>
+        : BaseNode<TransformNode.OptionValues, TransformNode.InputValues, HeightGrid>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
 
             public Vector2 TranslationPercent;
@@ -26,15 +31,15 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
+        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
-            context.BuildInputPort(x => x.Grid);
-            context.BuildInputPort(x => x.TranslationPercent);
-            context.BuildInputPort(x => x.RotationDegrees);
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
 
-            context.AddInputPort(x => x.Scale)
-                .WithDefaultValue(Vector2.one)
-                .Build();
+            var scaleModel = classModel.GetFieldModel(nameof(InputValues.Scale));
+            scaleModel.DefaultValue = Vector2.one;
+
+            // Build the ports automatically
+            base.OnDefineCustomInputPorts(context);
         }
 
         protected override bool TryExecuteNodeInternal()

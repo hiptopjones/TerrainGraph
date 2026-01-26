@@ -30,6 +30,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
 
             [IncludeIf(nameof(IsRampTypeCurve))]
@@ -47,22 +48,18 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
+        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
-            context.BuildInputPort(x => x.Grid);
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
 
-            if (IsRampTypeGradient())
-            {
-                context.AddInputPort(x => x.Gradient)
-                    .WithDefaultValue(GradientHelpers.GetDefaultGradient())
-                    .Build();
-            }
-            else
-            {
-                context.AddInputPort(x => x.Curve)
-                    .WithDefaultValue(AnimationCurve.EaseInOut(0, 0, 1, 1))
-                    .Build();
-            }
+            var gradientModel = classModel.GetFieldModel(nameof(InputValues.Gradient));
+            gradientModel.DefaultValue = GradientHelpers.GetDefaultGradient();
+
+            var curveModel = classModel.GetFieldModel(nameof(InputValues.Curve));
+            curveModel.DefaultValue = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+            // Build the ports automatically
+            base.OnDefineCustomInputPorts(context);
         }
 
         private bool IsRampTypeCurve() => Options.RampType == RampType.Curve;

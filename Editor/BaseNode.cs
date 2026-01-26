@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
@@ -7,32 +8,45 @@ using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
 {
-    public class OptionValuesBase
+    // Use a less-parameterized base class so using the inner classes is less ugly
+    public abstract class BaseNode<TResult> : Node
     {
-        [DefaultValue(true)]
-        [IncludeIf("HasOutputPort")]
-        public bool IsPreviewEnabled;
+        public abstract class OptionValuesBase
+        {
+            [DefaultValue(true)]
+            [IncludeIf("HasOutputPort")]
+            public bool IsPreviewEnabled;
 
-        public bool IsNodeDisabled;
+            public bool IsNodeDisabled;
 
-        [Ignore] public WarningBanner Warning;
-        [Ignore] public int VersionHash;
+            [Ignore]
+            public WarningBanner Warning;
+
+            [Ignore]
+            public int VersionHash;
+        }
+
+        public abstract class InputValuesBase
+        {
+            [Ignore]
+            public PreviewImage Preview;
+
+            [Ignore]
+            public int VersionHash;
+        }
+
+        // Public to make it visible when reflecting subclasses
+        public bool HasOutputPort() => typeof(TResult) != typeof(NullOutput);
     }
 
-    public class InputValuesBase
-    {
-        [Ignore] public PreviewImage Preview;
-        [Ignore] public int VersionHash;
-    }
-
-    public abstract class BaseNode<TOptionValues, TInputValues, TResult> : Node,
+    public abstract class BaseNode<TOptionValues, TInputValues, TResult> : BaseNode<TResult>,
         IValidatableNode,
         IExecutableNode,
         IEvaluatableNode<TResult>,
         ICacheableNode<TResult>,
         IPreviewableNode
-        where TOptionValues : OptionValuesBase
-        where TInputValues : InputValuesBase
+        where TOptionValues : BaseNode<TResult>.OptionValuesBase
+        where TInputValues : BaseNode<TResult>.InputValuesBase
         where TResult : class, IVersionedObject
     {
         public CacheData<TResult> CacheData { get; set; } = new();
@@ -54,40 +68,62 @@ namespace Indiecat.TerrainGraph.Editor
         //   - TryGetOutputValue - reads options, reads input
         //   - TryExecuteNode - reads options, reads input
         //   - TryExportNode - reads options, reads input
-
+        
+        // Called by Graph Toolkit when creating a node
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
             Options = null;
             Inputs = null;
 
-            var customContext = context.UseType<TOptionValues>();
-
-            if (typeof(TOptionValues) != typeof(OptionValuesBase))
-            {
-                OnDefineOptions(customContext);
-            }
-
-            if (HasOutputPort())
-            {
-                customContext.BuildOption(x => x.IsPreviewEnabled);
-            }
-
-            customContext.BuildOption(x => x.IsNodeDisabled);
-            customContext.BuildOption(x => x.Warning);
+            OnDefineCustomOptions(context);
+            OnDefineBaseOptions(context);
         }
 
-        protected virtual void OnDefineOptions(ICustomOptionDefinitionContext<TOptionValues> context)
+        private void OnDefineBaseOptions(IOptionDefinitionContext context)
         {
-            var bindingFlags =
-                BindingFlags.Public |
-                BindingFlags.Instance |
-                BindingFlags.DeclaredOnly; // No inherited members
-
-            var fieldInfos = typeof(TOptionValues).GetFields(bindingFlags);
-            foreach (var fieldInfo in fieldInfos)
+            if (HasOutputPort())
             {
-                context.BuildOptionFromFieldInfo(fieldInfo);
+                BuildOption(context, x => x.IsPreviewEnabled);
             }
+
+            BuildOption(context, x => x.IsNodeDisabled);
+            BuildOption(context, x => x.Warning);
+        }
+
+        protected virtual void OnDefineCustomOptions(IOptionDefinitionContext context)
+        {
+            var classModel = ClassModelCache.GetClassModel<TOptionValues>();
+
+            var subclassFieldModels = classModel.FieldModels
+                .Where(x => x.DeclaringType != typeof(OptionValuesBase));
+
+            foreach (var fieldModel in subclassFieldModels)
+            {
+                BuildOption(context, fieldModel);
+            }
+        }
+
+        protected void BuildOption<TField>(
+            IOptionDefinitionContext context, Expression<Func<TOptionValues, TField>> fieldExpression)
+        {
+            var member = fieldExpression.Body as MemberExpression;
+            var fieldInfo = member?.Member as FieldInfo;
+         
+            if (fieldInfo == null)
+            {
+                throw new ArgumentException("Invalid expression");
+            }
+
+            var fieldModel = ClassModelCache.GetFieldModel(fieldInfo);
+            BuildOption(context, fieldModel);
+        }
+
+        private void BuildOption(IOptionDefinitionContext context, FieldModel fieldModel)
+        {
+            var builder = context.AddOption(fieldModel.PortName, fieldModel.FieldType);
+            builder.WithDisplayName(fieldModel.DisplayName);
+            builder.WithDefaultValue(fieldModel.DefaultValue ?? default);
+            builder.Build();
         }
 
         protected override void OnDefinePorts(IPortDefinitionContext context)
@@ -99,49 +135,76 @@ namespace Indiecat.TerrainGraph.Editor
                 return;
             }
 
-            // Inputs
-            var inputContext = context.UseType<TInputValues>();
+            OnDefineCustomInputPorts(context);
+            OnDefineBaseInputPorts(context);
 
-            OnDefineInputPorts(inputContext);
-
-            if (HasOutputPort() && Options.IsPreviewEnabled)
-            {
-                inputContext.BuildInputPort(x => x.Preview);
-            }
-
-            // Output
-            if (HasOutputPort())
-            {
-                string displayName = GetOutputPortDisplayName();
-
-                context.AddOutputPort<TResult>(NODE_OUTPUT_VALUE_ID)
-                    .WithDisplayName(displayName)
-                    .Build();
-            }
+            OnDefineOutputPort(context);
         }
 
-        protected virtual void OnDefineInputPorts(ICustomInputPortDefinitionContext<TInputValues> context)
+        private void OnDefineOutputPort(IPortDefinitionContext context)
         {
-            var bindingFlags =
-                BindingFlags.Public |
-                BindingFlags.Instance |
-                BindingFlags.DeclaredOnly; // No inherited members
-
-            var fieldInfos = typeof(TInputValues).GetFields(bindingFlags);
-            foreach (var fieldInfo in fieldInfos)
+            if (!HasOutputPort())
             {
-                var includeIfAttribute = fieldInfo.GetCustomAttribute<IncludeIfAttribute>();
-                if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
+                return;
+            }
+
+            string displayName = GetOutputPortDisplayName();
+
+            context.AddOutputPort<TResult>(NODE_OUTPUT_VALUE_ID)
+                .WithDisplayName(displayName)
+                .Build();
+        }
+
+        protected virtual void OnDefineCustomInputPorts(IPortDefinitionContext context)
+        {
+            var classModel = ClassModelCache.GetClassModel<TInputValues>();
+
+            var customFieldModels = classModel.FieldModels
+                .Where(x => x.DeclaringType != typeof(InputValuesBase));
+
+            foreach (var fieldModel in customFieldModels)
+            {
+                if (!fieldModel.IsIncluded(this))
                 {
+                    // Field has been excluded by IncludeIf attribute
                     continue;
                 }
 
-                context.BuildInputPortFromFieldInfo(fieldInfo);
+                BuildInputPort(context, fieldModel);
             }
         }
 
-        // Public makes it visible when reflecting subclasses
-        public bool HasOutputPort() => typeof(TResult) != typeof(NullOutput);
+        protected virtual void OnDefineBaseInputPorts(IPortDefinitionContext context)
+        {
+            if (HasOutputPort() && Options.IsPreviewEnabled)
+            {
+                BuildInputPort(context, x => x.Preview);
+            }
+        }
+
+        protected void BuildInputPort<TField>(
+            IPortDefinitionContext context, Expression<Func<TInputValues, TField>> fieldExpression)
+        {
+            var member = fieldExpression.Body as MemberExpression;
+            var fieldInfo = member?.Member as FieldInfo;
+
+            if (fieldInfo == null)
+            {
+                throw new ArgumentException("Invalid expression");
+            }
+
+            var fieldModel = ClassModelCache.GetFieldModel(fieldInfo);
+            BuildInputPort(context, fieldModel);
+        }
+
+        private void BuildInputPort(IPortDefinitionContext context, FieldModel fieldModel)
+        {
+            context.AddInputPort(fieldModel.PortName)
+                .WithDataType(fieldModel.FieldType)
+                .WithDefaultValue(fieldModel.DefaultValue ?? default)
+                .WithDisplayName(fieldModel.DisplayName)
+                .Build();
+        }
 
         public bool TryValidateNode(GraphLogger graphLogger = null)
         {
@@ -153,11 +216,10 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (Options.IsNodeDisabled)
             {
-                TrySetWarningBanner("DISABLED");
+                // No validation when disabled
                 return true;
             }
 
-            TrySetWarningBanner(null);
             return TryUpdateInputValues(graphLogger);
         }
 
@@ -172,10 +234,11 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (Options.IsNodeDisabled)
             {
-                if (TryGetPassthruInput(out var fieldInfo))
+                var classModel = ClassModelCache.GetClassModel<TInputValues>();
+                var fieldModel = classModel.FieldModels.FirstOrDefault(x => x.IsPassthru);
+                if (fieldModel != null)
                 {
-                    var inputPortName = NodeHelpers.GetInputPortName(fieldInfo.Name);
-                    return PortEvaluator.TryEvaluateInputPort(this, inputPortName, out value);
+                    return PortEvaluator.TryEvaluateInputPort(this, fieldModel.PortName, out value);
                 }
 
                 value = null;
@@ -231,25 +294,20 @@ namespace Indiecat.TerrainGraph.Editor
 
             var tempOptions = Activator.CreateInstance<TOptionValues>();
 
-            var fieldInfos = typeof(TOptionValues).GetFields(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var fieldInfo in fieldInfos)
+            var classModel = ClassModelCache.GetClassModel<TOptionValues>();
+
+            foreach (var fieldModel in classModel.FieldModels)
             {
-                if (fieldInfo.GetCustomAttribute<IgnoreAttribute>() != null)
+                if (fieldModel.IsIgnored || !fieldModel.IsIncluded(this))
                 {
                     continue;
                 }
 
-                var includeIfAttribute = fieldInfo.GetCustomAttribute<IncludeIfAttribute>();
-                if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
-                {
-                    continue;
-                }
+                var nodeOption = GetNodeOptionByName(fieldModel.PortName);
 
-                var optionName = NodeHelpers.GetOptionName(fieldInfo.Name);
-                var nodeOption = GetNodeOptionByName(optionName);
+                var fieldType = fieldModel.FieldType;
 
-                var fieldType = fieldInfo.FieldType;
-
+                // TODO: Make this a compiled method
                 // nodeOption.TryGetValue<bool>(out var isPreviewEnabled)
                 var method = typeof(INodeOption)
                     .GetMethod(nameof(nodeOption.TryGetValue))
@@ -259,13 +317,11 @@ namespace Indiecat.TerrainGraph.Editor
 
                 if (!(bool)method.Invoke(nodeOption, parameters))
                 {
-                    Debug.LogError($"Unable to get option value: {optionName}");
+                    Debug.LogError($"Unable to get option value: {fieldModel.PortName}");
                     return false;
                 }
 
-                var fieldValue = Convert.ChangeType(parameters[0], fieldType);
-
-                fieldInfo.SetValue(tempOptions, fieldValue);
+                fieldModel.SetValue(tempOptions, parameters[0]);
             }
 
             options = tempOptions;
@@ -295,108 +351,69 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var isValid = true;
 
-            var fieldInfos = typeof(TInputValues).GetFields(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var fieldInfo in fieldInfos)
+            var classModel = ClassModelCache.GetClassModel<TInputValues>();
+
+            foreach (var fieldModel in classModel.FieldModels)
             {
-                if (fieldInfo.GetCustomAttribute<IgnoreAttribute>() != null)
+                if (fieldModel.IsIgnored || !fieldModel.IsIncluded(this))
                 {
                     continue;
                 }
 
-                var includeIfAttribute = fieldInfo.GetCustomAttribute<IncludeIfAttribute>();
-                if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
-                {
-                    continue;
-                }
-
-                var fieldType = fieldInfo.FieldType;
-                var inputDisplayName = NodeHelpers.GetDisplayName(fieldInfo);
+                var fieldType = fieldModel.FieldType;
 
                 if (fieldType.IsEnum)
                 {
-                    var value = fieldInfo.GetValue(inputs);
+                    var value = fieldModel.GetValue(inputs);
                     if (Enum.IsDefined(fieldType, value))
                     {
-                        graphLogger?.LogError($"{inputDisplayName} input invalid", this);
+                        graphLogger?.LogError($"{fieldModel.DisplayName} input invalid", this);
                         isValid = false;
                     }
                 }
 
                 if (fieldType == typeof(HeightGrid))
                 {
-                    var grid = (HeightGrid)fieldInfo.GetValue(inputs);
+                    var grid = (HeightGrid)fieldModel.GetValue(inputs);
                     if (grid == null || !grid.IsValid)
                     {
-                        graphLogger?.LogError($"{inputDisplayName} input missing", this);
+                        graphLogger?.LogError($"{fieldModel.DisplayName} input missing", this);
                         isValid = false;
                     }
                 }
 
                 if (fieldType == typeof(SplineWrapper))
                 {
-                    var spline = (SplineWrapper)fieldInfo.GetValue(inputs);
+                    var spline = (SplineWrapper)fieldModel.GetValue(inputs);
                     if (spline == null || !spline.IsValid)
                     {
-                        graphLogger?.LogError($"{inputDisplayName} input missing", this);
+                        graphLogger?.LogError($"{fieldModel.DisplayName} input missing", this);
                         isValid = false;
                     }
                 }
 
                 if (fieldType == typeof(SplineListWrapper))
                 {
-                    var splineList = (SplineListWrapper)fieldInfo.GetValue(inputs);
+                    var splineList = (SplineListWrapper)fieldModel.GetValue(inputs);
                     if (splineList == null || !splineList.IsValid)
                     {
-                        graphLogger?.LogError($"{inputDisplayName} input missing", this);
+                        graphLogger?.LogError($"{fieldModel.DisplayName} input missing", this);
                         isValid = false;
                     }
                 }
 
-                if (fieldType == typeof(float) || fieldType == typeof(int))
+                foreach (var rule in fieldModel.Rules)
                 {
-                    var minAttribute = fieldInfo.GetCustomAttribute<MinValueAttribute>();
-                    if (minAttribute != null)
+                    var result = rule.Validate(this, inputs);
+                    if (!result.IsValid)
                     {
-                        var rawValue = fieldInfo.GetValue(inputs);
-
-                        // Use float for both int and float cases, accepting limitations
-                        var floatValue = (float)Convert.ChangeType(fieldInfo.GetValue(inputs), typeof(float));
-                        var clampedValue = Mathf.Max(floatValue, minAttribute.Min);
-
-                        if (floatValue != clampedValue)
-                        {
-                            graphLogger?.LogWarning($"{inputDisplayName} input invalid: {rawValue} (valid: n >= {minAttribute.Min})", this);
-                            fieldInfo.SetValue(inputs, Convert.ChangeType(clampedValue, fieldType));
-
-                            // No failure, just clamp
-                        }
-                    }
-
-                    var rangeAttribute = fieldInfo.GetCustomAttribute<RangeValueAttribute>();
-                    if (rangeAttribute != null)
-                    {
-                        var rawValue = fieldInfo.GetValue(inputs);
-
-                        // Use float for both int and float cases, accepting limitations
-                        var floatValue = (float)Convert.ChangeType(fieldInfo.GetValue(inputs), typeof(float));
-                        var clampedValue = Mathf.Clamp(floatValue, rangeAttribute.Min, rangeAttribute.Max);
-
-                        if (floatValue != clampedValue)
-                        {
-                            graphLogger?.LogWarning($"{inputDisplayName} input invalid: {rawValue} (valid: n >= {rangeAttribute.Min} && n <= {rangeAttribute.Max})", this);
-                            fieldInfo.SetValue(inputs, Convert.ChangeType(clampedValue, fieldType));
-
-                            // No failure, just clamp
-                        }
-                    }
-                }
-
-                var validIfAttributes = fieldInfo.GetCustomAttributes<ValidIfAttribute>();
-                foreach (var validIfAttribute in validIfAttributes)
-                {
-                    if (!IsPredicateTrue(validIfAttribute.PredicateName, inputs, graphLogger))
-                    {
+                        graphLogger?.LogError(result.Message, this);
                         isValid = false;
+                    }
+                    else if (!string.IsNullOrEmpty(result.Message))
+                    {
+                        // Probably corrected something for the user
+                        graphLogger?.LogWarning(result.Message, this);
                     }
                 }
             }
@@ -406,44 +423,35 @@ namespace Indiecat.TerrainGraph.Editor
 
         private bool TryGetInputValues(GraphLogger graphLogger, out TInputValues inputs)
         {
-            inputs = null;
-
             var tempInputs = Activator.CreateInstance<TInputValues>();
 
-            var fieldInfos = typeof(TInputValues).GetFields(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var fieldInfo in fieldInfos)
+            var classModel = ClassModelCache.GetClassModel<TInputValues>();
+
+            foreach (var fieldModel in classModel.FieldModels)
             {
-                if (fieldInfo.GetCustomAttribute<IgnoreAttribute>() != null)
+                if (fieldModel.IsIgnored || !fieldModel.IsIncluded(this))
                 {
                     continue;
                 }
 
-                var includeIfAttribute = fieldInfo.GetCustomAttribute<IncludeIfAttribute>();
-                if (includeIfAttribute != null && !IsPredicateTrue(includeIfAttribute.PredicateName))
-                {
-                    continue;
-                }
+                var fieldType = fieldModel.FieldType;
 
-                var inputPortName = NodeHelpers.GetInputPortName(fieldInfo.Name);
-
-                var fieldType = fieldInfo.FieldType;
-
+                // TODO: Make this a compiled method
                 // PortEvaluator.TryEvaluateInputPort(this, NODE_INPUT_GRID_ID, out temp.Grid)
                 var method = typeof(PortEvaluator)
                     .GetMethod(nameof(PortEvaluator.TryEvaluateInputPort))
                     .MakeGenericMethod(fieldType);
 
-                var parameters = new object[] { this, inputPortName, null };
+                var parameters = new object[] { this, fieldModel.PortName, null };
 
                 if (!(bool)method.Invoke(null, parameters))
                 {
                     // Too noisy to log here
+                    inputs = null;
                     return false;
                 }
 
-                var fieldValue = Convert.ChangeType(parameters[2], fieldType);
-
-                fieldInfo.SetValue(tempInputs, fieldValue);
+                fieldModel.SetValue(tempInputs, parameters[2]);
             }
 
             tempInputs.VersionHash = HashCode.Combine(tempInputs.GetHashCode(), Options.GetHashCode());
@@ -539,9 +547,10 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var previewPortName = NodeHelpers.GetInputPortName(nameof(InputValuesBase.Preview));
+                var classModel = ClassModelCache.GetClassModel<TInputValues>();
+                var fieldModel = classModel.GetFieldModel(nameof(InputValuesBase.Preview));
 
-                var previewPort = GetInputPortByName(previewPortName);
+                var previewPort = GetInputPortByName(fieldModel.PortName);
                 if (previewPort == null)
                 {
                     Debug.Log("Unable to get the preview port");
@@ -562,43 +571,6 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 previewImage.UpdateTexture(texture, gridSize);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
-        }
-
-        public bool TrySetWarningBanner(string text)
-        {
-            try
-            {
-                var warningOptionName = NodeHelpers.GetOptionName(nameof(OptionValuesBase.Warning));
-
-                var warningOption = GetNodeOptionByName(warningOptionName);
-                if (warningOption == null)
-                {
-                    Debug.Log("Unable to get the warning option");
-                    return false;
-                }
-
-                if (!warningOption.TryGetValue(out WarningBanner warningBanner))
-                {
-                    // Unable to get warning banner value, so cannot display anything
-                    Debug.LogError("Unable to get the warning banner");
-                    return false;
-                }
-
-                if (warningBanner == null)
-                {
-                    Debug.Log("Warning banner is null");
-                    return false;
-                }
-
-                warningBanner.UpdateProperties(text);
 
                 return true;
             }
@@ -647,40 +619,6 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             return displayName;
-        }
-
-        private bool IsPredicateTrue(string predicateName, params object[] parameters)
-        {
-            var isInverted = predicateName.StartsWith("!");
-            predicateName = predicateName.Trim('!');
-
-            var bindingFlags =
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance;
-
-            var method = GetType().GetMethod(predicateName, bindingFlags);
-            if (method == null)
-            {
-                throw new Exception($"missing predicate method: {predicateName}");
-            }
-
-            var result = (bool)method.Invoke(this, parameters);
-            return isInverted ? !result : result;
-        }
-
-        private bool TryGetPassthruInput(out FieldInfo fieldInfo)
-        {
-            var bindingFlags =
-                BindingFlags.Public |
-                BindingFlags.Instance |
-                BindingFlags.DeclaredOnly; // No inherited members
-
-            var fieldInfos = typeof(TInputValues).GetFields(bindingFlags);
-
-            // Get the primary field input
-            fieldInfo = fieldInfos.FirstOrDefault(x => x.FieldType == typeof(TResult));
-            return fieldInfo != null;
         }
     }
 }

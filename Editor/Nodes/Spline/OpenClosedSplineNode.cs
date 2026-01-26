@@ -32,6 +32,7 @@ namespace Indiecat.TerrainGraph.Editor
         public class InputValues : InputValuesBase
         {
             [DisplayName("Spline")]
+            [Passthru]
             public SplineWrapper SplineWrapper;
 
             [DefaultValue(true)]
@@ -48,20 +49,6 @@ namespace Indiecat.TerrainGraph.Editor
                     base.GetHashCode(),
                     SplineWrapper?.VersionHash, AddLastVertex, RemoveLastVertex
                 );
-            }
-        }
-
-        protected override void OnDefineInputPorts(ICustomInputPortDefinitionContext<InputValues> context)
-        {
-            context.BuildInputPort(x => x.SplineWrapper);
-
-            if (IsOperationOpen())
-            {
-                context.BuildInputPort(x => x.AddLastVertex);
-            }
-            else
-            {
-                context.BuildInputPort(x => x.RemoveLastVertex);
             }
         }
 

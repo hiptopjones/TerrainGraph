@@ -7,8 +7,12 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class IslandsHeightNode
-        : BaseNode<OptionValuesBase, IslandsHeightNode.InputValues, HeightGrid>
+        : BaseNode<IslandsHeightNode.OptionValues, IslandsHeightNode.InputValues, HeightGrid>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
             public HeightGrid Grid;

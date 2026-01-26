@@ -7,11 +7,16 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class SmoothSplineNode
-        : BaseNode<OptionValuesBase, SmoothSplineNode.InputValues, SplineWrapper>
+        : BaseNode<SmoothSplineNode.OptionValues, SmoothSplineNode.InputValues, SplineWrapper>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
             [DisplayName("Spline")]
+            [Passthru]
             public SplineWrapper SplineWrapper;
 
             [DisplayName("Iterations")]

@@ -9,8 +9,12 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class ImportSplineNode
-        : BaseNode<OptionValuesBase, ImportSplineNode.InputValues, SplineWrapper>
+        : BaseNode<ImportSplineNode.OptionValues, ImportSplineNode.InputValues, SplineWrapper>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
             [DefaultValue("My Spline")]
@@ -26,16 +30,14 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private bool IsValidTarget(InputValues inputs, GraphLogger graphLogger)
+        private ValidationResult IsValidTarget(InputValues inputs)
         {
-            var inputDisplayName = NodeHelpers.GetDisplayName(typeof(InputValues), nameof(InputValues.TargetObjectName));
-
-            var isValid = true;
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+            var targetModel = classModel.GetFieldModel(nameof(InputValues.TargetObjectName));
 
             if (string.IsNullOrEmpty(inputs.TargetObjectName))
             {
-                graphLogger?.LogError($"{inputDisplayName} value missing", this);
-                isValid = false;
+                return ValidationResult.Error($"{targetModel.DisplayName} input missing");
             }
             else
             {
@@ -45,26 +47,23 @@ namespace Indiecat.TerrainGraph.Editor
                 var namedSplineContainerCount = splineContainers.Count(x => x.name == inputs.TargetObjectName);
                 if (namedSplineContainerCount == 0)
                 {
-                    graphLogger?.LogError($"{inputDisplayName} value invalid", this);
-                    isValid = false;
+                    return ValidationResult.Error($"{targetModel.DisplayName} input invalid");
                 }
                 else if (namedSplineContainerCount > 1)
                 {
-                    graphLogger?.LogError($"{inputDisplayName} value ambiguous", this);
-                    isValid = false;
+                    return ValidationResult.Error($"{targetModel.DisplayName} input ambiguous");
                 }
                 else
                 {
                     var splineContainer = splineContainers.First();
                     if (splineContainer.Spline == null)
                     {
-                        graphLogger?.LogError($"{inputDisplayName} missing spline", this);
-                        isValid = false;
+                        ValidationResult.Error($"{targetModel.DisplayName} missing spline");
                     }
                 }
             }
 
-            return isValid;
+            return ValidationResult.Ok();
         }
 
         protected override bool TryExecuteNodeInternal()

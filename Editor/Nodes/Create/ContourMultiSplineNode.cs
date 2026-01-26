@@ -4,8 +4,13 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class ContourMultiSplineNode : BaseNode<OptionValuesBase, ContourMultiSplineNode.InputValues, SplineListWrapper>
+    public class ContourMultiSplineNode
+        : BaseNode<ContourMultiSplineNode.OptionValues, ContourMultiSplineNode.InputValues, SplineListWrapper>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
             public HeightGrid Grid;

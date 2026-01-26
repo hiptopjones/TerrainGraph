@@ -5,10 +5,15 @@ namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
     public class RemoveNode
-        : BaseNode<OptionValuesBase, RemoveNode.InputValues, HeightGrid>
+        : BaseNode<RemoveNode.OptionValues, RemoveNode.InputValues, HeightGrid>
     {
+        public class OptionValues : OptionValuesBase
+        {
+        }
+
         public class InputValues : InputValuesBase
         {
+            [Passthru]
             public HeightGrid Grid;
 
             public float Height;

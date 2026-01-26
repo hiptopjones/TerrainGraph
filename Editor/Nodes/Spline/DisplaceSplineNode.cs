@@ -33,6 +33,7 @@ namespace Indiecat.TerrainGraph.Editor
         public class InputValues : InputValuesBase
         {
             [DisplayName("Spline")]
+            [Passthru]
             public SplineWrapper SplineWrapper;
 
             [DisplayName("Offset")]
