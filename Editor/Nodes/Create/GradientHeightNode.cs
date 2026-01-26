@@ -28,6 +28,17 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
+        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
+        {
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+
+            var gradientModel = classModel.GetFieldModel(nameof(InputValues.Gradient));
+            gradientModel.DefaultValue = GradientHelpers.GetDefaultGradient();
+
+            // Build the ports automatically
+            base.OnDefineCustomInputPorts(context);
+        }
+
         protected override bool TryExecuteNodeInternal()
         {
             Texture2D rampTexture = null;
