@@ -19,7 +19,8 @@ namespace Indiecat.TerrainGraph.Editor
             [MinValue(1), DefaultValue(5)]
             public int Radius;
 
-            [RangeValue(1, 50), DefaultValue(1)]
+            [DefaultValue(1)]
+            [RangeValue(1, 50), Slider]
             [DisplayName("Iterations")]
             public int IterationCount;
 

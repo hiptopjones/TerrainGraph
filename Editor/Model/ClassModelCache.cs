@@ -8,6 +8,8 @@ namespace Indiecat.TerrainGraph.Editor
     {
         private static readonly Dictionary<Type, ClassModel> _cache = new();
 
+        public static ClassModel GetClassModel(string typeName) => GetClassModel(Type.GetType(typeName));
+
         public static ClassModel GetClassModel<T>() => GetClassModel(typeof(T));
 
         public static ClassModel GetClassModel(Type type)

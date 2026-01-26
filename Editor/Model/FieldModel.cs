@@ -32,5 +32,7 @@ namespace Indiecat.TerrainGraph.Editor
         public float? Max;
 
         public List<IValidationRule> Rules = new();
+
+        public bool UseSlider;
     }
 }

@@ -70,10 +70,10 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 fieldModel.Min = rangeAttribute.Min;
                 fieldModel.Max = rangeAttribute.Max;
-            }
 
-            // TODO
-            //fieldModel.HasSlider = attributes.Any(a => a is SliderAttribute);
+                // Only check for a slider if a range is provided
+                fieldModel.UseSlider = attributes.OfType<SliderAttribute>().Any();
+            }
 
             var rules = new List<IValidationRule>();
 

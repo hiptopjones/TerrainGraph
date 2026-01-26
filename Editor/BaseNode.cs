@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -20,7 +21,7 @@ namespace Indiecat.TerrainGraph.Editor
             public bool IsNodeDisabled;
 
             [Ignore]
-            public WarningBanner Warning;
+            public BehaviorInjector Injector;
 
             [Ignore]
             public int VersionHash;
@@ -79,6 +80,7 @@ namespace Indiecat.TerrainGraph.Editor
             OnDefineBaseOptions(context);
         }
 
+        private int _counter;
         private void OnDefineBaseOptions(IOptionDefinitionContext context)
         {
             if (HasOutputPort())
@@ -87,14 +89,14 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             BuildOption(context, x => x.IsNodeDisabled);
-            BuildOption(context, x => x.Warning);
+            BuildOption(context, x => x.Injector);
         }
 
         protected virtual void OnDefineCustomOptions(IOptionDefinitionContext context)
         {
-            var classModel = ClassModelCache.GetClassModel<TOptionValues>();
+            var optionsModel = ClassModelCache.GetClassModel<TOptionValues>();
 
-            var subclassFieldModels = classModel.FieldModels
+            var subclassFieldModels = optionsModel.FieldModels
                 .Where(x => x.DeclaringType != typeof(OptionValuesBase));
 
             foreach (var fieldModel in subclassFieldModels)
@@ -164,9 +166,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected virtual void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
-            var classModel = ClassModelCache.GetClassModel<TInputValues>();
+            var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
 
-            var customFieldModels = classModel.FieldModels
+            var customFieldModels = inputsModel.FieldModels
                 .Where(x => x.DeclaringType != typeof(InputValuesBase));
 
             foreach (var fieldModel in customFieldModels)
@@ -187,6 +189,10 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 BuildInputPort(context, x => x.Preview);
             }
+
+            // Need unity to call us back after everything has been defined
+            // so we can update the injector type
+            EditorApplication.delayCall += () => UpdateInjector();
         }
 
         protected void BuildInputPort<TField>(
@@ -248,8 +254,8 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (Options.IsNodeDisabled)
             {
-                var classModel = ClassModelCache.GetClassModel<TInputValues>();
-                var fieldModel = classModel.FieldModels.FirstOrDefault(x => x.IsPassthru);
+                var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
+                var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.IsPassthru);
                 if (fieldModel != null)
                 {
                     return PortEvaluator.TryEvaluateInputPort(this, fieldModel.PortName, out value);
@@ -308,9 +314,9 @@ namespace Indiecat.TerrainGraph.Editor
 
             var tempOptions = Activator.CreateInstance<TOptionValues>();
 
-            var classModel = ClassModelCache.GetClassModel<TOptionValues>();
+            var optionsModel = ClassModelCache.GetClassModel<TOptionValues>();
 
-            foreach (var fieldModel in classModel.FieldModels)
+            foreach (var fieldModel in optionsModel.FieldModels)
             {
                 if (fieldModel.IsIgnored || !fieldModel.IsIncluded(this))
                 {
@@ -365,9 +371,9 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var isValid = true;
 
-            var classModel = ClassModelCache.GetClassModel<TInputValues>();
+            var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
 
-            foreach (var fieldModel in classModel.FieldModels)
+            foreach (var fieldModel in inputsModel.FieldModels)
             {
                 if (fieldModel.IsIgnored || !fieldModel.IsIncluded(this))
                 {
@@ -445,9 +451,9 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var tempInputs = Activator.CreateInstance<TInputValues>();
 
-            var classModel = ClassModelCache.GetClassModel<TInputValues>();
+            var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
 
-            foreach (var fieldModel in classModel.FieldModels)
+            foreach (var fieldModel in inputsModel.FieldModels)
             {
                 if (fieldModel.IsIgnored || !fieldModel.IsIncluded(this))
                 {
@@ -567,8 +573,8 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var classModel = ClassModelCache.GetClassModel<TInputValues>();
-                var fieldModel = classModel.GetFieldModel(nameof(InputValuesBase.Preview));
+                var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
+                var fieldModel = inputsModel.GetFieldModel(nameof(InputValuesBase.Preview));
 
                 var previewPort = GetInputPortByName(fieldModel.PortName);
                 if (previewPort == null)
@@ -639,6 +645,24 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             return displayName;
+        }
+
+        private void UpdateInjector()
+        {
+            var optionsModel = ClassModelCache.GetClassModel<TOptionValues>();
+            var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
+
+            var injectorModel = optionsModel.GetFieldModel(nameof(OptionValuesBase.Injector));
+            var injectorOption = GetNodeOptionByName(injectorModel.PortName);
+
+            if (injectorOption.TryGetValue<BehaviorInjector>(out var injector))
+            {
+                if (injector != null)
+                {
+                    // The injector uses the inputs model (not options)
+                    injector.TypeName = inputsModel.ClassType.FullName;
+                }
+            }
         }
     }
 }
