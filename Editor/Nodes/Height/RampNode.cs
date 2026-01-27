@@ -22,7 +22,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     RampType
                 );
             }
@@ -42,7 +41,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     Grid?.VersionHash, Curve, GradientHelpers.GetHashCode(Gradient)
                 );
             }

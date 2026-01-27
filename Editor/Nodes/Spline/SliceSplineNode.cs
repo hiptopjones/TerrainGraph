@@ -36,7 +36,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     SplineWrapper?.VersionHash, Start, End, VertexCount
                 );
             }

@@ -20,7 +20,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     CurveType
                 );
             }
@@ -41,7 +40,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     CurveType, Size, VertexCount
                 );
             }

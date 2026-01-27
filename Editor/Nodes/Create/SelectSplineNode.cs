@@ -21,7 +21,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     SplinesWrapper?.VersionHash, SplineIndex
                 );
             }

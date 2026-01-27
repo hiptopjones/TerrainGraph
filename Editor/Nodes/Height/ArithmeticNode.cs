@@ -32,7 +32,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     ArithmeticOperator, IsFlipped
                 );
             }
@@ -49,7 +48,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     Grid?.VersionHash, Value
                 );
             }

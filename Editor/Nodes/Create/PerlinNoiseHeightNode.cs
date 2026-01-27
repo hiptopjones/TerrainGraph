@@ -26,7 +26,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     Offset, Frequency, Seed, Size
                 );
             }

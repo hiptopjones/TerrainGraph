@@ -23,7 +23,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     Operation
                 );
             }
@@ -46,7 +45,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     SplineWrapper?.VersionHash, AddLastVertex, RemoveLastVertex
                 );
             }

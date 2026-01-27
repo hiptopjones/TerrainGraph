@@ -24,7 +24,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     EasingType
                 );
             }
@@ -46,7 +45,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     Grid?.VersionHash, SplineWrapper?.VersionHash, Strength, Margin
                 );
             }

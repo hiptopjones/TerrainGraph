@@ -17,7 +17,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     IsSamplingEnabled
                 );
             }
@@ -38,7 +37,6 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    base.GetHashCode(),
                     SplineWrapper?.VersionHash, SampleCount, Size
                 );
             }
