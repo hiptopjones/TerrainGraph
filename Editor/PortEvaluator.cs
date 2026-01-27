@@ -20,19 +20,6 @@ namespace Indiecat.TerrainGraph.Editor
                 // Sanity check, since I keep wasting time finding type mismatches on ports
                 if (fromType != toType)
                 {
-                    var wrapperType = typeof(WrappedParameter<T>);
-
-                    // Is this a wrapper type?
-                    if (fromType == wrapperType || fromType.IsSubclassOf(wrapperType))
-                    {
-                        // Make the request with the wrapper, and get the desired type after
-                        if (TryEvaluateInputPortInternal(node, port, out WrappedParameter<T> wrapper))
-                        {
-                            value = wrapper.Value;
-                            return true;
-                        }
-                    }
-
                     Debug.Log($"Type mismatch on {node} input port {portId}: {typeof(T).Name} != {port.dataType}");
                     return false;
                 }
