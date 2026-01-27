@@ -1,16 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolkit.Editor;
+using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     public static class GraphHelpers
     {
+        private static Type _baseNodeType = typeof(BaseNode<>);
+
         public static List<INode> GetOrderedNodes(Graph graph)
         {
-            var nodes = graph.GetNodes().ToList();
-            var orderedNodes = TopologicalSort(nodes);
+            var nodes = graph.GetNodes()
+                .Where(x => x.IsGenericTypeOrSubclass(_baseNodeType)).ToList();
 
+            var orderedNodes = TopologicalSort(nodes);
             return orderedNodes;
         }
 
@@ -50,6 +55,12 @@ namespace Indiecat.TerrainGraph.Editor
                         var connectedNode = connectedPort.GetNode();
                         if (connectedNode == null)
                         {
+                            continue;
+                        }
+
+                        if (!connectedNode.IsGenericTypeOrSubclass(_baseNodeType))
+                        {
+                            // Ignore variable nodes, etc.
                             continue;
                         }
 
