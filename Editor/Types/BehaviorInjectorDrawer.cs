@@ -15,19 +15,40 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var root = new VisualElement();
 
+            // If the target is null, don't bother registering attach/detach
+            // The target can be null for the following reasons:
+            //  - Node list previews
+            //  - Graphs serialized prior to the injector's addition
             var target = fieldInfo.GetValue(property.serializedObject.targetObject) as BehaviorInjector;
-
-            // Node list preview can have a null target
             if (target != null)
             {
-                root.RegisterCallback<AttachToPanelEvent>(_ => AddInjectedBehavior(target, root));
-                root.RegisterCallback<DetachFromPanelEvent>(_ => RemoveInjectedBehavior(target, root));
+                root.RegisterCallback<AttachToPanelEvent>(_ => AddInjectedBehavior(property, root));
+                root.RegisterCallback<DetachFromPanelEvent>(_ => RemoveInjectedBehavior(root));
             }
 
             return root;
         }
 
-        private void RemoveInjectedBehavior(BehaviorInjector target, VisualElement root)
+        private void AddInjectedBehavior(SerializedProperty property, VisualElement root)
+        {
+            var inputsTypeName = property.FindPropertyRelative("InputsTypeName")?.stringValue;
+            var optionsTypeName = property.FindPropertyRelative("OptionsTypeName")?.stringValue;
+
+            if (!string.IsNullOrEmpty(inputsTypeName))
+            {
+                var optionsModel = ClassModelCache.GetClassModel(optionsTypeName);
+                var inputsModel = ClassModelCache.GetClassModel(inputsTypeName);
+
+                UpdateFields(root, inputsModel, optionsModel);
+            }
+            else
+            {
+                // Try again shortly, when hopefully the node has been able to set the type name
+                EditorApplication.delayCall += () => AddInjectedBehavior(property, root);
+            }
+        }
+
+        private void RemoveInjectedBehavior(VisualElement root)
         {
             foreach (var element in _injectedElements)
             {
@@ -35,21 +56,6 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             _injectedElements.Clear();
-        }
-
-        private void AddInjectedBehavior(BehaviorInjector injector, VisualElement root)
-        {
-            if (!string.IsNullOrEmpty(injector.InputsTypeName))
-            {
-                var optionsModel = ClassModelCache.GetClassModel(injector.OptionsTypeName);
-                var inputsModel = ClassModelCache.GetClassModel(injector.InputsTypeName);
-                UpdateFields(root, inputsModel, optionsModel);
-            }
-            else
-            {
-                // Try again shortly, when hopefully the node has been able to set the type name
-                EditorApplication.delayCall += () => AddInjectedBehavior(injector, root);
-            }
         }
 
         private void UpdateFields(VisualElement root, ClassModel inputsModel, ClassModel optionsModel)

@@ -666,6 +666,9 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (injectorOption.TryGetValue<BehaviorInjector>(out var injector))
             {
+                // NOTE: Injector may be null if the graph was serialized prior to its addition.
+                // NOTE: Resolve this by either duplicating or saving the file with a newer version
+
                 if (injector != null)
                 {
                     injector.OptionsTypeName = optionsModel.ClassType.FullName;
