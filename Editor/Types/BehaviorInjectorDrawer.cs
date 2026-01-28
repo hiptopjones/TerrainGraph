@@ -47,24 +47,39 @@ namespace Indiecat.TerrainGraph.Editor
             }
             else
             {
-                // Try again shortly
-                root.schedule.Execute(() => AddInjectedBehavior(injector, root)).StartingIn(100);
+                // Try again shortly, when hopefully the node has been able to set the type name
+                EditorApplication.delayCall += () => AddInjectedBehavior(injector, root);
             }
         }
 
         private void UpdateFields(VisualElement root, ClassModel inputsModel, ClassModel optionsModel)
         {
-            if (TryFindAncestorByName(root, "node-options", out var optionsRoot))
+            VisualElement optionsRoot = null;
+            VisualElement inputsRoot = null;
+
+            if (TryFindAncestorByName(root, "node-options", out optionsRoot))
+            {
+                var optionsParent = optionsRoot.parent;
+                if (optionsParent != null)
+                {
+                    var portsRoot = optionsParent.Q("port-container");
+                    if (portsRoot != null)
+                    {
+                        inputsRoot = portsRoot.Q("inputs");
+                    }
+                }
+            }
+
+            // Sometimes we get called for attach, but some things are not yet present
+            if (optionsRoot != null && inputsRoot != null)
             {
                 ProcessOptions(optionsRoot, optionsModel);
-
-                var optionsParent = optionsRoot.parent;
-                var portsRoot = optionsParent.Q("port-container");
-                if (portsRoot != null)
-                {
-                    var inputsRoot = portsRoot.Q("inputs");
-                    ProcessInputs(inputsRoot, inputsModel);
-                }
+                ProcessInputs(inputsRoot, inputsModel);
+            }
+            else
+            {
+                // Try again shortly, when hopefully everything is in place
+                EditorApplication.delayCall += () => UpdateFields(root, inputsModel, optionsModel);
             }
         }
 
@@ -255,7 +270,7 @@ namespace Indiecat.TerrainGraph.Editor
             });
 
             container.Add(slider);
-            _injectedElements.Add(container);
+            _injectedElements.Add(slider);
         }
 
         private void UpdateIntegerField(IntegerField integerField, FieldModel fieldModel)
@@ -310,7 +325,7 @@ namespace Indiecat.TerrainGraph.Editor
             });
 
             container.Add(slider);
-            _injectedElements.Add(container);
+            _injectedElements.Add(slider);
         }
     }
 }
