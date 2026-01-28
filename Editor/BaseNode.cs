@@ -15,8 +15,10 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DefaultValue(true)]
             [IncludeIf(nameof(HasOutputPort))]
+            [DisplayName("Enable Preview")]
             public bool IsPreviewEnabled;
 
+            [DisplayName("Disable Node")]
             public bool IsNodeDisabled;
 
             [Ignore]
