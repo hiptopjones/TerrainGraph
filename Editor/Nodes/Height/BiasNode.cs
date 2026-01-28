@@ -17,6 +17,8 @@ namespace Indiecat.TerrainGraph.Editor
             public HeightGrid Grid;
 
             [DefaultValue(0.5f)]
+            [RangeValue(0, 1)]
+            [Slider]
             public float Bias;
 
             public override int GetHashCode()
