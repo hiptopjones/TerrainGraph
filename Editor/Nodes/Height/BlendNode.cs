@@ -70,10 +70,17 @@ namespace Indiecat.TerrainGraph.Editor
             var grid1FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid1));
             var grid2FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid2));
 
-            if (inputs.Grid1.RenderTexture.width != inputs.Grid2.RenderTexture.width ||
-                inputs.Grid1.RenderTexture.height != inputs.Grid2.RenderTexture.height)
+            if (inputs.Grid1 != null && inputs.Grid1.IsValid &&
+                inputs.Grid2 != null && inputs.Grid2.IsValid)
             {
-                return ValidationResult.Error($"{grid1FieldModel.DisplayName} and {grid2FieldModel.DisplayName} size mismatch");
+                // Only run this check if both inputs are present
+                // Base node validation would normally catch this, but if it only fails on one
+                // of them we'd might still get here.
+                if (inputs.Grid1.RenderTexture.width != inputs.Grid2.RenderTexture.width ||
+                    inputs.Grid1.RenderTexture.height != inputs.Grid2.RenderTexture.height)
+                {
+                    return ValidationResult.Error($"{grid1FieldModel.DisplayName} and {grid2FieldModel.DisplayName} size mismatch");
+                }
             }
 
             return ValidationResult.Ok();
