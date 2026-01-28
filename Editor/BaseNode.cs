@@ -233,16 +233,26 @@ namespace Indiecat.TerrainGraph.Editor
             if (Options == null)
             {
                 graphLogger?.LogError("Options is null");
+
+                ClearPreview();
                 return false;
             }
 
             if (Options.IsNodeDisabled)
             {
                 // No validation when disabled
+
+                ClearPreview();
                 return true;
             }
 
-            return TryUpdateInputValues(graphLogger);
+            if (!TryUpdateInputValues(graphLogger))
+            {
+                ClearPreview();
+                return false;
+            }
+
+            return true;
         }
 
         public bool TryGetOutputValue(IPort _, out TResult value)
@@ -357,14 +367,11 @@ namespace Indiecat.TerrainGraph.Editor
             if (!TryGetInputValues(graphLogger, out TInputValues tempInputs))
             {
                 graphLogger?.LogError("Upstream failure", this);
-
-                ClearPreview();
                 return false;
             }
 
             if (!TryValidateInputValues(tempInputs, graphLogger))
             {
-                ClearPreview();
                 return false;
             }
 
@@ -666,8 +673,8 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 if (injector != null)
                 {
-                    // The injector uses the inputs model (not options)
-                    injector.TypeName = inputsModel.ClassType.FullName;
+                    injector.OptionsTypeName = optionsModel.ClassType.FullName;
+                    injector.InputsTypeName = inputsModel.ClassType.FullName;
                 }
             }
         }

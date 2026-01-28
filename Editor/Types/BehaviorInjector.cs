@@ -5,6 +5,7 @@ namespace Indiecat.TerrainGraph.Editor
     [Serializable]
     public class BehaviorInjector
     {
-        public string TypeName;
+        public string OptionsTypeName;
+        public string InputsTypeName;
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -8,6 +9,8 @@ namespace Indiecat.TerrainGraph.Editor
     [CustomPropertyDrawer(typeof(BehaviorInjector))]
     public class BehaviorInjectorDrawer : PropertyDrawer
     {
+        private List<VisualElement> _injectedElements = new();
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var root = new VisualElement();
@@ -17,78 +20,160 @@ namespace Indiecat.TerrainGraph.Editor
             // Node list preview can have a null target
             if (target != null)
             {
-                root.RegisterCallback<AttachToPanelEvent>(_ => TryUpdateFields(target, root));
+                root.RegisterCallback<AttachToPanelEvent>(_ => AddInjectedBehavior(target, root));
+                root.RegisterCallback<DetachFromPanelEvent>(_ => RemoveInjectedBehavior(target, root));
             }
 
             return root;
         }
 
-        private void TryUpdateFields(BehaviorInjector injector, VisualElement root)
+        private void RemoveInjectedBehavior(BehaviorInjector target, VisualElement root)
         {
-            if (!string.IsNullOrEmpty(injector.TypeName))
+            foreach (var element in _injectedElements)
             {
-                var inputsModel = ClassModelCache.GetClassModel(injector.TypeName);
-                UpdateFields(root, inputsModel);
+                element.parent.Remove(element);
+            }
+
+            _injectedElements.Clear();
+        }
+
+        private void AddInjectedBehavior(BehaviorInjector injector, VisualElement root)
+        {
+            if (!string.IsNullOrEmpty(injector.InputsTypeName))
+            {
+                var optionsModel = ClassModelCache.GetClassModel(injector.OptionsTypeName);
+                var inputsModel = ClassModelCache.GetClassModel(injector.InputsTypeName);
+                UpdateFields(root, inputsModel, optionsModel);
             }
             else
             {
                 // Try again shortly
-                root.schedule.Execute(() => TryUpdateFields(injector, root)).StartingIn(100);
+                root.schedule.Execute(() => AddInjectedBehavior(injector, root)).StartingIn(100);
             }
         }
 
-        private void UpdateFields(VisualElement root, ClassModel inputsModel)
+        private void UpdateFields(VisualElement root, ClassModel inputsModel, ClassModel optionsModel)
         {
             if (TryFindAncestorByName(root, "node-options", out var optionsRoot))
             {
-                var optionsParent = optionsRoot.parent;
+                ProcessOptions(optionsRoot, optionsModel);
 
+                var optionsParent = optionsRoot.parent;
                 var portsRoot = optionsParent.Q("port-container");
                 if (portsRoot != null)
                 {
-                    var inputPortsRoot = portsRoot.Q("inputs");
-                    var connectors = inputPortsRoot.Query("connector-container").Build().ToList();
-                    var editors = inputPortsRoot.Query("constant-editor").Build().ToList();
+                    var inputsRoot = portsRoot.Q("inputs");
+                    ProcessInputs(inputsRoot, inputsModel);
+                }
+            }
+        }
 
-                    if (editors.Count == connectors.Count)
+        private void ProcessOptions(VisualElement optionsRoot, ClassModel optionsModel)
+        {
+            var labels = optionsRoot.Query<Label>().Build();
+            var displayNames = labels.Select(x => x.text).ToList();
+            var editors = labels.Select(x => x.parent).ToList();
+
+            for (int i = 0; i < displayNames.Count(); i++)
+            {
+                var displayName = displayNames[i];
+                var editorElement = editors[i];
+
+                var toggleField = editorElement as Toggle;
+                if (toggleField != null)
+                {
+                    var fieldModel = optionsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
+                    if (fieldModel.Name == "IsNodeDisabled")
                     {
-                        var displayNames = connectors.Select(x => x.Q<Label>().text).ToList();
-
-                        for (int i = 0; i < displayNames.Count; i++)
-                        {
-                            var displayName = displayNames[i];
-                            var editorElement = editors[i];
-
-                            var floatField = editorElement.Q<FloatField>();
-                            if (floatField != null)
-                            {
-                                var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
-                                UpdateFloatField(floatField, fieldModel);
-
-                                continue;
-                            }
-
-                            var integerField = editorElement.Q<IntegerField>();
-                            if (integerField != null)
-                            {
-                                var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
-                                UpdateIntegerField(integerField, fieldModel);
-
-                                continue;
-                            }
-
-                            var textField = editorElement.Q<TextField>();
-                            if (textField != null)
-                            {
-                                var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
-                                UpdateTextField(textField, fieldModel);
-
-                                continue;
-                            }
-                        }
+                        AddDisabledBanner(toggleField, optionsRoot, optionsModel);
                     }
                 }
             }
+        }
+
+        private void ProcessInputs(VisualElement inputsRoot, ClassModel inputsModel)
+        {
+            var connectors = inputsRoot.Query("connector-container").Build().ToList();
+            var editors = inputsRoot.Query("constant-editor").Build().ToList();
+
+            if (editors.Count == connectors.Count)
+            {
+                var displayNames = connectors.Select(x => x.Q<Label>().text).ToList();
+
+                for (int i = 0; i < displayNames.Count; i++)
+                {
+                    var displayName = displayNames[i];
+                    var editorElement = editors[i];
+
+                    var floatField = editorElement.Q<FloatField>();
+                    if (floatField != null)
+                    {
+                        var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
+                        UpdateFloatField(floatField, fieldModel);
+
+                        continue;
+                    }
+
+                    var integerField = editorElement.Q<IntegerField>();
+                    if (integerField != null)
+                    {
+                        var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
+                        UpdateIntegerField(integerField, fieldModel);
+
+                        continue;
+                    }
+
+                    var textField = editorElement.Q<TextField>();
+                    if (textField != null)
+                    {
+                        var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
+                        UpdateTextField(textField, fieldModel);
+
+                        continue;
+                    }
+                }
+            }
+        }
+
+        private void AddDisabledBanner(Toggle toggle, VisualElement optionsRoot, ClassModel inputsModel)
+        {
+            var container = new VisualElement
+            {
+                style =
+                {
+                    flexGrow = 1,
+                    marginLeft = 10,
+                    marginTop = 10,
+                    marginRight = 10,
+                    marginBottom = 10,
+                    backgroundColor = Color.yellow,
+                }
+            };
+
+            var label = new Label("DISABLED")
+            {
+                style =
+                {
+                    paddingLeft = 5,
+                    paddingTop = 5,
+                    paddingRight = 5,
+                    paddingBottom = 5,
+                    fontSize = 50,
+                    color = Color.black,
+                    alignSelf = Align.Center
+                }
+            };
+            container.Add(label);
+
+            container.style.display = toggle.value ? DisplayStyle.Flex : DisplayStyle.None;
+
+            toggle.RegisterValueChangedCallback(e =>
+            {
+                container.style.display = e.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+            });
+
+            optionsRoot.Add(container);
+            _injectedElements.Add(container);
         }
 
         private bool TryFindAncestorByName(VisualElement node, string name, out VisualElement ancestor)
@@ -170,6 +255,7 @@ namespace Indiecat.TerrainGraph.Editor
             });
 
             container.Add(slider);
+            _injectedElements.Add(container);
         }
 
         private void UpdateIntegerField(IntegerField integerField, FieldModel fieldModel)
@@ -224,6 +310,7 @@ namespace Indiecat.TerrainGraph.Editor
             });
 
             container.Add(slider);
+            _injectedElements.Add(container);
         }
     }
 }
