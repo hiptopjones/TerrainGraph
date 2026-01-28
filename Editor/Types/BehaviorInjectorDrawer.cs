@@ -25,18 +25,19 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void TryUpdateFields(BehaviorInjector injector, VisualElement root)
         {
-            if (string.IsNullOrEmpty(injector.TypeName))
+            if (!string.IsNullOrEmpty(injector.TypeName))
+            {
+                var inputsModel = ClassModelCache.GetClassModel(injector.TypeName);
+                UpdateFields(root, inputsModel);
+            }
+            else
             {
                 // Try again shortly
                 root.schedule.Execute(() => TryUpdateFields(injector, root)).StartingIn(100);
-                return;
             }
-
-            var classModel = ClassModelCache.GetClassModel(injector.TypeName);
-            UpdateFields(root, classModel);
         }
 
-        private void UpdateFields(VisualElement root, ClassModel classModel)
+        private void UpdateFields(VisualElement root, ClassModel inputsModel)
         {
             if (TryFindAncestorByName(root, "node-options", out var optionsRoot))
             {
@@ -61,7 +62,7 @@ namespace Indiecat.TerrainGraph.Editor
                             var floatField = editorElement.Q<FloatField>();
                             if (floatField != null)
                             {
-                                var fieldModel = classModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
+                                var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
                                 UpdateFloatField(floatField, fieldModel);
 
                                 continue;
@@ -70,7 +71,7 @@ namespace Indiecat.TerrainGraph.Editor
                             var integerField = editorElement.Q<IntegerField>();
                             if (integerField != null)
                             {
-                                var fieldModel = classModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
+                                var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
                                 UpdateIntegerField(integerField, fieldModel);
 
                                 continue;
@@ -79,7 +80,7 @@ namespace Indiecat.TerrainGraph.Editor
                             var textField = editorElement.Q<TextField>();
                             if (textField != null)
                             {
-                                var fieldModel = classModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
+                                var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
                                 UpdateTextField(textField, fieldModel);
 
                                 continue;
