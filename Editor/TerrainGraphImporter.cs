@@ -53,15 +53,22 @@ namespace Indiecat.TerrainGraph.Editor
             //  - Nodes providing values have always gone through validation before they are queried
             var orderedNodes = GraphHelpers.GetOrderedNodes(graph);
 
-            foreach (var node in orderedNodes.OfType<IValidatableNode>())
+            foreach (var node in orderedNodes)
             {
-                node.TryValidateNode(null);
-            }
-
-            var exportableNodes = orderedNodes.OfType<IExportableNode>();
-            foreach (var node in exportableNodes)
-            {
-                node.TryExportNode();
+                var validatableNode = (IValidatableNode)node;
+                if (validatableNode.TryValidateNode(null))
+                {
+                    // Do not execute without successful validation
+                    var executableNode = (IExecutableNode)node;
+                    if (executableNode.TryExecuteNode())
+                    {
+                        var exportableNode = node as IExportableNode;
+                        if (exportableNode != null)
+                        {
+                            exportableNode.TryExportNode();
+                        }
+                    }
+                }
             }
 
             return true;
