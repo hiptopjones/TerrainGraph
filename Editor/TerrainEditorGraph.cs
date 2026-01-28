@@ -34,14 +34,22 @@ namespace Indiecat.TerrainGraph.Editor
             //  - Nodes providing values have always gone through validation before they are queried
             var orderedNodes = GraphHelpers.GetOrderedNodes(this);
 
-            foreach (var node in orderedNodes.OfType<IValidatableNode>())
+            foreach (var node in orderedNodes)
             {
-                node.TryValidateNode(graphLogger);
-            }
+                var validatableNode = (IValidatableNode)node;
+                validatableNode.TryValidateNode(graphLogger);
 
-            foreach (var node in orderedNodes.OfType<IPreviewableNode>())
-            {
-                node.TryUpdatePreview();
+                if (!validatableNode.IsNodeValid)
+                {
+                    // Do not execute or preview invalid nodes
+                    continue;
+                }
+
+                var executableNode = (IExecutableNode)node;
+                executableNode.TryExecuteNode();
+
+                var previewableNode = (IPreviewableNode)node;
+                previewableNode.TryUpdatePreview();
             }
         }
 

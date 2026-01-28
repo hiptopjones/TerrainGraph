@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading.Tasks;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -15,7 +14,7 @@ namespace Indiecat.TerrainGraph.Editor
         public abstract class OptionValuesBase
         {
             [DefaultValue(true)]
-            [IncludeIf("HasOutputPort")]
+            [IncludeIf(nameof(HasOutputPort))]
             public bool IsPreviewEnabled;
 
             public bool IsNodeDisabled;
@@ -30,6 +29,7 @@ namespace Indiecat.TerrainGraph.Editor
         public abstract class InputValuesBase
         {
             [Ignore]
+            [IncludeIf(nameof(HasOutputPort))]
             public PreviewImage Preview;
 
             [Ignore]
@@ -52,6 +52,9 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public CacheData<TResult> CacheData { get; set; } = new();
 
+        public bool IsNodeValid => Inputs != null;
+
+
         protected abstract bool TryExecuteNodeInternal();
 
         protected TOptionValues Options;
@@ -65,7 +68,7 @@ namespace Indiecat.TerrainGraph.Editor
         //   - OnDefineOptions - clears options, clears input
         //   - OnDefinePorts - creates and reads options, clears input
         //   - TryValidateNode - reads options, creates input
-        //   - TryPreviewNode - reads options, reads input
+        //   - TryUpdatePreview - reads options, reads input
         //   - TryGetOutputValue - reads options, reads input
         //   - TryExecuteNode - reads options, reads input
         //   - TryExportNode - reads options, reads input
@@ -80,7 +83,6 @@ namespace Indiecat.TerrainGraph.Editor
             OnDefineBaseOptions(context);
         }
 
-        private int _counter;
         private void OnDefineBaseOptions(IOptionDefinitionContext context)
         {
             if (HasOutputPort())
@@ -355,15 +357,19 @@ namespace Indiecat.TerrainGraph.Editor
             if (!TryGetInputValues(graphLogger, out TInputValues tempInputs))
             {
                 graphLogger?.LogError("Upstream failure", this);
+
+                ClearPreview();
                 return false;
             }
 
             if (!TryValidateInputValues(tempInputs, graphLogger))
             {
+                ClearPreview();
                 return false;
             }
 
             Inputs = tempInputs;
+
             return true;
         }
 
@@ -494,38 +500,42 @@ namespace Indiecat.TerrainGraph.Editor
                 return true;
             }
 
-            // Ensure the node state is up to date
-            //  - Needed for standalone nodes that have nobody else to poke them
-            //  - Needed to eventually try and cache input values
-            if (TryExecuteNode())
+            if (!Options.IsPreviewEnabled)
             {
-                if (!Options.IsPreviewEnabled)
-                {
-                    // Force generation when next enabled
-                    CacheData.PreviewHash = 0;
+                // Force generation when next enabled
+                CacheData.PreviewHash = 0;
 
-                    // Preview is disabled, treat as up-to-date
+                // Preview is disabled, treat as up-to-date
+                return true;
+            }
+
+            if (TryCreatePreviewTexture(CacheData.Output, out var texture, out var gridSize))
+            {
+                if (TrySetPreviewTexture(texture, gridSize))
+                {
+                    // Cache generation value to avoid unnecessary updates
+                    CacheData.PreviewHash = CacheData.Output.VersionHash;
+                    CacheData.PreviewTexture = texture;
+                    CacheData.GridSize = gridSize;
+
+                    // Ensure the texture gets cleaned up when the output object goes away
+                    TextureMemoryManager.Register(CacheData.Output, texture);
+
+                    // Preview was successfully updated
                     return true;
                 }
-
-                // TODO: Should not be re-creating this if nothing has changed
-                if (TryCreatePreviewTexture(CacheData.Output, out var texture, out var gridSize))
-                {
-                    if (TrySetPreviewTexture(texture, gridSize))
-                    {
-                        // Cache generation value to avoid unnecessary updates
-                        CacheData.PreviewHash = CacheData.Output.VersionHash;
-                        CacheData.PreviewTexture = texture;
-                        CacheData.GridSize = gridSize;
-
-                        // Ensure the texture gets cleaned up when the output object goes away
-                        TextureMemoryManager.Register(CacheData.Output, texture);
-
-                        // Preview was successfully updated
-                        return true;
-                    }
-                }
             }
+
+            ClearPreview();
+
+            // Preview failed to update
+            return false;
+        }
+
+        private void ClearPreview()
+        {
+            // Force generation when next enabled
+            CacheData.PreviewHash = 0;
 
             if (Options.IsPreviewEnabled)
             {
@@ -535,9 +545,6 @@ namespace Indiecat.TerrainGraph.Editor
                 // Best effort, not checking the return
                 TrySetPreviewTexture(warningTexture, 0);
             }
-
-            // Preview failed to update
-            return false;
         }
 
         private bool TryCreatePreviewTexture(TResult value, out Texture texture, out int gridSize)
