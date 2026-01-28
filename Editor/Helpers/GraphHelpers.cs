@@ -63,6 +63,13 @@ namespace Indiecat.TerrainGraph.Editor
                             continue;
                         }
 
+                        if (!graph.ContainsKey(connectedNode))
+                        {
+                            // BUG: (Graph Toolkit 0.4.0-exp.2) Node is deleted and then brought back with Undo
+                            inDegree[connectedNode] = 0;
+                            graph[connectedNode] = new List<INode>();
+                        }
+
                         graph[connectedNode].Add(node);
                         inDegree[node]++;
 
