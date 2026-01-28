@@ -305,10 +305,8 @@ namespace Indiecat.TerrainGraph.Editor
             // Clear the cached values in case there's an early exit below
             CacheData.Output = null;
 
-            var startTime = DateTime.Now;
             if (TryExecuteNodeInternal())
             {
-                CacheData.Output.ExecutionTime = (float)(DateTime.Now - startTime).TotalSeconds;
                 return true;
             }
 
