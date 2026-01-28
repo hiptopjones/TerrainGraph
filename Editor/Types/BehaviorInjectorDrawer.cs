@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -91,6 +92,8 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void ProcessOptions(VisualElement optionsRoot, ClassModel optionsModel)
         {
+            var isSeparatorrAdded = false;
+
             var labels = optionsRoot.Query<Label>().Build();
             var displayNames = labels.Select(x => x.text).ToList();
             var editors = labels.Select(x => x.parent).ToList();
@@ -100,13 +103,28 @@ namespace Indiecat.TerrainGraph.Editor
                 var displayName = displayNames[i];
                 var editorElement = editors[i];
 
+                var fieldModel = optionsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
+                if (fieldModel.DeclaringType != fieldModel.ClassModel.ClassType)
+                {
+                    // Add a separator between custom options and base options
+                    if (!isSeparatorrAdded)
+                    {
+                        // No separator if no custom options
+                        if (i > 0)
+                        {
+                            InsertSeparator(optionsRoot, i);
+                        }
+
+                        isSeparatorrAdded = true;
+                    }
+                }
+
                 var toggleField = editorElement as Toggle;
                 if (toggleField != null)
                 {
-                    var fieldModel = optionsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
                     if (fieldModel.Name == "IsNodeDisabled")
                     {
-                        AddDisabledBanner(toggleField, optionsRoot, optionsModel);
+                        AddDisabledBanner(toggleField, optionsRoot);
                     }
                 }
             }
@@ -156,7 +174,23 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private void AddDisabledBanner(Toggle toggle, VisualElement optionsRoot, ClassModel inputsModel)
+        private void InsertSeparator(VisualElement optionsRoot, int index)
+        {
+            var container = new VisualElement
+            {
+                style =
+                {
+                    flexGrow = 1,
+                    borderBottomColor = new Color(0x22/256f, 0x22/256f, 0x22/256f),
+                    borderBottomWidth = 2
+                }
+            };
+
+            optionsRoot.Insert(index, container);
+            _injectedElements.Add(container);
+        }
+
+        private void AddDisabledBanner(Toggle toggle, VisualElement optionsRoot)
         {
             var container = new VisualElement
             {
