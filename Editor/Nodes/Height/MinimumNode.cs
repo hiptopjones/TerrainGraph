@@ -4,38 +4,18 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class ArithmeticNode
-        : BaseNode<ArithmeticNode.OptionValues, ArithmeticNode.InputValues, HeightGrid>
+    public class MinimumNode
+        : BaseNode<MinimumNode.OptionValues, MinimumNode.InputValues, HeightGrid>
     {
-        public enum ArithmeticOperator
-        {
-            Add = 100,
-            Subtract = 200,
-            Multiply = 300,
-            Divide = 400,
-            Minimum = 500,
-            Maximum = 600,
-            Average = 700,
-            Compare = 1000,
-            Power = 2000,
-        }
-
         public class OptionValues : OptionValuesBase
         {
-            [DefaultValue(ArithmeticOperator.Multiply)]
-            [DisplayName("Operation")]
-            public ArithmeticOperator ArithmeticOperator;
-
             [DisplayName("Ignore Zero")]
             public bool IsZeroIgnored;
-
-            [DisplayName("Flip Inputs")]
-            public bool IsFlipped;
 
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    ArithmeticOperator, IsZeroIgnored, IsFlipped
+                    IsZeroIgnored
                 );
             }
         }
@@ -56,27 +36,13 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
-        {
-            if (Options.IsFlipped)
-            {
-                BuildInputPort(context, x => x.Value);
-                BuildInputPort(context, x => x.Grid);
-            }
-            else
-            {
-                BuildInputPort(context, x => x.Grid);
-                BuildInputPort(context, x => x.Value);
-            }
-        }
-
         protected override bool TryExecuteNodeInternal()
         {
             try
             {
-                var arithmeticOperator = Options.ArithmeticOperator;
+                var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Minimum;
                 var isZeroIgnored = Options.IsZeroIgnored;
-                var isFlipped = Options.IsFlipped;
+                var isFlipped = false;
                 var inputGrid = Inputs.Grid;
                 var value = Inputs.Value;
 
@@ -90,7 +56,6 @@ namespace Indiecat.TerrainGraph.Editor
                 {
                     return false;
                 }
-
                 var outputGrid = new HeightGrid(size);
 
                 outputGrid.RenderTexture = outputTexture;

@@ -4,28 +4,11 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class ArithmeticNode
-        : BaseNode<ArithmeticNode.OptionValues, ArithmeticNode.InputValues, HeightGrid>
+    public class SubtractNode
+        : BaseNode<SubtractNode.OptionValues, SubtractNode.InputValues, HeightGrid>
     {
-        public enum ArithmeticOperator
-        {
-            Add = 100,
-            Subtract = 200,
-            Multiply = 300,
-            Divide = 400,
-            Minimum = 500,
-            Maximum = 600,
-            Average = 700,
-            Compare = 1000,
-            Power = 2000,
-        }
-
         public class OptionValues : OptionValuesBase
         {
-            [DefaultValue(ArithmeticOperator.Multiply)]
-            [DisplayName("Operation")]
-            public ArithmeticOperator ArithmeticOperator;
-
             [DisplayName("Ignore Zero")]
             public bool IsZeroIgnored;
 
@@ -35,7 +18,7 @@ namespace Indiecat.TerrainGraph.Editor
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    ArithmeticOperator, IsZeroIgnored, IsFlipped
+                    IsZeroIgnored, IsFlipped
                 );
             }
         }
@@ -74,7 +57,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var arithmeticOperator = Options.ArithmeticOperator;
+                var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Subtract;
                 var isZeroIgnored = Options.IsZeroIgnored;
                 var isFlipped = Options.IsFlipped;
                 var inputGrid = Inputs.Grid;
