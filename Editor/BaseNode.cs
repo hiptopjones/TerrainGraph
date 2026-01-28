@@ -52,9 +52,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public CacheData<TResult> CacheData { get; set; } = new();
 
-        public bool IsNodeValid => Inputs != null;
-
-
         protected abstract bool TryExecuteNodeInternal();
 
         protected TOptionValues Options;
@@ -233,26 +230,16 @@ namespace Indiecat.TerrainGraph.Editor
             if (Options == null)
             {
                 graphLogger?.LogError("Options is null");
-
-                ClearPreview();
                 return false;
             }
 
             if (Options.IsNodeDisabled)
             {
                 // No validation when disabled
-
-                ClearPreview();
                 return true;
             }
 
-            if (!TryUpdateInputValues(graphLogger))
-            {
-                ClearPreview();
-                return false;
-            }
-
-            return true;
+            return TryUpdateInputValues(graphLogger);
         }
 
         public bool TryGetOutputValue(IPort _, out TResult value)
@@ -266,6 +253,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (Options.IsNodeDisabled)
             {
+                // We are disabled, try to pass along the upstream value if possible
                 var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
                 var fieldModel = inputsModel.FieldModels.FirstOrDefault(x => x.IsPassthru);
                 if (fieldModel != null)
@@ -277,8 +265,9 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
 
-            if (!TryExecuteNode())
+            if (CacheData.Output == null)
             {
+                // Execute failed
                 value = null;
                 return false;
             }
@@ -302,15 +291,10 @@ namespace Indiecat.TerrainGraph.Editor
                 return true;
             }
 
-            // Clear the cached values in case there's an early exit below
+            // Clear cache state to be safe
             CacheData.Output = null;
 
-            if (TryExecuteNodeInternal())
-            {
-                return true;
-            }
-
-            return false;
+            return TryExecuteNodeInternal();
         }
 
         private bool TryUpdateOptionValues(GraphLogger graphLogger = null)
@@ -507,13 +491,31 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (!Options.IsPreviewEnabled)
             {
-                // Force generation when next enabled
-                CacheData.PreviewHash = 0;
-
                 // Preview is disabled, treat as up-to-date
                 return true;
             }
 
+            if (Inputs == null)
+            {
+                ClearPreview();
+
+                // Validation failed
+                return false;
+            }
+
+            if (CacheData.Output == null)
+            {
+                ClearPreview();
+
+                // Execution failed
+                return false;
+            }
+
+            return TryUpdatePreviewInternal();
+        }
+
+        private bool TryUpdatePreviewInternal()
+        {
             if (TryCreatePreviewTexture(CacheData.Output, out var texture, out var gridSize))
             {
                 if (TrySetPreviewTexture(texture, gridSize))
@@ -531,8 +533,6 @@ namespace Indiecat.TerrainGraph.Editor
                 }
             }
 
-            ClearPreview();
-
             // Preview failed to update
             return false;
         }
@@ -542,14 +542,11 @@ namespace Indiecat.TerrainGraph.Editor
             // Force generation when next enabled
             CacheData.PreviewHash = 0;
 
-            if (Options.IsPreviewEnabled)
-            {
-                // Make it very clear there is a problem
-                var warningTexture = EditorGUIUtility.IconContent("console.warnicon.sml").image;
+            // Make it very clear there is a problem
+            var warningTexture = EditorGUIUtility.IconContent("console.warnicon.sml").image;
 
-                // Best effort, not checking the return
-                TrySetPreviewTexture(warningTexture, 0);
-            }
+            // Best effort, not checking the return
+            TrySetPreviewTexture(warningTexture, 0);
         }
 
         private bool TryCreatePreviewTexture(TResult value, out Texture texture, out int gridSize)

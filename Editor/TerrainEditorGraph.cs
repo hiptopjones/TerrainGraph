@@ -37,16 +37,12 @@ namespace Indiecat.TerrainGraph.Editor
             foreach (var node in orderedNodes)
             {
                 var validatableNode = (IValidatableNode)node;
-                validatableNode.TryValidateNode(graphLogger);
-
-                if (!validatableNode.IsNodeValid)
+                if (validatableNode.TryValidateNode(graphLogger))
                 {
-                    // Do not execute or preview invalid nodes
-                    continue;
+                    // Do not execute without successful validation
+                    var executableNode = (IExecutableNode)node;
+                    executableNode.TryExecuteNode();
                 }
-
-                var executableNode = (IExecutableNode)node;
-                executableNode.TryExecuteNode();
 
                 var previewableNode = (IPreviewableNode)node;
                 previewableNode.TryUpdatePreview();
