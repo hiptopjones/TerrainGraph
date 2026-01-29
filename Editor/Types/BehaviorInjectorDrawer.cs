@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -15,6 +15,13 @@ namespace Indiecat.TerrainGraph.Editor
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var root = new VisualElement();
+
+            // Used to debug property problems
+            var debug = new VisualElement();
+            debug.Add(new PropertyField(property.FindPropertyRelative("InputsTypeName")));
+            debug.Add(new PropertyField(property.FindPropertyRelative("OptionsTypeName")));
+            debug.style.display = DisplayStyle.None;
+            root.Add(debug);
 
             // If the target is null, don't bother registering attach/detach
             // The target can be null for the following reasons:
@@ -92,22 +99,31 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void ProcessOptions(VisualElement optionsRoot, ClassModel optionsModel)
         {
-            var isSeparatorrAdded = false;
+            var isSeparatorAdded = false;
 
-            var labels = optionsRoot.Query<Label>().Build();
-            var displayNames = labels.Select(x => x.text).ToList();
-            var editors = labels.Select(x => x.parent).ToList();
-
-            for (int i = 0; i < displayNames.Count(); i++)
+            for (int i = 0; i < optionsRoot.childCount; i++)
             {
-                var displayName = displayNames[i];
-                var editorElement = editors[i];
+                var optionElement = optionsRoot[i];
 
+                var label = optionElement.Q<Label>();
+                if (label == null)
+                {
+                    continue;
+                }
+
+                var editorElement = label.parent;
+                var displayName = label.text;
+    
                 var fieldModel = optionsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
+                if (fieldModel == null)
+                {
+                    continue;
+                }
+
                 if (fieldModel.DeclaringType != fieldModel.ClassModel.ClassType)
                 {
                     // Add a separator between custom options and base options
-                    if (!isSeparatorrAdded)
+                    if (!isSeparatorAdded)
                     {
                         // No separator if no custom options
                         if (i > 0)
@@ -115,7 +131,7 @@ namespace Indiecat.TerrainGraph.Editor
                             InsertSeparator(optionsRoot, i);
                         }
 
-                        isSeparatorrAdded = true;
+                        isSeparatorAdded = true;
                     }
                 }
 
