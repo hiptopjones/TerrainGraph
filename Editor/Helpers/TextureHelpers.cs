@@ -50,7 +50,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             try
             {
-                var shader = Resources.Load<Shader>("HeightGridColorizer");
+                var shader = Resources.Load<Shader>("Shaders/URP/HeightGridColorizer");
                 if (shader == null)
                 {
                     Debug.LogError($"Unable to find colorizer shader");

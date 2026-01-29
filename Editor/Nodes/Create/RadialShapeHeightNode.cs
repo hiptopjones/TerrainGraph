@@ -60,7 +60,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(RadialShapeHeightNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(RadialShapeHeightNode), out var shader))
                 {
                     return false;
                 }

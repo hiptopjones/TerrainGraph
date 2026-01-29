@@ -9,14 +9,13 @@ namespace Indiecat.TerrainGraph.Editor
 {
     public static class ShaderWrappers
     {
-
         public static bool TryGetRange(Texture texture, out float min, out float max)
         {
             try
             {
                 const int THREADS_PER_GROUP = 128; // must match shader
 
-                if (!ComputeHelpers.TryLoadComputeShader("Shaders/MinMaxReduction", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader("MinMaxReduction", out var shader))
                 {
                     min = 0;
                     max = 0;
@@ -117,7 +116,7 @@ namespace Indiecat.TerrainGraph.Editor
                     outputTexture = TextureHelpers.CreateRenderTexture(size, RenderTextureFormat.RFloat);
                 }
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(SplineHeightNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(SplineHeightNode), out var shader))
                 {
                     return false;
                 }
@@ -192,7 +191,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var inputTexture = grid.RenderTexture;
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(ContourSplineNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(ContourSplineNode), out var shader))
                 {
                     splines = null;
                     return false;
@@ -265,7 +264,7 @@ namespace Indiecat.TerrainGraph.Editor
                     outputTexture = TextureHelpers.CreateRenderTexture(size, RenderTextureFormat.RFloat);
                 }
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(GrowNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(GrowNode), out var shader))
                 {
                     return false;
                 }
@@ -308,7 +307,7 @@ namespace Indiecat.TerrainGraph.Editor
             keywordBuilder.AddKeyword(isFlipped ? "ARGS_FLIPPED" : "ARGS_NORMAL");
             keywordBuilder.AddKeyword(isZeroIgnored ? "ZERO_EXCLUDE" : "ZERO_INCLUDE");
 
-            if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(ArithmeticNode)}", out var shader))
+            if (!ComputeHelpers.TryLoadComputeShader(nameof(ArithmeticNode), out var shader))
             {
                 return false;
             }

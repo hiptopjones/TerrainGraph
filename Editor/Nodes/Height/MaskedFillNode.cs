@@ -58,7 +58,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(MaskedFillNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(MaskedFillNode), out var shader))
                 {
                     return false;
                 }

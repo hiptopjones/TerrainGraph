@@ -49,7 +49,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(VoronoiNoiseHeightNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(VoronoiNoiseHeightNode), out var shader))
                 {
                     return false;
                 }

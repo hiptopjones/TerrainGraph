@@ -55,7 +55,7 @@ namespace Indiecat.TerrainGraph.Editor
                 rampTexture = TextureHelpers.GetRampTexture(size, (t) => gradient.Evaluate(t).grayscale);
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(GradientHeightNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(GradientHeightNode), out var shader))
                 {
                     return false;
                 }

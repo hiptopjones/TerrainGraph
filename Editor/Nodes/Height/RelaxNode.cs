@@ -53,7 +53,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(RelaxNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(RelaxNode), out var shader))
                 {
                     return false;
                 }

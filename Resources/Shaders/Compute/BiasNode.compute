@@ -1,9 +1,9 @@
 #pragma kernel CSMain
 
-#include "CommonLibrary.hlsl"
+#include "..\Common\CommonLibrary.hlsl"
 
 Texture2D<float> _InTexture;
-float _Gain;
+float _Bias;
 
 RWTexture2D<float> _OutTexture;
 
@@ -14,5 +14,5 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     float t = saturate(_InTexture[uv].r);
     
-    _OutTexture[uv].r = Gain(t, _Gain);
+    _OutTexture[uv].r = Bias(t, _Bias);
 }

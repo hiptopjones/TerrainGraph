@@ -1,6 +1,6 @@
 #pragma kernel CSMain
 
-#include "Noise.cginc"
+#include "..\Common\Noise.cginc"
 
 float2 _Start;
 float _Frequency;

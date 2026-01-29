@@ -73,7 +73,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 RenderTexture outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(SplineVoronoiHeightNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(SplineVoronoiHeightNode), out var shader))
                 {
                     return false;
                 }

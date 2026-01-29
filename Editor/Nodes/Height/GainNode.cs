@@ -45,7 +45,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputTexture = inputGrid.RenderTexture;
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(GainNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(GainNode), out var shader))
                 {
                     return false;
                 }

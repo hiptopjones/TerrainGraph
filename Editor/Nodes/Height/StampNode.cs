@@ -71,7 +71,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var maskTexture = maskGrid.RenderTexture;
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(StampNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(StampNode), out var shader))
                 {
                     return false;
                 }

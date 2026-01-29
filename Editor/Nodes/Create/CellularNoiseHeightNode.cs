@@ -48,7 +48,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(CellularNoiseHeightNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(CellularNoiseHeightNode), out var shader))
                 {
                     return false;
                 }

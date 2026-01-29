@@ -74,7 +74,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader($"Shaders/{nameof(RebaseNode)}", out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(RebaseNode), out var shader))
                 {
                     return false;
                 }
