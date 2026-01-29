@@ -9,8 +9,10 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     // Use a less-parameterized base class so using the inner classes is less ugly
+    [Serializable]
     public abstract class BaseNode<TResult> : Node
     {
+        [Serializable]
         public abstract class OptionValuesBase
         {
             [DefaultValue(true)]
@@ -28,6 +30,7 @@ namespace Indiecat.TerrainGraph.Editor
             public int VersionHash;
         }
 
+        [Serializable]
         public abstract class InputValuesBase
         {
             [Ignore]
@@ -42,6 +45,7 @@ namespace Indiecat.TerrainGraph.Editor
         public bool HasOutputPort() => typeof(TResult) != typeof(NullOutput);
     }
 
+    [Serializable]
     public abstract class BaseNode<TOptionValues, TInputValues, TResult> : BaseNode<TResult>,
         IValidatableNode,
         IExecutableNode,
