@@ -9,10 +9,8 @@ namespace Indiecat.TerrainGraph.Editor
     [RequireComponent(typeof(MeshRenderer))]
     public class MeshPreview : MonoBehaviour
     {
-        [Range(16, 1024)]
-        [SerializeField] private int _resolution = 256;
-
-        [SerializeField] private int _heightScale = 100;
+        private int _size = 256;
+        private float _heightScale = 100;
 
         private MeshFilter _meshFilter;
         private MeshRenderer _meshRenderer;
@@ -20,7 +18,7 @@ namespace Indiecat.TerrainGraph.Editor
         private Material _previewMaterial;
         private RenderTexture _heightGridTexture;
 
-        private int _lastResolution;
+        private int _lastSize;
 
         void OnEnable()
         {
@@ -39,12 +37,16 @@ namespace Indiecat.TerrainGraph.Editor
 
         void RegenerateMeshIfNeeded()
         {
-            if (_meshFilter.sharedMesh == null || _resolution != _lastResolution)
+            if (_meshFilter.sharedMesh == null || _size != _lastSize)
             {
-                _meshFilter.sharedMesh = GenerateGridMesh(_resolution);
-                _lastResolution = _resolution;
+                var mesh = MeshHelpers.GenerateGridMesh(_size);
 
-                transform.localScale = transform.localScale.WithX(_resolution).WithZ(_resolution);
+                // Prevent saving this object in the scene
+                mesh.hideFlags = HideFlags.HideAndDontSave;
+
+                _meshFilter.sharedMesh = mesh;
+
+                _lastSize = _size;
             }
         }
 
@@ -59,7 +61,6 @@ namespace Indiecat.TerrainGraph.Editor
                 return;
             }
 
-            Debug.Log($"preview material found");
             _meshRenderer.sharedMaterial = _previewMaterial;
         }
 
@@ -73,79 +74,28 @@ namespace Indiecat.TerrainGraph.Editor
             var materialPropertyBlock = new MaterialPropertyBlock();
 
             materialPropertyBlock.SetTexture("_HeightGridTexture", _heightGridTexture);
-            materialPropertyBlock.SetInt("_HeightScale", _heightScale);
+            materialPropertyBlock.SetFloat("_HeightScale", _heightScale);
 
             _meshRenderer.SetPropertyBlock(materialPropertyBlock);
         }
 
-        public void SetHeightmap(RenderTexture renderTexture)
+        public void SetHeightTexture(RenderTexture renderTexture, int referenceSize, float referenceHeightScale)
         {
             _heightGridTexture = renderTexture;
+            _size = _heightGridTexture.width;
 
-            // Check if we're disabled
-            if (_meshRenderer != null)
+            // Maintains a constant scale in the scene, regardless of grid size
+            transform.localScale = Vector3.one * referenceSize / _size;
+            _heightScale = referenceHeightScale * _size / referenceSize;
+
+            if (_meshRenderer == null)
             {
-                UpdateMaterialProperties();
-
-                SceneView.RepaintAll();
-            }
-        }
-
-        public static Mesh GenerateGridMesh(int resolution)
-        {
-            var verticesPerSide = resolution + 1;
-            var vertexCount = verticesPerSide * verticesPerSide;
-            var triangleCount = resolution * resolution * 6;
-
-            Vector3[] vertices = new Vector3[vertexCount];
-            Vector2[] uvs = new Vector2[vertexCount];
-            int[] triangles = new int[triangleCount];
-
-            for (int y = 0; y < verticesPerSide; y++)
-            {
-                for (int x = 0; x < verticesPerSide; x++)
-                {
-                    var i = y * verticesPerSide + x;
-                    var xf = (float)x / resolution;
-                    var yf = (float)y / resolution;
-
-                    vertices[i] = new Vector3(xf - 0.5f, 0, yf - 0.5f);
-                    uvs[i] = new Vector2(xf, yf);
-                }
+                // Happens if we start out disabled
+                return;
             }
 
-            int t = 0;
-            for (int y = 0; y < resolution; y++)
-            {
-                for (int x = 0; x < resolution; x++)
-                {
-                    var i = y * verticesPerSide + x;
-
-                    triangles[t++] = i;
-                    triangles[t++] = i + verticesPerSide;
-                    triangles[t++] = i + 1;
-
-                    triangles[t++] = i + 1;
-                    triangles[t++] = i + verticesPerSide;
-                    triangles[t++] = i + verticesPerSide + 1;
-                }
-            }
-
-            var mesh = new Mesh();
-            mesh.indexFormat = vertexCount > 65000
-                ? UnityEngine.Rendering.IndexFormat.UInt32
-                : UnityEngine.Rendering.IndexFormat.UInt16;
-
-            mesh.vertices = vertices;
-            mesh.uv = uvs;
-            mesh.triangles = triangles;
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-
-            // Prevent saving this object in the scene
-            mesh.hideFlags = HideFlags.HideAndDontSave;
-
-            return mesh;
+            UpdateMaterialProperties();
+            SceneView.RepaintAll();
         }
     }
 

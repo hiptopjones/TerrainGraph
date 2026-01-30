@@ -138,5 +138,59 @@ namespace Indiecat.TerrainGraph.Editor
             builder.Append("\n");
             return builder.ToString();
         }
+
+        public static Mesh GenerateGridMesh(int size)
+        {
+            var verticesPerSide = size + 1;
+            var vertexCount = verticesPerSide * verticesPerSide;
+            var triangleCount = size * size * 6;
+
+            var vertices = new Vector3[vertexCount];
+            var uvs = new Vector2[vertexCount];
+            var triangles = new int[triangleCount];
+
+            for (int y = 0; y < verticesPerSide; y++)
+            {
+                for (int x = 0; x < verticesPerSide; x++)
+                {
+                    var i = y * verticesPerSide + x;
+                    var xf = (float)x / size;
+                    var yf = (float)y / size;
+
+                    vertices[i] = new Vector3(x, 0, y);
+                    uvs[i] = new Vector2(xf, yf);
+                }
+            }
+
+            var t = 0;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    var i = y * verticesPerSide + x;
+
+                    triangles[t++] = i;
+                    triangles[t++] = i + verticesPerSide;
+                    triangles[t++] = i + 1;
+
+                    triangles[t++] = i + 1;
+                    triangles[t++] = i + verticesPerSide;
+                    triangles[t++] = i + verticesPerSide + 1;
+                }
+            }
+
+            var mesh = new Mesh();
+            mesh.indexFormat = vertexCount > 65000
+                ? UnityEngine.Rendering.IndexFormat.UInt32
+                : UnityEngine.Rendering.IndexFormat.UInt16;
+
+            mesh.vertices = vertices;
+            mesh.uv = uvs;
+            mesh.triangles = triangles;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            return mesh;
+        }
     }
 }

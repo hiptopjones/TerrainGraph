@@ -23,13 +23,19 @@ namespace Indiecat.TerrainGraph.Editor
             [Passthru]
             public HeightGrid Grid;
 
-            [DefaultValue("Height Grid Preview")]
+            [DefaultValue("Grid Preview")]
             public string TargetObjectName;
+
+            [MinValue(16), DefaultValue(256)]
+            public int ReferenceSize;
+
+            [MinValue(1), DefaultValue(100)]
+            public int ReferenceHeight;
 
             public override int GetHashCode()
             {
                 return HashCode.Combine(
-                    Grid?.VersionHash
+                    Grid?.VersionHash, TargetObjectName, ReferenceSize, ReferenceHeight
                 );
             }
         }
@@ -40,6 +46,8 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputGrid = Inputs.Grid;
                 var targetObjectName = Inputs.TargetObjectName;
+                var referenceSize = Inputs.ReferenceSize;
+                var referenceHeightScale = Inputs.ReferenceHeight;
 
                 var size = inputGrid.Size;
 
@@ -49,7 +57,7 @@ namespace Indiecat.TerrainGraph.Editor
                 Graphics.Blit(inputTexture, outputTexture);
 
                 var previewObject = GetOrCreatePreview(targetObjectName);
-                previewObject.SetHeightmap(outputTexture);
+                previewObject.SetHeightTexture(outputTexture, referenceSize, referenceHeightScale);
 
                 var outputGrid = new HeightGrid(size);
 
