@@ -66,16 +66,16 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        public static HeightmapPreview GetOrCreatePreview(string targetName)
+        public static MeshPreview GetOrCreatePreview(string targetName)
         {
-            HeightmapPreview preview = Object.FindObjectsByType<HeightmapPreview>(
+            MeshPreview preview = Object.FindObjectsByType<MeshPreview>(
                 FindObjectsInactive.Include, FindObjectsSortMode.None)
                     .FirstOrDefault(x => x.name == targetName);
 
             if (preview == null)
             {
                 GameObject go = new GameObject(targetName);
-                preview = go.AddComponent<HeightmapPreview>();
+                preview = go.AddComponent<MeshPreview>();
                 go.transform.position = Vector3.zero;
             }
 

@@ -7,7 +7,7 @@ namespace Indiecat.TerrainGraph.Editor
     [ExecuteAlways]
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
-    public class HeightmapPreview : MonoBehaviour
+    public class MeshPreview : MonoBehaviour
     {
         [Range(16, 1024)]
         [SerializeField] private int _resolution = 256;
@@ -81,9 +81,14 @@ namespace Indiecat.TerrainGraph.Editor
         public void SetHeightmap(RenderTexture renderTexture)
         {
             _heightGridTexture = renderTexture;
-            UpdateMaterialProperties();
 
-            SceneView.RepaintAll();
+            // Check if we're disabled
+            if (_meshRenderer != null)
+            {
+                UpdateMaterialProperties();
+
+                SceneView.RepaintAll();
+            }
         }
 
         public static Mesh GenerateGridMesh(int resolution)
