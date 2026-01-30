@@ -18,13 +18,6 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DefaultValue(RampType.Curve)]
             public RampType RampType;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    RampType
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -37,13 +30,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [IncludeIf(nameof(IsRampTypeGradient))]
             public Gradient Gradient;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, Curve, GradientHelpers.GetHashCode(Gradient)
-                );
-            }
         }
 
         protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)

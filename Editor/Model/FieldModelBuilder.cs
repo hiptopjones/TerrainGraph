@@ -33,6 +33,9 @@ namespace Indiecat.TerrainGraph.Editor
                 fieldModel.PortName = $"{fieldInfo.Name}Input";
             }
 
+            // Check if this was declared on the base class (false) or the subclass (true)
+            fieldModel.IsCustom = fieldInfo.DeclaringType == fieldInfo.ReflectedType;
+
             var attributes = fieldInfo.GetCustomAttributes().ToList();
 
             var displayNameAttribute = attributes.OfType<DisplayNameAttribute>().FirstOrDefault();

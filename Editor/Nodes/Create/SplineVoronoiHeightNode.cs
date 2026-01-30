@@ -14,13 +14,8 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Use Sampled Points")]
             public bool IsSamplingEnabled;
 
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    IsSamplingEnabled
-                );
-            }
         }
+
         public class InputValues : InputValuesBase
         {
             [DisplayName("Spline")]
@@ -33,13 +28,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [MinValue(16), DefaultValue(256)]
             public int Size;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    SplineWrapper?.VersionHash, SampleCount, Size
-                );
-            }
         }
 
         private bool IsSamplingEnabled() => Options.IsSamplingEnabled;

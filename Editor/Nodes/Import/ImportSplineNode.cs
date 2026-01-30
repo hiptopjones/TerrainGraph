@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using UnityEngine.Splines;
 using Object = UnityEngine.Object;
@@ -13,11 +12,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                // Avoid using the base hash code
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -25,13 +19,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DefaultValue("My Spline")]
             [ValidIf(nameof(IsValidTarget))]
             public string TargetObjectName;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    TargetObjectName
-                );
-            }
         }
 
         private ValidationResult IsValidTarget(InputValues inputs)

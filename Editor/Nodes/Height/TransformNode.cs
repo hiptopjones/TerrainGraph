@@ -9,11 +9,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                // Avoid using the base hash code
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -26,13 +21,6 @@ namespace Indiecat.TerrainGraph.Editor
             public float RotationDegrees;
 
             public Vector2 Scale;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, TranslationPercent, RotationDegrees, Scale
-                );
-            }
         }
 
         protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)

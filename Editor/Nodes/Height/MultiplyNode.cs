@@ -9,10 +9,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -22,13 +18,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DefaultValue(0.5f)]
             public float Value;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, Value
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

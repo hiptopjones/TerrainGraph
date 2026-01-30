@@ -11,11 +11,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                // Avoid using the base hash code
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -31,13 +26,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Min Angle")]
             [DefaultValue(150)]
             public float MinAngleDegrees;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    SplineWrapper?.VersionHash, IterationCount, MinAngleDegrees
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

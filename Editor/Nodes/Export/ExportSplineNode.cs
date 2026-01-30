@@ -15,13 +15,6 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DisplayName("Flatten")]
             public bool IsFlattened;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    IsFlattened
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -32,13 +25,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DefaultValue("My Spline")]
             [ValidIf(nameof(IsValidTarget))]
             public string TargetObjectName;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    SplineWrapper?.VersionHash, TargetObjectName
-                );
-            }
         }
 
         private ValidationResult IsValidTarget(InputValues inputs)

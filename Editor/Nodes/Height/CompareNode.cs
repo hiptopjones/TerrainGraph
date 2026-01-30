@@ -14,13 +14,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DisplayName("Flip Inputs")]
             public bool IsFlipped;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    IsZeroIgnored, IsFlipped
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -30,13 +23,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DefaultValue(0.5f)]
             public float Value;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, Value
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

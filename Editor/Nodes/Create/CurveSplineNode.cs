@@ -16,13 +16,6 @@ namespace Indiecat.TerrainGraph.Editor
         public class OptionValues : OptionValuesBase
         {
             public CurveType CurveType;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    CurveType
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -36,13 +29,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Vertices")]
             [MinValue(10), DefaultValue(10)]
             public int VertexCount;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    CurveType, Size, VertexCount
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

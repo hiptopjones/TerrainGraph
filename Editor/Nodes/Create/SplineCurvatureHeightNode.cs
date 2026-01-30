@@ -13,11 +13,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                // Avoid using the base hash code
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -35,13 +30,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Threshold")]
             [DefaultValue(0.1f)]
             public float StraightThreshold;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    SplineWrapper?.VersionHash, Size, SampleCount, StraightThreshold
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

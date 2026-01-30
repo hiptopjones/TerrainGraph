@@ -16,6 +16,7 @@ namespace Indiecat.TerrainGraph.Editor
         public bool IsPassthru;
 
         public bool IsIgnored;
+        public bool IsCustom;
 
         // parameter 0: node object
         // parameter 1: predicate result

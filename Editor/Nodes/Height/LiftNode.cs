@@ -20,13 +20,6 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DefaultValue(EasingType.SmoothStep)]
             public EasingType EasingType;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    EasingType
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -41,13 +34,6 @@ namespace Indiecat.TerrainGraph.Editor
             public float Strength;
 
             public float Margin;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, SplineWrapper?.VersionHash, Strength, Margin
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

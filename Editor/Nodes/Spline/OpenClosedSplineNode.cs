@@ -19,13 +19,6 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DefaultValue(OpenCloseOperation.OpenSpline)]
             public OpenCloseOperation Operation;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Operation
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -41,13 +34,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DefaultValue(true)]
             [IncludeIf(nameof(IsOperationClose))]
             public bool RemoveLastVertex;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    SplineWrapper?.VersionHash, AddLastVertex, RemoveLastVertex
-                );
-            }
         }
 
         private bool IsOperationOpen() => Options.Operation == OpenCloseOperation.OpenSpline;

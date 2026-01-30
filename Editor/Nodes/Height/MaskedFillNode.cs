@@ -9,11 +9,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                // Avoid using the base hash code
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -27,13 +22,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Iterations")]
             [RangeValue(1, 1000), DefaultValue(100)]
             public int IterationCount;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, MaskGrid?.VersionHash, IterationCount
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

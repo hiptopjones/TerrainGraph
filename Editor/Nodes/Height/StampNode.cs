@@ -19,13 +19,6 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DefaultValue(EasingType.SmoothStep)]
             public EasingType EasingType;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    EasingType
-                );
-            }
         }
 
 
@@ -42,13 +35,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DefaultValue(10)]
             public int Radius;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, StampGrid?.VersionHash, MaskGrid?.VersionHash, Radius
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

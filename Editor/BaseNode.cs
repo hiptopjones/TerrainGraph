@@ -75,7 +75,7 @@ namespace Indiecat.TerrainGraph.Editor
         //   - TryGetOutputValue - reads options, reads input
         //   - TryExecuteNode - reads options, reads input
         //   - TryExportNode - reads options, reads input
-        
+
         // Called by Graph Toolkit when creating a node
         protected override void OnDefineOptions(IOptionDefinitionContext context)
         {
@@ -115,7 +115,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var member = fieldExpression.Body as MemberExpression;
             var fieldInfo = member?.Member as FieldInfo;
-         
+
             if (fieldInfo == null)
             {
                 throw new ArgumentException("Invalid expression");
@@ -291,6 +291,13 @@ namespace Indiecat.TerrainGraph.Editor
                 return false;
             }
 
+            if (!HasOutputPort())
+            {
+                // Node has no output port, so nothing to execute
+                // It is probably an export node.
+                return true;
+            }
+
             if (CacheData.Output != null && CacheData.Output.VersionHash == Inputs.VersionHash)
             {
                 // Node is already up-to-date
@@ -343,6 +350,8 @@ namespace Indiecat.TerrainGraph.Editor
 
                 fieldModel.SetValue(tempOptions, parameters[0]);
             }
+
+            tempOptions.VersionHash = GetOptionsHashCode(tempOptions);
 
             options = tempOptions;
             return true;
@@ -481,7 +490,7 @@ namespace Indiecat.TerrainGraph.Editor
                 fieldModel.SetValue(tempInputs, parameters[2]);
             }
 
-            tempInputs.VersionHash = HashCode.Combine(tempInputs.GetHashCode(), Options.GetHashCode());
+            tempInputs.VersionHash = HashCode.Combine(GetInputsHashCode(tempInputs), Options.VersionHash);
 
             inputs = tempInputs;
             return true;
@@ -681,6 +690,65 @@ namespace Indiecat.TerrainGraph.Editor
                     injector.InputsTypeName = inputsModel.ClassType.FullName;
                 }
             }
+        }
+
+        private int GetInputsHashCode(TInputValues inputs)
+        {
+            var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
+
+            var hashCode = 0;
+
+            foreach (var fieldModel in inputsModel.FieldModels)
+            {
+                if (fieldModel.IsCustom)
+                {
+                    if (fieldModel.FieldType == typeof(HeightGrid))
+                    {
+                        var grid = (HeightGrid)fieldModel.GetValue(inputs);
+                        hashCode = HashCode.Combine(hashCode, grid?.VersionHash);
+                    }
+                    else if (fieldModel.FieldType == typeof(SplineWrapper))
+                    {
+                        var splineWrapper = (SplineWrapper)fieldModel.GetValue(inputs);
+                        hashCode = HashCode.Combine(hashCode, splineWrapper?.VersionHash);
+                    }
+                    else if (fieldModel.FieldType == typeof(SplineListWrapper))
+                    {
+                        var splineListWrapper = (SplineListWrapper)fieldModel.GetValue(inputs);
+                        hashCode = HashCode.Combine(hashCode, splineListWrapper?.VersionHash);
+                    }
+                    else if (fieldModel.FieldType == typeof(Gradient))
+                    {
+                        var gradient = (Gradient)fieldModel.GetValue(inputs);
+                        hashCode = HashCode.Combine(hashCode, GradientHelpers.GetHashCode(gradient));
+                    }
+                    else
+                    {
+                        var value = fieldModel.GetValue(inputs);
+                        hashCode = HashCode.Combine(hashCode, value);
+                    }
+                }
+            }
+
+            return hashCode;
+        }
+
+        private int GetOptionsHashCode(TOptionValues options)
+        {
+            var optionsModel = ClassModelCache.GetClassModel<TOptionValues>();
+
+            var hashCode = 0;
+
+            foreach (var fieldModel in optionsModel.FieldModels)
+            {
+                if (fieldModel.IsCustom)
+                {
+                    var value = fieldModel.GetValue(options);
+                    hashCode = HashCode.Combine(hashCode, value);
+                }
+            }
+
+            return hashCode;
         }
     }
 }

@@ -17,13 +17,6 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DefaultValue(RebaseType.Floor)]
             public RebaseType RebaseType;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    RebaseType
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -33,13 +26,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DisplayName("Value")]
             public float TargetValue;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, TargetValue
-                );
-            }
         }
 
         protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)

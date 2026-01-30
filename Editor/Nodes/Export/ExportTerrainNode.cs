@@ -12,11 +12,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                // Avoid using the base hash code
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -27,13 +22,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DefaultValue("My Terrain Data")]
             [ValidIf(nameof(IsValidTarget))]
             public string TargetAssetName;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, TargetAssetName
-                );
-            }
         }
 
         private ValidationResult IsValidTarget(InputValues inputs)

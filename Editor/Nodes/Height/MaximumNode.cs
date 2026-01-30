@@ -11,13 +11,6 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DisplayName("Ignore Zero")]
             public bool IsZeroIgnored;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    IsZeroIgnored
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -27,13 +20,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DefaultValue(0.5f)]
             public float Value;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, Value
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

@@ -12,13 +12,6 @@ namespace Indiecat.TerrainGraph.Editor
         public class OptionValues : OptionValuesBase
         {
             public bool IgnoreZero;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    IgnoreZero
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -30,13 +23,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DefaultValue("Assets/Models/ExportedMesh.obj")]
             public string ExportPath;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, HeightScale, ExportPath
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

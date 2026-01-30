@@ -9,11 +9,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                // Avoid using the base hash code
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -23,13 +18,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Path")]
             [DefaultValue("Assets/Textures/ExportedTexture.png")]
             public string ExportFilePath;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid?.VersionHash, ExportFilePath
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

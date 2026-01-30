@@ -26,13 +26,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DisplayName("Flip Inputs")]
             public bool IsFlipped;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    BlendOperator, IsFlipped
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -41,13 +34,6 @@ namespace Indiecat.TerrainGraph.Editor
             [Passthru]
             public HeightGrid Grid1;
             public HeightGrid Grid2;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Grid1?.VersionHash, Grid2?.VersionHash
-                );
-            }
         }
 
         protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)

@@ -20,13 +20,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Axis")]
             [DefaultValue(DisplacementAxis.Horizontal)]
             public DisplacementAxis DisplacementAxis;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    DisplacementAxis
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -53,14 +46,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Vertices")]
             [MinValue(10), DefaultValue(100)]
             public int VertexCount;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    HashCode.Combine(SplineWrapper?.VersionHash, LinearOffset, Frequency),
-                    Amplitude, Seed, IterationCount, VertexCount
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

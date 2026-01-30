@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -13,11 +12,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                // Avoid using the base hash code
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -39,13 +33,6 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Vertices")]
             [MinValue(10), DefaultValue(100)]
             public int VertexCount;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    SplineWrapper1?.VersionHash, SplineWrapper2?.VersionHash, Start, End, VertexCount
-                );
-            }
         }
 
         private ValidationResult IsValidEnd(InputValues inputs)

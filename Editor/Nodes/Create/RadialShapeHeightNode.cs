@@ -19,13 +19,6 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DefaultValue(ShapeType.Cone)]
             public ShapeType ShapeType;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    ShapeType
-                );
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -35,13 +28,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             [MinValue(16), DefaultValue(256)]
             public int Size;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    RadiusPercent, Size
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()

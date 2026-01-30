@@ -9,11 +9,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            public override int GetHashCode()
-            {
-                // Avoid using the base hash code
-                return 0;
-            }
         }
 
         public class InputValues : InputValuesBase
@@ -22,17 +17,11 @@ namespace Indiecat.TerrainGraph.Editor
 
             [MinValue(5), DefaultValue(20)]
             public int CellSize;
+
             public int Seed;
 
             [MinValue(16), DefaultValue(256)]
             public int Size;
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(
-                    Offset, CellSize, Seed, Size
-                );
-            }
         }
 
         protected override bool TryExecuteNodeInternal()
