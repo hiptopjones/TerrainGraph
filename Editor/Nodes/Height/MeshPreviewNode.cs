@@ -62,16 +62,16 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        public static MeshPreview GetOrCreatePreview(string targetName)
+        public static MeshPreviewComponent GetOrCreatePreview(string targetName)
         {
-            MeshPreview preview = Object.FindObjectsByType<MeshPreview>(
+            MeshPreviewComponent preview = Object.FindObjectsByType<MeshPreviewComponent>(
                 FindObjectsInactive.Include, FindObjectsSortMode.None)
                     .FirstOrDefault(x => x.name == targetName);
 
             if (preview == null)
             {
                 GameObject go = new GameObject(targetName);
-                preview = go.AddComponent<MeshPreview>();
+                preview = go.AddComponent<MeshPreviewComponent>();
                 go.transform.position = Vector3.zero;
             }
 

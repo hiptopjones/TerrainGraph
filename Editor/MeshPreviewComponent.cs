@@ -1,5 +1,4 @@
-﻿using Indiecat.UnityCommon.Runtime;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -7,7 +6,7 @@ namespace Indiecat.TerrainGraph.Editor
     [ExecuteAlways]
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
-    public class MeshPreview : MonoBehaviour
+    public class MeshPreviewComponent : MonoBehaviour
     {
         private int _size = 256;
         private float _heightScale = 100;
@@ -70,7 +69,7 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 return;
             }
-            
+
             var materialPropertyBlock = new MaterialPropertyBlock();
 
             materialPropertyBlock.SetTexture("_HeightGridTexture", _heightGridTexture);
