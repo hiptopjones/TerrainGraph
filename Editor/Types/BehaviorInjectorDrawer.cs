@@ -10,26 +10,28 @@ namespace Indiecat.TerrainGraph.Editor
     [CustomPropertyDrawer(typeof(BehaviorInjector))]
     public class BehaviorInjectorDrawer : PropertyDrawer
     {
+        private int _retryCount;
+
         private List<VisualElement> _injectedElements = new();
+
+        private SerializedObject _serializedObject;
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var root = new VisualElement();
 
-            // Used to debug property problems
+            // Useful to debug property problems
             var debug = new VisualElement();
             debug.Add(new PropertyField(property.FindPropertyRelative("InputsTypeName")));
             debug.Add(new PropertyField(property.FindPropertyRelative("OptionsTypeName")));
             debug.style.display = DisplayStyle.None;
             root.Add(debug);
 
-            // If the target is null, don't bother registering attach/detach
-            // The target can be null for the following reasons:
-            //  - Node list previews
-            //  - Graphs serialized prior to the injector's addition
             var target = fieldInfo.GetValue(property.serializedObject.targetObject) as BehaviorInjector;
             if (target != null)
             {
+                _serializedObject = property.serializedObject;
+
                 root.RegisterCallback<AttachToPanelEvent>(_ => AddInjectedBehavior(property, root));
                 root.RegisterCallback<DetachFromPanelEvent>(_ => RemoveInjectedBehavior(root));
             }
@@ -39,11 +41,21 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void AddInjectedBehavior(SerializedProperty property, VisualElement root)
         {
+            if (TryFindAncestorByName(root, "libraryViewContainer", out _) ||
+                TryFindAncestorByName(root, "Graph Inspector", out _))
+            {
+                // Ignore the item library and the inspector
+                // We only want to inject node UI that is in the graph view
+                return;
+            }
+
             var inputsTypeName = property.FindPropertyRelative("InputsTypeName")?.stringValue;
             var optionsTypeName = property.FindPropertyRelative("OptionsTypeName")?.stringValue;
 
             if (!string.IsNullOrEmpty(inputsTypeName))
             {
+                _retryCount = 0;
+
                 var optionsModel = ClassModelCache.GetClassModel(optionsTypeName);
                 var inputsModel = ClassModelCache.GetClassModel(inputsTypeName);
 
@@ -51,8 +63,16 @@ namespace Indiecat.TerrainGraph.Editor
             }
             else
             {
+                if (_retryCount > 3)
+                {
+                    // Injector properties could not be retrieved
+                    return;
+                }
+
                 // Try again shortly, when hopefully the node has been able to set the type name
                 EditorApplication.delayCall += () => AddInjectedBehavior(property, root);
+
+                _retryCount++;
             }
         }
 
@@ -87,13 +107,23 @@ namespace Indiecat.TerrainGraph.Editor
             // Sometimes we get called for attach, but some things are not yet present
             if (optionsRoot != null && inputsRoot != null)
             {
+                _retryCount = 0;
+
                 ProcessOptions(optionsRoot, optionsModel);
                 ProcessInputs(inputsRoot, inputsModel);
             }
             else
             {
+                if (_retryCount > 3)
+                {
+                    // Visual tree not ready
+                    return;
+                }
+
                 // Try again shortly, when hopefully everything is in place
                 EditorApplication.delayCall += () => UpdateFields(root, inputsModel, optionsModel);
+
+                _retryCount++;
             }
         }
 
@@ -138,10 +168,15 @@ namespace Indiecat.TerrainGraph.Editor
                     {
                         AddDisabledBanner(toggleField, optionsRoot);
                     }
+
+                    if (fieldModel.Name == "IsPreviewEnabled")
+                    {
+                        InsertPreviewButton(toggleField, fieldModel);
+                    }
                 }
             }
 
-            // Delay the separator insertion until after looping, otherwise the child count changes in the middle
+            // Delay the separator insertion until after looping, otherwise the child count changes mid-loop
             if (isSeparatorInsertIndexSet)
             {
                 if (separatorInsertIndex > 0)
@@ -210,6 +245,30 @@ namespace Indiecat.TerrainGraph.Editor
 
             optionsRoot.Insert(index, container);
             _injectedElements.Add(container);
+        }
+
+        private void InsertPreviewButton(Toggle toggle, FieldModel fieldModel)
+        {
+            var container = toggle.parent;
+
+            container.style.flexDirection = FlexDirection.Row;
+            container.style.justifyContent = Justify.SpaceBetween;
+
+            var button = new Button();
+            button.text = "Preview Mesh";
+            button.clicked += () =>
+            {
+                _serializedObject.Update();
+
+                var injector = fieldInfo.GetValue(_serializedObject.targetObject) as BehaviorInjector;
+                if (injector != null)
+                {
+                    injector.EnableMeshPreview();
+                }
+            };
+
+            container.Add(button);
+            _injectedElements.Add(button);
         }
 
         private void AddDisabledBanner(Toggle toggle, VisualElement optionsRoot)

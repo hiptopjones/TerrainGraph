@@ -7,5 +7,7 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public string OptionsTypeName;
         public string InputsTypeName;
+
+        public Action EnableMeshPreview;
     }
 }

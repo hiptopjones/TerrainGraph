@@ -1,5 +1,4 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -8,6 +7,9 @@ namespace Indiecat.TerrainGraph.Editor
     [RequireComponent(typeof(MeshRenderer))]
     public class MeshPreviewComponent : MonoBehaviour
     {
+        [SerializeField] private int _referenceSize = 256;
+        [SerializeField] private float _referenceHeightScale = 100;
+
         private int _size = 256;
         private float _heightScale = 100;
 
@@ -19,7 +21,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         private int _lastSize;
 
-        void OnEnable()
+        private void OnEnable()
         {
             _meshFilter = GetComponent<MeshFilter>();
             _meshRenderer = GetComponent<MeshRenderer>();
@@ -28,13 +30,13 @@ namespace Indiecat.TerrainGraph.Editor
             EnsureMaterial();
         }
 
-        void Update()
+        private void Update()
         {
             RegenerateMeshIfNeeded();
             UpdateMaterialProperties();
         }
 
-        void RegenerateMeshIfNeeded()
+        private void RegenerateMeshIfNeeded()
         {
             if (_meshFilter.sharedMesh == null || _size != _lastSize)
             {
@@ -49,7 +51,7 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        void EnsureMaterial()
+        private void EnsureMaterial()
         {
             var materialPath = "Materials/Height Grid Preview Material";
 
@@ -63,9 +65,9 @@ namespace Indiecat.TerrainGraph.Editor
             _meshRenderer.sharedMaterial = _previewMaterial;
         }
 
-        void UpdateMaterialProperties()
+        private void UpdateMaterialProperties()
         {
-            if (_heightGridTexture == null)
+            if (_heightGridTexture == null || _meshRenderer == null)
             {
                 return;
             }
@@ -78,24 +80,20 @@ namespace Indiecat.TerrainGraph.Editor
             _meshRenderer.SetPropertyBlock(materialPropertyBlock);
         }
 
-        public void SetHeightTexture(RenderTexture renderTexture, int referenceSize, float referenceHeightScale)
+        public void SetHeightTexture(RenderTexture renderTexture)
         {
+            // NOTE:
+            // Output render textures are generally tied to a specific node instance
+            // The texture reference should change only if the grid size changes
+            // The mesh will reflect the texture as long as the reference is valid
+
             _heightGridTexture = renderTexture;
+
             _size = _heightGridTexture.width;
 
             // Maintains a constant scale in the scene, regardless of grid size
-            transform.localScale = Vector3.one * referenceSize / _size;
-            _heightScale = referenceHeightScale * _size / referenceSize;
-
-            if (_meshRenderer == null)
-            {
-                // Happens if we start out disabled
-                return;
-            }
-
-            UpdateMaterialProperties();
-            SceneView.RepaintAll();
+            transform.localScale = Vector3.one * _referenceSize / _size;
+            _heightScale = _referenceHeightScale * _size / _referenceSize;
         }
     }
-
 }

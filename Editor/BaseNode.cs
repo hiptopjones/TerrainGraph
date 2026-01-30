@@ -5,6 +5,7 @@ using System.Reflection;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -681,13 +682,12 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (injectorOption.TryGetValue<BehaviorInjector>(out var injector))
             {
-                // NOTE: Injector may be null if the graph was serialized prior to its addition.
-                // NOTE: Resolve this by either duplicating or saving the file with a newer version
-
                 if (injector != null)
                 {
                     injector.OptionsTypeName = optionsModel.ClassType.FullName;
                     injector.InputsTypeName = inputsModel.ClassType.FullName;
+
+                    injector.EnableMeshPreview = SetMeshPreviewTexture;
                 }
             }
         }
@@ -749,6 +749,33 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             return hashCode;
+        }
+
+        protected void SetMeshPreviewTexture()
+        {
+            var gridPreview = GetOrCreateMeshPreviewComponent();
+
+            if (TryGetOutputValue(null, out TResult value))
+            {
+                var grid = value as HeightGrid;
+                if (grid != null && grid.IsValid)
+                {
+                    gridPreview.SetHeightTexture(grid.RenderTexture);
+                }
+            }
+        }
+
+        public static MeshPreviewComponent GetOrCreateMeshPreviewComponent()
+        {
+            MeshPreviewComponent preview = Object.FindFirstObjectByType<MeshPreviewComponent>();
+            if (preview == null)
+            {
+                GameObject go = new GameObject("Grid Preview");
+                preview = go.AddComponent<MeshPreviewComponent>();
+                go.transform.position = Vector3.zero;
+            }
+
+            return preview;
         }
     }
 }
