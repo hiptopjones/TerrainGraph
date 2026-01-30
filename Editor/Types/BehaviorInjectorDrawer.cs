@@ -99,7 +99,8 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void ProcessOptions(VisualElement optionsRoot, ClassModel optionsModel)
         {
-            var isSeparatorAdded = false;
+            var isSeparatorInsertIndexSet = false;
+            var separatorInsertIndex = 0;
 
             for (int i = 0; i < optionsRoot.childCount; i++)
             {
@@ -120,18 +121,13 @@ namespace Indiecat.TerrainGraph.Editor
                     continue;
                 }
 
-                if (fieldModel.DeclaringType != fieldModel.ClassModel.ClassType)
+                if (!fieldModel.IsCustom)
                 {
-                    // Add a separator between custom options and base options
-                    if (!isSeparatorAdded)
+                    // Add the separator just before the first base option
+                    if (!isSeparatorInsertIndexSet)
                     {
-                        // No separator if no custom options
-                        if (i > 0)
-                        {
-                            InsertSeparator(optionsRoot, i);
-                        }
-
-                        isSeparatorAdded = true;
+                        separatorInsertIndex = i;
+                        isSeparatorInsertIndexSet = true;
                     }
                 }
 
@@ -142,6 +138,16 @@ namespace Indiecat.TerrainGraph.Editor
                     {
                         AddDisabledBanner(toggleField, optionsRoot);
                     }
+                }
+            }
+
+            // Delay the separator insertion until after looping, otherwise the child count changes in the middle
+            if (isSeparatorInsertIndexSet)
+            {
+                if (separatorInsertIndex > 0)
+                {
+                    // No separator if there were no custom options (index = 0)
+                    InsertSeparator(optionsRoot, separatorInsertIndex);
                 }
             }
         }
