@@ -360,6 +360,8 @@ namespace Indiecat.TerrainGraph.Editor
             };
             slider.style.flexGrow = 1;
 
+            slider.value = floatField.value;
+
             Undo.undoRedoPerformed += () =>
             {
                 // Schedule update because value may not have actually changed yet
@@ -414,6 +416,8 @@ namespace Indiecat.TerrainGraph.Editor
                 highValue = sliderMax,
             };
             slider.style.flexGrow = 1;
+
+            slider.value = integerField.value;
 
             Undo.undoRedoPerformed += () =>
             {
