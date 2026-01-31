@@ -48,10 +48,11 @@ namespace Indiecat.TerrainGraph.Editor
                 builder.AppendLine($"    type: {GetNodeName(node)}");
                 builder.AppendLine($"    id: {GetShortNodeId(node)}");
 
-                builder.AppendLine("    options:");
-                foreach (var fieldModel in optionsModel.FieldModels)
+                var customOptionModels = optionsModel.FieldModels.Where(x => x.IsCustom);
+                if (customOptionModels.Any())
                 {
-                    if (fieldModel.IsCustom)
+                    builder.AppendLine("    options:");
+                    foreach (var fieldModel in customOptionModels)
                     {
                         var value = fieldModel.GetValue(options);
                         builder.AppendLine(
@@ -74,11 +75,16 @@ namespace Indiecat.TerrainGraph.Editor
                     {
                         if (fieldModel.IsCustom)
                         {
+                            var port = node.GetInputPorts().FirstOrDefault(x => x.name == fieldModel.PortName);
+                            if (port == null)
+                            {
+                                continue;
+                            }
+
                             if (fieldModel.FieldType == typeof(HeightGrid) ||
                                 fieldModel.FieldType == typeof(SplineWrapper) ||
                                 fieldModel.FieldType == typeof(SplineListWrapper))
                             {
-                                var port = node.GetInputPortByName(fieldModel.PortName);
                                 var connectedPort = port.firstConnectedPort;
                                 var connectedNode = connectedPort.GetNode();
 
