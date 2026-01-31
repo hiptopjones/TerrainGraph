@@ -8,6 +8,17 @@ using UnityEngine.Splines;
 
 namespace Indiecat.TerrainGraph.Editor
 {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Segment
+    {
+        public Vector3 a;
+        public float _p0; // padding
+        public Vector3 b;
+        public float _p1; // padding
+        public float t0;
+        public float t1;
+    }
+
     internal static class SplineHelpers
     {
         // Applies any transform on the spline container, so the points are expressed in world space
@@ -253,20 +264,9 @@ namespace Indiecat.TerrainGraph.Editor
             return splines;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        public struct SplineSegment
+        public static List<Segment> GenerateSegments(Spline spline, int segmentCount)
         {
-            public Vector3 startPosition;
-            public float _padding0;
-            public Vector3 endPosition;
-            public float _padding1;
-            public float tStart;
-            public float tEnd;
-        }
-
-        public static List<SplineSegment> GenerateSegments(Spline spline, int segmentCount)
-        {
-            var segments = new List<SplineSegment>(segmentCount);
+            var segments = new List<Segment>(segmentCount);
 
             if (segmentCount <= 0)
             {
@@ -283,12 +283,12 @@ namespace Indiecat.TerrainGraph.Editor
                 Vector3 startPosition = spline.EvaluatePosition(t0);
                 Vector3 endPosition = spline.EvaluatePosition(t1);
 
-                segments.Add(new SplineSegment
+                segments.Add(new Segment
                 {
-                    tStart = t0,
-                    tEnd = t1,
-                    startPosition = startPosition,
-                    endPosition = endPosition
+                    a = startPosition,
+                    b = endPosition,
+                    t0 = t0,
+                    t1 = t1,
                 });
             }
 

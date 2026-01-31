@@ -70,7 +70,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var inputSpline = inputSplineWrapper.Spline;
 
-                List<SplineHelpers.SplineSegment> segments;
+                List<Segment> segments;
                 if (isCentered)
                 {
                     var gridCenter = (Vector2.one * size / 2).ToVector3XZ();
@@ -83,7 +83,7 @@ namespace Indiecat.TerrainGraph.Editor
                     segments = SplineHelpers.GenerateSegments(inputSpline, segmentCount);
                 }
 
-                int stride = Marshal.SizeOf(typeof(SplineHelpers.SplineSegment));
+                int stride = Marshal.SizeOf(typeof(Segment));
                 segmentsBuffer = new ComputeBuffer(segments.Count, stride);
                 segmentsBuffer.SetData(segments);
 
