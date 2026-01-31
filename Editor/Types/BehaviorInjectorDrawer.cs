@@ -239,7 +239,9 @@ namespace Indiecat.TerrainGraph.Editor
                 {
                     flexGrow = 1,
                     borderBottomColor = new Color(0x22/256f, 0x22/256f, 0x22/256f),  // TODO: What about light mode?
-                    borderBottomWidth = 2
+                    borderBottomWidth = 2,
+                    marginTop = 5,
+                    marginBottom = 5
                 }
             };
 
