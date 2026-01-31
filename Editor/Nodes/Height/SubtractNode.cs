@@ -54,7 +54,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputTexture = inputGrid.RenderTexture;
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ShaderWrappers.TryArithmetic(
+                if (!ShaderWrappers.TryArithmeticOperation(
                     inputTexture, value, arithmeticOperator, isZeroIgnored, isFlipped, size, ref outputTexture))
                 {
                     return false;

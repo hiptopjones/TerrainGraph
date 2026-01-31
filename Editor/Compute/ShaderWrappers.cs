@@ -288,7 +288,7 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        public static bool TryArithmetic(
+        public static bool TryArithmeticOperation(
             RenderTexture inputTexture,
             float value,
             ArithmeticNode.ArithmeticOperator arithmeticOperator,
