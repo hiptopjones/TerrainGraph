@@ -65,7 +65,8 @@ Shader "Hidden/HeightGridPreview"
                 Light mainLight = GetMainLight();
                 float NdotL = saturate(dot(normalWS, mainLight.direction));
 
-                float3 color = NdotL.xxx;
+                float ambient = 0.2;
+                float3 color = NdotL.xxx * (1 - ambient) + ambient;
 
                 return half4(color, 1);
             }
