@@ -13,7 +13,6 @@ namespace Indiecat.TerrainGraph.Editor
         {
             [DisplayName("Use Sampled Points")]
             public bool IsSamplingEnabled;
-
         }
 
         public class InputValues : InputValuesBase
@@ -23,7 +22,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DisplayName("Samples")]
             [MinValue(10), DefaultValue(100)]
-            [IncludeIf("IsSamplingEnabled")]
+            [IncludeIf(nameof(IsSamplingEnabled))]
             public int SampleCount;
 
             [MinValue(16), DefaultValue(256)]

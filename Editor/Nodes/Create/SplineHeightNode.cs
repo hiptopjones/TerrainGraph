@@ -13,7 +13,8 @@ namespace Indiecat.TerrainGraph.Editor
 
         public class InputValues : InputValuesBase
         {
-            [DisplayName("Spline")] public SplineWrapper SplineWrapper;
+            [DisplayName("Spline")]
+            public SplineWrapper SplineWrapper;
 
             [DisplayName("Samples")]
             [MinValue(10), DefaultValue(100)]
@@ -39,7 +40,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var size = Inputs.Size;
 
                 var inputSpline = inputSplineWrapper.Spline;
-                RenderTexture outputTexture = GetOrCreateNodeRenderTexture(size);
+                var outputTexture = GetOrCreateNodeRenderTexture(size);
 
                 if (!ShaderWrappers.TryGenerateSdf(inputSpline, size, sampleCount, isCentered, applySplineHeight, ref outputTexture))
                 {
