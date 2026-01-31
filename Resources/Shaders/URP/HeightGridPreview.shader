@@ -4,6 +4,8 @@ Shader "Hidden/HeightGridPreview"
     {
         _HeightGridTexture ("Height Grid Texture", 2D) = "white" {}
         _HeightScale ("Height Scale", Float) = 100
+        _AmbientWrap ("Ambient Wrap", Range (0, 0.5)) = 0.2 // 0 = normal lambert, 1 = very soft
+
     }
 
     SubShader
@@ -35,6 +37,7 @@ Shader "Hidden/HeightGridPreview"
 
             CBUFFER_START(UnityPerMaterial)
                 float _HeightScale;
+                float _AmbientWrap;
             CBUFFER_END
 
             TEXTURE2D(_HeightGridTexture);
@@ -63,10 +66,9 @@ Shader "Hidden/HeightGridPreview"
                 float3 normalWS = normalize(cross(dpdy, dpdx));
 
                 Light mainLight = GetMainLight();
-                float NdotL = saturate(dot(normalWS, mainLight.direction));
 
-                float ambient = 0.2;
-                float3 color = NdotL.xxx * (1 - ambient) + ambient;
+                float ndotlWrapped = saturate((dot(normalWS, mainLight.direction) + _AmbientWrap) / (1 + _AmbientWrap));
+                float3 color = ndotlWrapped;
 
                 return half4(color, 1);
             }
