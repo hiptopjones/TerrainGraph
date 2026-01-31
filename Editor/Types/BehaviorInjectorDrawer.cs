@@ -238,7 +238,7 @@ namespace Indiecat.TerrainGraph.Editor
                 style =
                 {
                     flexGrow = 1,
-                    borderBottomColor = new Color(0x22/256f, 0x22/256f, 0x22/256f),
+                    borderBottomColor = new Color(0x22/256f, 0x22/256f, 0x22/256f),  // TODO: What about light mode?
                     borderBottomWidth = 2
                 }
             };
@@ -265,6 +265,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             var button = new Button();
             button.text = "Preview Mesh";
+            button.style.backgroundColor = new Color(0.3f, 0.1f, 0); // TODO: What about light mode
             button.clicked += () =>
             {
                 _serializedObject.Update();
