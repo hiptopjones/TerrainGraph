@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+﻿using UnityEditor;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -6,8 +6,7 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public static string TitleCaseToWords(string input)
         {
-            // Uses negative lookbehind to avoid matching the first word
-            return Regex.Replace(input, @"(?<!^)([A-Z])", " $1");
+            return ObjectNames.NicifyVariableName(input);
         }
     }
 }
