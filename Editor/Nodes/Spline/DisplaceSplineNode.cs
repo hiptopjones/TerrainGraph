@@ -15,11 +15,22 @@ namespace Indiecat.TerrainGraph.Editor
             Vertical
         }
 
+        public enum DisplacementSign
+        {
+            Both,
+            Positive,
+            Negative
+        }
+
         public class OptionValues : OptionValuesBase
         {
             [DisplayName("Axis")]
             [DefaultValue(DisplacementAxis.Horizontal)]
             public DisplacementAxis DisplacementAxis;
+
+            [DisplayName("Sign")]
+            [DefaultValue(DisplacementSign.Both)]
+            public DisplacementSign DisplacementSign;
         }
 
         public class InputValues : InputValuesBase
@@ -53,6 +64,7 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var displacementAxis = Options.DisplacementAxis;
+                var displacementSign = Options.DisplacementSign;
                 var inputSplineWrapper = Inputs.SplineWrapper;
                 var offset = Inputs.LinearOffset;
                 var frequency = Inputs.Frequency;
@@ -89,6 +101,21 @@ namespace Indiecat.TerrainGraph.Editor
 
                         var noise = GetSeamlessNoise(start, frequency, t + offset);
 
+                        switch (displacementSign)
+                        {
+                            case DisplacementSign.Negative:
+                                noise = Mathf.Min(0, noise);
+                                break;
+
+                            case DisplacementSign.Positive:
+                                noise = Mathf.Max(0, noise);
+                                break;
+
+                            case DisplacementSign.Both:
+                                // No change
+                                break;
+                        }
+
                         switch (displacementAxis)
                         {
                             case DisplacementAxis.Horizontal:
@@ -96,7 +123,7 @@ namespace Indiecat.TerrainGraph.Editor
                                 break;
 
                             case DisplacementAxis.Vertical:
-                                displacement += up * Mathf.Clamp01(noise) * amplitude;
+                                displacement += up * noise * amplitude;
                                 break;
                         }
 
