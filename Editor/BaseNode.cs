@@ -61,6 +61,9 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected abstract bool TryExecuteNodeInternal();
 
+        // NOTE: Any duplicates are managed during graph change processing
+        public string Id = Guid.NewGuid().ToString();
+
         protected TOptionValues Options;
         protected TInputValues Inputs;
 

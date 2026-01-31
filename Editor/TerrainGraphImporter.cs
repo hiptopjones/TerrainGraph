@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Text;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEditor.AssetImporters;
@@ -12,15 +14,13 @@ namespace Indiecat.TerrainGraph.Editor
         // Ensure the upgrade always runs the first time
         [SerializeField] private int _version = 1;
 
-        private const int CURRENT_VERSION = 2;
-
         public override void OnImportAsset(AssetImportContext context)
         {
-            if (_version < CURRENT_VERSION)
+            if (_version < TerrainEditorGraph.CURRENT_VERSION)
             {
                 VersionUpgrader.UpdateAssetFile(context.assetPath);
 
-                _version = CURRENT_VERSION;
+                _version = TerrainEditorGraph.CURRENT_VERSION;
 
                 // Mark importer dirty so Unity saves the meta
                 EditorUtility.SetDirty(this);
@@ -41,9 +41,12 @@ namespace Indiecat.TerrainGraph.Editor
             Debug.Log($"[Import] Loaded {graph.nodeCount} nodes from {Path.GetFileNameWithoutExtension(context.assetPath)}");
 
             TryExecuteGraph(graph);
+
+            // Write out a more readable version of the graph
+            SidecarGenerator.WriteSidecar(context.assetPath, graph);
         }
 
-        private bool TryExecuteGraph(TerrainEditorGraph graph)
+        private static bool TryExecuteGraph(TerrainEditorGraph graph)
         {
             // Always update nodes in dependency order
             //  - Validation of one node must not look for values in an unvalidated node

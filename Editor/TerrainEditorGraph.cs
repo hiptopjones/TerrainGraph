@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
+using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -13,6 +16,10 @@ namespace Indiecat.TerrainGraph.Editor
         internal const string ASSET_FILE_EXTENSION = "trgraph";
 
         internal const string DEFAULT_ASSET_NAME = "Terrain Graph";
+
+        internal const int CURRENT_VERSION = 2;
+
+        private Dictionary<string, INode> _nodeIds = new();
 
         [MenuItem("Assets/Create/Terrain Graph")]
         static void CreateAssetFile()
@@ -35,6 +42,8 @@ namespace Indiecat.TerrainGraph.Editor
 
             foreach (var node in orderedNodes)
             {
+                EnsureUniqueId(node);
+
                 var validatableNode = (IValidatableNode)node;
                 if (validatableNode.TryValidateNode(graphLogger))
                 {
@@ -45,6 +54,32 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var previewableNode = (IPreviewableNode)node;
                 previewableNode.TryUpdatePreview();
+            }
+        }
+
+        private void EnsureUniqueId(INode node)
+        {
+            // This works because we assume a file on disk has unique IDs
+            // The first time it's loaded, all IDs are unique
+            // When a user duplicates a node, the ID will be duplicated
+            // The graph change callback will find a node with the same ID as one already in the map
+            // We change the ID of the new node, and store it back in the map
+
+            var idFieldInfo = node.GetType().GetField("Id", BindingFlags.Instance | BindingFlags.Public);
+            var id = Convert.ToString(idFieldInfo.GetValue(node));
+
+            if (_nodeIds.TryGetValue(id, out var mappedNode))
+            {
+                if (node != mappedNode)
+                {
+                    // Duplicate mapping for this ID, change node ID
+                    id = Guid.NewGuid().ToString();
+                    idFieldInfo.SetValue(node, id);
+                }
+            }
+            else
+            {
+                _nodeIds[id] = node;
             }
         }
 
