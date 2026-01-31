@@ -1,11 +1,12 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Splines;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class TextureHeightNode
-        : BaseNode<TextureHeightNode.OptionValues, TextureHeightNode.InputValues, HeightGrid>
+    public class ImportTextureNode
+        : BaseNode<ImportTextureNode.OptionValues, ImportTextureNode.InputValues, HeightGrid>
     {
         public class OptionValues : OptionValuesBase
         {
@@ -13,6 +14,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public class InputValues : InputValuesBase
         {
+            [NotNull]
             public Texture2D Texture;
         }
 

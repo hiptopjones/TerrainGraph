@@ -162,6 +162,9 @@ namespace Indiecat.TerrainGraph.Editor
                 case Gradient g:
                     return g.ToString(); // TODO: How to show detail briefly?
 
+                case Texture t:
+                    return t.name;
+
                 default:
                     // Fallback: stable string, not ToString() on Unity objects
                     return QuoteIfNeeded(value.ToString());

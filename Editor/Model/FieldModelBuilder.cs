@@ -90,6 +90,12 @@ namespace Indiecat.TerrainGraph.Editor
                 rules.Add(new RangeValueRule(fieldModel, rangeAttribute.Min, rangeAttribute.Max));
             }
 
+            var notNullAttribute = attributes.OfType<NotNullAttribute>().FirstOrDefault();
+            if (notNullAttribute != null)
+            {
+                rules.Add(new NotNullRule(fieldModel));
+            }
+
             foreach (var validIf in attributes.OfType<ValidIfAttribute>())
             {
                 rules.Add(new ValidIfRule(BuildValidationDelegate(fieldInfo, validIf.MethodName)));
@@ -110,10 +116,6 @@ namespace Indiecat.TerrainGraph.Editor
             var reflectedType = fieldInfo.ReflectedType;
             var outerType = reflectedType.DeclaringType;
 
-            //Debug.Log($"method name: {methodName}");
-            //var method = outerType.GetMethod(methodName, bindingFlags);
-            //return (Func<object, bool>)Delegate.CreateDelegate(typeof(Func<object, bool>), null, method);
-
             var method = outerType.GetMethod(methodName, bindingFlags);
             return obj =>
             {
@@ -127,13 +129,6 @@ namespace Indiecat.TerrainGraph.Editor
                     throw;
                 }
             };
-
-            //var objectParameter = Expression.Parameter(typeof(object), "obj");
-            //var typedObjectParameter = Expression.Convert(objectParameter, outerType);
-            //var callExpression = Expression.Call(typedObjectParameter, method);
-            //var lambdaExpression = Expression.Lambda<Func<object, bool>>(callExpression, objectParameter);
-
-            //return lambdaExpression.Compile();
         }
 
         private static Func<object, object, ValidationResult> BuildValidationDelegate(FieldInfo fieldInfo, string methodName)
