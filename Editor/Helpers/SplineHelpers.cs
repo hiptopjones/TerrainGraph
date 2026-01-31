@@ -1,6 +1,7 @@
 ﻿using Indiecat.UnityCommon.Runtime;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -250,6 +251,48 @@ namespace Indiecat.TerrainGraph.Editor
             }
 
             return splines;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SplineSegment
+        {
+            public Vector3 startPosition;
+            public float _padding0;
+            public Vector3 endPosition;
+            public float _padding1;
+            public float tStart;
+            public float tEnd;
+        }
+
+        public static List<SplineSegment> GenerateSegments(Spline spline, int segmentCount)
+        {
+            var segments = new List<SplineSegment>(segmentCount);
+
+            if (segmentCount <= 0)
+            {
+                return segments;
+            }
+
+            float step = 1f / segmentCount;
+
+            for (int i = 0; i < segmentCount; i++)
+            {
+                float t0 = i * step;
+                float t1 = (i + 1) * step;
+
+                Vector3 startPosition = spline.EvaluatePosition(t0);
+                Vector3 endPosition = spline.EvaluatePosition(t1);
+
+                segments.Add(new SplineSegment
+                {
+                    tStart = t0,
+                    tEnd = t1,
+                    startPosition = startPosition,
+                    endPosition = endPosition
+                });
+            }
+
+            return segments;
         }
     }
 }

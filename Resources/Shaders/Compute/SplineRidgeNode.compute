@@ -1,0 +1,71 @@
+#pragma kernel CSMain
+
+#include "..\Common\CommonLibrary.hlsl"
+
+struct Segment
+{
+    float3 a; // start point (world)
+    float _padding0;
+    float3 b; // end point   (world)
+    float _padding1;
+    float t0; // normalized spline t at start (0..1)
+    float t1; // normalized spline t at end   (0..1)
+};
+
+StructuredBuffer<Segment> _Segments;
+int _SegmentCount;
+float _BaseRadius;
+int _Size;
+
+Texture2D<float> _RadiusCurveTexture;
+Texture2D<float> _FalloffCurveTexture;
+SamplerState sampler_LinearClamp;
+
+RWTexture2D<float> _OutTexture;
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _Size || id.y >= (uint) _Size)
+    {
+        return;
+    }
+
+    uint2 uv = id.xy;
+    float2 p = uv;
+    
+    float minDistance = 1e20;
+    float bestT = 0;
+    float bestHeight = 0;
+
+    [loop]
+    for (int i = 0; i < _SegmentCount; i++)
+    {
+        Segment segment = _Segments[i];
+        
+        float tSegment;
+        float distance = DistanceToSegment(p, segment.a.xz, segment.b.xz, tSegment);
+        
+        if (distance < minDistance)
+        {
+            minDistance = distance;
+            bestT = lerp(segment.t0, segment.t1, tSegment);
+            bestHeight = lerp(segment.a.y, segment.b.y, tSegment);
+        }
+    }
+    
+    // Vary the radius of influence along the curve
+    float radiusScale = SampleCurve(_RadiusCurveTexture, sampler_LinearClamp, bestT);
+    float radius = _BaseRadius * radiusScale;
+
+    // Vary the cross-section falloff by distance from the spline (as determined by radius)
+    float d01 = saturate(minDistance / max(radius, 1e-6));
+    float falloff = SampleCurve(_FalloffCurveTexture, sampler_LinearClamp, d01);
+    
+    float height = bestHeight * falloff;
+    
+    _OutTexture[uv].r = height;
+}
+
+
+
