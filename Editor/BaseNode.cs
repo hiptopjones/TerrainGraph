@@ -690,7 +690,10 @@ namespace Indiecat.TerrainGraph.Editor
                     injector.OptionsTypeName = optionsModel.ClassType.FullName;
                     injector.InputsTypeName = inputsModel.ClassType.FullName;
 
-                    injector.EnableMeshPreview = SetMeshPreviewTexture;
+                    if (typeof(TResult) == typeof(HeightGrid))
+                    {
+                        injector.SetMeshPreview = SetMeshPreviewTexture;
+                    }
                 }
             }
         }

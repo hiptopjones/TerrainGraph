@@ -249,6 +249,15 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void InsertPreviewButton(Toggle toggle, FieldModel fieldModel)
         {
+            _serializedObject.Update();
+
+            var injector = fieldInfo.GetValue(_serializedObject.targetObject) as BehaviorInjector;
+            if (injector.SetMeshPreview == null)
+            {
+                // Not applicable for this node
+                return;
+            }
+
             var container = toggle.parent;
 
             container.style.flexDirection = FlexDirection.Row;
@@ -263,7 +272,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var injector = fieldInfo.GetValue(_serializedObject.targetObject) as BehaviorInjector;
                 if (injector != null)
                 {
-                    injector.EnableMeshPreview();
+                    injector.SetMeshPreview();
                 }
             };
 
