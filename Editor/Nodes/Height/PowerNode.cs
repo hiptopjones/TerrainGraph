@@ -9,6 +9,8 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
+            [DisplayName("Ignore Zero")]
+            public bool IsZeroIgnored;
         }
 
         public class InputValues : InputValuesBase
@@ -25,7 +27,7 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Power;
-                var isZeroIgnored = false;
+                var isZeroIgnored = Options.IsZeroIgnored;
                 var isFlipped = false;
                 var inputGrid = Inputs.Grid;
                 var value = Inputs.Value;
@@ -40,6 +42,7 @@ namespace Indiecat.TerrainGraph.Editor
                 {
                     return false;
                 }
+
                 var outputGrid = new HeightGrid(size);
 
                 outputGrid.RenderTexture = outputTexture;

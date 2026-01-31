@@ -7,16 +7,11 @@ namespace Indiecat.TerrainGraph.Editor
     public class AddNode
         : BaseNode<AddNode.OptionValues, AddNode.InputValues, HeightGrid>
     {
-        public enum OperandType
-        {
-            Constant,
-            Grid,
-        }
-
         public class OptionValues : OptionValuesBase
         {
-            [DefaultValue(OperandType.Constant)]
-            public OperandType OperandType;
+            [DefaultValue(true)]
+            [DisplayName("Use Constant")]
+            public bool UseConstantOperand;
 
             [DisplayName("Ignore Zero")]
             public bool IsZeroIgnored;
@@ -28,21 +23,21 @@ namespace Indiecat.TerrainGraph.Editor
             public HeightGrid Grid;
 
             [DefaultValue(0.5f)]
-            [IncludeIf(nameof(IsOperandTypeConstant))]
+            [IncludeIf(nameof(IsOperandConstant))]
             public float Value;
 
-            [IncludeIf(nameof(IsOperandTypeGrid))]
+            [IncludeIf(nameof(IsOperandGrid))]
             public HeightGrid Grid2;
         }
 
-        private bool IsOperandTypeConstant() => Options.OperandType == OperandType.Constant;
-        private bool IsOperandTypeGrid() => Options.OperandType == OperandType.Grid;
+        private bool IsOperandConstant() => Options.UseConstantOperand;
+        private bool IsOperandGrid() => !Options.UseConstantOperand;
 
         protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
             var classModel = ClassModelCache.GetClassModel<InputValues>();
 
-            if (IsOperandTypeGrid())
+            if (IsOperandGrid())
             {
                 var grid1Model = classModel.GetFieldModel(nameof(InputValues.Grid));
                 grid1Model.DisplayName = "Grid 1";
@@ -74,7 +69,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (IsOperandTypeConstant())
+                if (IsOperandConstant())
                 {
                     var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Add;
 
