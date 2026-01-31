@@ -7,8 +7,17 @@ namespace Indiecat.TerrainGraph.Editor
     public class AddNode
         : BaseNode<AddNode.OptionValues, AddNode.InputValues, HeightGrid>
     {
+        public enum OperandType
+        {
+            Constant,
+            Grid,
+        }
+
         public class OptionValues : OptionValuesBase
         {
+            [DefaultValue(OperandType.Constant)]
+            public OperandType OperandType;
+
             [DisplayName("Ignore Zero")]
             public bool IsZeroIgnored;
         }
@@ -19,28 +28,76 @@ namespace Indiecat.TerrainGraph.Editor
             public HeightGrid Grid;
 
             [DefaultValue(0.5f)]
+            [IncludeIf(nameof(IsOperandTypeConstant))]
             public float Value;
+
+            [IncludeIf(nameof(IsOperandTypeGrid))]
+            public HeightGrid Grid2;
+        }
+
+        private bool IsOperandTypeConstant() => Options.OperandType == OperandType.Constant;
+        private bool IsOperandTypeGrid() => Options.OperandType == OperandType.Grid;
+
+        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
+        {
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+
+            if (IsOperandTypeGrid())
+            {
+                var grid1Model = classModel.GetFieldModel(nameof(InputValues.Grid));
+                grid1Model.DisplayName = "Grid 1";
+
+                var grid2Model = classModel.GetFieldModel(nameof(InputValues.Grid2));
+                grid2Model.DisplayName = "Grid 2";
+            }
+            else
+            {
+                var gridModel = classModel.GetFieldModel(nameof(InputValues.Grid));
+                gridModel.DisplayName = "Grid";
+            }
+
+            // Build the ports automatically
+            base.OnDefineCustomInputPorts(context);
         }
 
         protected override bool TryExecuteNodeInternal()
         {
             try
             {
-                var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Add;
                 var isZeroIgnored = Options.IsZeroIgnored;
                 var isFlipped = false;
                 var inputGrid = Inputs.Grid;
+                var inputGrid2 = Inputs.Grid2;
                 var value = Inputs.Value;
 
                 var size = inputGrid.Size;
 
-                var inputTexture = inputGrid.RenderTexture;
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ShaderWrappers.TryArithmeticOperation(
-                    inputTexture, value, arithmeticOperator, isZeroIgnored, isFlipped, size, ref outputTexture))
+                if (IsOperandTypeConstant())
                 {
-                    return false;
+                    var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Add;
+
+                    var inputTexture = inputGrid.RenderTexture;
+
+                    if (!ShaderWrappers.TryArithmeticOperation(
+                        inputTexture, value, arithmeticOperator, isZeroIgnored, isFlipped, size, ref outputTexture))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    var blendOperator = BlendNode.BlendOperator.Add;
+
+                    var inputTexture1 = inputGrid.RenderTexture;
+                    var inputTexture2 = inputGrid2.RenderTexture;
+
+                    if (!ShaderWrappers.TryBlendOperation(
+                        inputTexture1, inputTexture2, blendOperator, isZeroIgnored, isFlipped, size, ref outputTexture))
+                    {
+                        return false;
+                    }
                 }
 
                 var outputGrid = new HeightGrid(size);

@@ -22,7 +22,11 @@ namespace Indiecat.TerrainGraph.Editor
         public class OptionValues : OptionValuesBase
         {
             [DefaultValue(BlendOperator.Multiply)]
+            [DisplayName("Operation")]
             public BlendOperator BlendOperator;
+
+            [DisplayName("Ignore Zero")]
+            public bool IsZeroIgnored;
 
             [DisplayName("Flip Inputs")]
             public bool IsFlipped;
@@ -78,34 +82,21 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var blendOperator = Options.BlendOperator;
                 var isFlipped = Options.IsFlipped;
+                var isZeroIgnored = Options.IsZeroIgnored;
                 var inputGrid1 = Inputs.Grid1;
                 var inputGrid2 = Inputs.Grid2;
 
                 var size = inputGrid1.Size;
 
-                var keywordBuilder = new KeywordBuilder();
-                keywordBuilder.AddKeyword($"OP_{blendOperator.ToString().ToUpper()}");
-                keywordBuilder.AddKeyword(isFlipped ? "ARGS_FLIPPED" : "ARGS_NORMAL");
-
                 var inputTexture1 = inputGrid1.RenderTexture;
                 var inputTexture2 = inputGrid2.RenderTexture;
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader(nameof(BlendNode), out var shader))
+                if (!ShaderWrappers.TryBlendOperation(
+                    inputTexture1, inputTexture2, blendOperator, isZeroIgnored, isFlipped, size, ref outputTexture))
                 {
                     return false;
                 }
-
-                var kernel = shader.FindKernel("CSMain");
-
-                shader.SetTexture(kernel, "_InTexture1", inputTexture1);
-                shader.SetTexture(kernel, "_InTexture2", inputTexture2);
-                shader.SetTexture(kernel, "_OutTexture", outputTexture);
-
-                shader.shaderKeywords = keywordBuilder.GetKeywords();
-
-                var groups = Mathf.CeilToInt(size / 8.0f);
-                shader.Dispatch(kernel, groups, groups, 1);
 
                 var outputGrid = new HeightGrid(size);
 

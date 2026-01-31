@@ -2,6 +2,7 @@
 
 #pragma multi_compile OP_ADD OP_SUBTRACT OP_MULTIPLY OP_DIVIDE OP_MAXIMUM OP_MINIMUM OP_AVERAGE OP_COMPARE
 #pragma multi_compile ARGS_NORMAL ARGS_FLIPPED
+#pragma multi_compile ZERO_EXCLUDE ZERO_INCLUDE
 
 Texture2D<float> _InTexture1;
 Texture2D<float> _InTexture2;
@@ -19,35 +20,44 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     float output;
 
-    #if ARGS_NORMAL
-        float a = height1;
-        float b = height2;
-    #elif ARGS_FLIPPED
-        float a = height2;
-        float b = height1;
-    #endif
+#if ARGS_NORMAL
+    float a = height1;
+    float b = height2;
+#elif ARGS_FLIPPED
+    float a = height2;
+    float b = height1;
+#endif
     
-    // Choose operation
-    #if OP_ADD
+#if ZERO_EXCLUDE
+    if (a == 0)
+    {
+        output = 0;
+    }
+    else
+#endif
+    {
+        // Choose operation    
+#if OP_ADD
         output = a + b;
-    #elif OP_SUBTRACT
+#elif OP_SUBTRACT
         output = a - b;
-    #elif OP_MULTIPLY
+#elif OP_MULTIPLY
         output = a * b;
-    #elif OP_DIVIDE
+#elif OP_DIVIDE
         output = a / b;
-    #elif OP_MAXIMUM
+#elif OP_MAXIMUM
         output = max(a, b);
-    #elif OP_MINIMUM
+#elif OP_MINIMUM
         output = min(a, b);
-    #elif OP_AVERAGE
+#elif OP_AVERAGE
         output = (a + b) / 2;
-    #elif OP_COMPARE
+#elif OP_COMPARE
         if (a == b)
             output = 0;
         else
             output = lerp(-1, 1, step(a, b));
-    #endif
+#endif
+    }
 
     _OutTexture[uv].r = output;
 }

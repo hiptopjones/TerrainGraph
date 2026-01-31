@@ -325,5 +325,43 @@ namespace Indiecat.TerrainGraph.Editor
 
             return true;
         }
+
+        public static bool TryBlendOperation(
+            RenderTexture inputTexture1,
+            RenderTexture inputTexture2,
+            BlendNode.BlendOperator blendOperator,
+            bool isZeroIgnored,
+            bool isFlipped,
+            int size,
+            ref RenderTexture outputTexture)
+        {
+            if (outputTexture == null)
+            {
+                outputTexture = TextureHelpers.CreateRenderTexture(size, RenderTextureFormat.RFloat);
+            }
+
+            var keywordBuilder = new KeywordBuilder();
+            keywordBuilder.AddKeyword($"OP_{blendOperator.ToString().ToUpper()}");
+            keywordBuilder.AddKeyword(isFlipped ? "ARGS_FLIPPED" : "ARGS_NORMAL");
+            keywordBuilder.AddKeyword(isZeroIgnored ? "ZERO_EXCLUDE" : "ZERO_INCLUDE");
+
+            if (!ComputeHelpers.TryLoadComputeShader(nameof(BlendNode), out var shader))
+            {
+                return false;
+            }
+
+            var kernel = shader.FindKernel("CSMain");
+
+            shader.SetTexture(kernel, "_InTexture1", inputTexture1);
+            shader.SetTexture(kernel, "_InTexture2", inputTexture2);
+            shader.SetTexture(kernel, "_OutTexture", outputTexture);
+
+            shader.shaderKeywords = keywordBuilder.GetKeywords();
+
+            var groups = Mathf.CeilToInt(size / 8.0f);
+            shader.Dispatch(kernel, groups, groups, 1);
+
+            return true;
+        }
     }
 }
