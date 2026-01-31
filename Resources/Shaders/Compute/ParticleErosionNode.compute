@@ -1,0 +1,258 @@
+﻿#pragma kernel CSMain_ImportHeights
+#pragma kernel CSMain_InitializeParticles
+#pragma kernel CSMain_StepParticles
+#pragma kernel CSMain_ExportHeights
+
+struct Particle
+{
+    float2 pos; // in map coordinates [0..Size)
+    float2 vel; // map units per step
+    float water; // water amount
+    float sediment; // sediment carried
+    uint alive; // 1 = active
+    uint _pad;
+};
+
+Texture2D<float> _InTexture;
+
+RWStructuredBuffer<Particle> _Particles;
+RWStructuredBuffer<int> _FixedPointHeights;
+
+int _Size;
+int _ParticleCount;
+
+int _FixedPointScale; // e.g. 65536
+
+// Simulation params (tweakable)
+float _DeltaTime; // step dt
+float _Inertia; // 0..1 (higher = keeps direction)
+float _Gravity; // accel along slope
+float _EvaporationRate; // water *= (1-evap*dt)
+float _DepositionRate; // deposit speed
+float _ErosionRate; // erosion speed
+float _SedimentCapacity; // capacity constant
+float _MinCapacity; // prevents zero capacity
+float _MaxSpeed; // clamp
+float _StartWater; // spawn water
+float _StartSpeed; // spawn speed
+float _BoundaryMargin; // keeps particles away from extreme edges
+
+RWTexture2D<float> _OutTexture;
+
+// Helpers
+uint Hash(uint x)
+{
+    // xorshift-ish
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    return x;
+}
+
+float Rand01(inout uint state)
+{
+    state = Hash(state);
+    // 24-bit mantissa style
+    return (state & 0x00FFFFFFu) / 16777216.0;
+}
+
+int GetIndex(int2 p)
+{
+    return p.y * _Size + p.x;
+}
+
+float HeightAtInt(int2 p)
+{
+    p = clamp(p, int2(0, 0), int2(_Size - 1, _Size - 1));
+    return (float) _FixedPointHeights[GetIndex(p)] / (float) _FixedPointScale;
+}
+
+float SampleHeightBilinear(float2 pos)
+{
+    // pos is in map coords [0..MapSize)
+    float2 p = clamp(pos, 0.0, (float) _Size - 1.001);
+    int2 ip = (int2) floor(p);
+    float2 f = frac(p);
+
+    float h00 = HeightAtInt(ip);
+    float h10 = HeightAtInt(ip + int2(1, 0));
+    float h01 = HeightAtInt(ip + int2(0, 1));
+    float h11 = HeightAtInt(ip + int2(1, 1));
+
+    float hx0 = lerp(h00, h10, f.x);
+    float hx1 = lerp(h01, h11, f.x);
+    return lerp(hx0, hx1, f.y);
+}
+
+float2 SampleGradient(float2 pos)
+{
+    // central differences on height
+    float2 p = clamp(pos, 1.0, (float) _Size - 2.0);
+    float hL = SampleHeightBilinear(p + float2(-1, 0));
+    float hR = SampleHeightBilinear(p + float2(1, 0));
+    float hD = SampleHeightBilinear(p + float2(0, -1));
+    float hU = SampleHeightBilinear(p + float2(0, 1));
+
+    float2 g;
+    g.x = (hR - hL) * 0.5;
+    g.y = (hU - hD) * 0.5;
+    return g;
+}
+
+void AddHeightBilinear(float2 pos, float amount)
+{
+    // Distribute amount to 4 neighbors using bilinear weights.
+    // amount can be positive (deposit) or negative (erode).
+    float2 p = clamp(pos, 0.0, (float) _Size - 1.001);
+    int2 ip = (int2) floor(p);
+    float2 f = frac(p);
+
+    float w00 = (1 - f.x) * (1 - f.y);
+    float w10 = (f.x) * (1 - f.y);
+    float w01 = (1 - f.x) * (f.y);
+    float w11 = (f.x) * (f.y);
+
+    int a00 = (int) round(amount * w00 * _FixedPointScale);
+    int a10 = (int) round(amount * w10 * _FixedPointScale);
+    int a01 = (int) round(amount * w01 * _FixedPointScale);
+    int a11 = (int) round(amount * w11 * _FixedPointScale);
+
+    int2 p00 = clamp(ip, int2(0, 0), int2(_Size - 1, _Size - 1));
+    int2 p10 = clamp(ip + int2(1, 0), int2(0, 0), int2(_Size - 1, _Size - 1));
+    int2 p01 = clamp(ip + int2(0, 1), int2(0, 0), int2(_Size - 1, _Size - 1));
+    int2 p11 = clamp(ip + int2(1, 1), int2(0, 0), int2(_Size - 1, _Size - 1));
+
+    InterlockedAdd(_FixedPointHeights[GetIndex(p00)], a00);
+    InterlockedAdd(_FixedPointHeights[GetIndex(p10)], a10);
+    InterlockedAdd(_FixedPointHeights[GetIndex(p01)], a01);
+    InterlockedAdd(_FixedPointHeights[GetIndex(p11)], a11);
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_ImportHeights(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _Size || id.y >= (uint) _Size)
+    {
+        return;
+    }
+
+    uint2 uv = id.xy;
+    uint i = GetIndex(uv);
+    
+    _FixedPointHeights[i] = (int) (_InTexture[uv].r * _FixedPointScale);
+}
+
+[numthreads(256, 1, 1)]
+void CSMain_InitializeParticles(uint3 tid : SV_DispatchThreadID)
+{
+    uint id = tid.x;
+    if (id >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    uint s = (uint) (id * 9781u + 6271u);
+
+    Particle p;
+    p.alive = 1u;
+
+    // Spawn away from edges so particles can move
+    float m = _BoundaryMargin;
+    float rx = Rand01(s);
+    float ry = Rand01(s);
+    p.pos = float2(lerp(m, (float) _Size - m, rx),
+                   lerp(m, (float) _Size - m, ry));
+
+    // Random initial direction
+    float a = Rand01(s) * 6.2831853;
+    p.vel = float2(cos(a), sin(a)) * _StartSpeed;
+
+    p.water = _StartWater;
+    p.sediment = 0.0;
+    p._pad = 0;
+
+    _Particles[id] = p;
+}
+
+[numthreads(256, 1, 1)]
+void CSMain_StepParticles(uint3 tid : SV_DispatchThreadID)
+{
+    uint id = tid.x;
+    if (id >= (uint) _ParticleCount)
+    {
+        return;
+    }
+
+    Particle p = _Particles[id];
+    if (p.alive == 0u)
+    {
+        return;
+    }
+
+    // Current height + gradient
+    float h0 = SampleHeightBilinear(p.pos);
+    float2 gradient = SampleGradient(p.pos);
+
+    // Move downhill: accel opposite gradient
+    float2 accel = -gradient * _Gravity;
+
+    // Inertia blend (keeps motion stable)
+    p.vel = normalize(lerp(p.vel, p.vel + accel * _DeltaTime, 1.0 - _Inertia) + 1e-6);
+
+    // Speed scale: use downhill height drop to add speed-ish behavior
+    float speed = length(p.vel);
+    speed = min(speed, _MaxSpeed);
+
+    float2 nextPos = p.pos + p.vel * speed * _DeltaTime;
+
+    // Out of bounds
+    if (nextPos.x < 1.0 || nextPos.y < 1.0 || nextPos.x > _Size - 2.0 || nextPos.y > _Size - 2.0)
+    {
+        p.alive = 0u;
+        _Particles[id] = p;
+        return;
+    }
+
+    float h1 = SampleHeightBilinear(nextPos);
+    float dh = h1 - h0; // negative if going downhill
+
+    // Sediment capacity (common Lagrangian erosion idea)
+    float cap = max(_MinCapacity, (-dh) * speed * p.water * _SedimentCapacity);
+
+    if (p.sediment > cap)
+    {
+        // Deposit
+        float deposit = (p.sediment - cap) * _DepositionRate;
+        p.sediment -= deposit;
+        AddHeightBilinear(p.pos, deposit);
+    }
+    else
+    {
+        // Erode
+        float erode = min((cap - p.sediment) * _ErosionRate, h0); // don't erode below 0 if h0 is your baseline
+        p.sediment += erode;
+        AddHeightBilinear(p.pos, -erode);
+    }
+
+    // Evaporate water
+    p.water *= saturate(1.0 - _EvaporationRate * _DeltaTime);
+
+    // Update position
+    p.pos = nextPos;
+
+    _Particles[id] = p;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_ExportHeights(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _Size || id.y >= (uint) _Size)
+    {
+        return;
+    }
+
+    uint2 uv = id.xy;
+    uint i = GetIndex(uv);
+
+    _OutTexture[uv] = (float) _FixedPointHeights[i] / _FixedPointScale;
+}
