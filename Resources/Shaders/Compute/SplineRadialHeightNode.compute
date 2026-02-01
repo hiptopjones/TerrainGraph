@@ -1,0 +1,90 @@
+#pragma kernel CSMain
+
+#include "..\Common\CommonLibrary.hlsl"
+
+struct Segment
+{
+    float3 a; // start point (world)
+    float _padding0;
+    float3 b; // end point   (world)
+    float _padding1;
+    float t0; // normalized spline t at start (0..1)
+    float t1; // normalized spline t at end   (0..1)
+};
+
+StructuredBuffer<Segment> _Segments;
+int _SegmentCount;
+
+int _Size;
+
+Texture2D<float> _ProfileTexture;
+SamplerState sampler_LinearClamp;
+
+RWTexture2D<float> _OutTexture;
+
+bool IsPointInPolygon(float2 p, StructuredBuffer<Segment> segments, int segmentCount)
+{
+    bool inside = false;
+
+    for (int i = 0; i < segmentCount; i++)
+    {
+        float2 vi = segments[i].a.xz;
+        float2 vj = segments[i].b.xz;
+
+        bool intersect = ((vi.y > p.y) != (vj.y > p.y)) &&
+            (p.x < (vj.x - vi.x) * (p.y - vi.y) / (vj.y - vi.y + 1e-7) + vi.x);
+
+        if (intersect)
+        {
+            inside = !inside;
+        }
+    }
+
+    return inside;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint) _Size || id.y >= (uint) _Size)
+    {
+        return;
+    }
+
+    uint2 uv = id.xy;
+    float2 p = uv;
+    
+    if (!IsPointInPolygon(p, _Segments, _SegmentCount))
+    {
+        _OutTexture[uv].r = 0;
+        return;
+    }
+    
+    float2 center = float2(_Size / 2.0, _Size / 2.0);
+    
+    float distanceFromCenter = length(p - center);
+    
+    float minTotalDistance = 1e20;
+    
+    [loop]
+    for (int i = 0; i < _SegmentCount; i++)
+    {
+        Segment segment = _Segments[i];
+                
+        float tSegment;
+        float distanceFromSegment = DistanceToSegment(p, segment.a.xz, segment.b.xz, tSegment);
+        
+        float totalDistance = distanceFromSegment + distanceFromCenter;
+        if (totalDistance < minTotalDistance)
+        {
+            float2 segmentPosition = lerp(segment.a.xz, segment.b.xz, tSegment);
+            minTotalDistance = totalDistance;
+        }
+    }
+
+    // Vary the cross-section falloff by distance from the center
+    float d01 = saturate(distanceFromCenter / minTotalDistance);
+    float output = SampleCurve(_ProfileTexture, sampler_LinearClamp, d01);
+
+    _OutTexture[uv].r = output;
+}
