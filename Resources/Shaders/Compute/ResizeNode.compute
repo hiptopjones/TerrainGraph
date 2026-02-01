@@ -28,6 +28,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float2 samplerPosition = ((outputUV - outputCenter) * _Scale + inputCenter) / inputSize;
     float lod = 0; 
     
+    // TODO: Consider using bicubic sampling to remove facets, especially if scaling up
     float height = _InTexture.SampleLevel(sampler_InTexture, samplerPosition, lod).r;
     
     _OutTexture[outputUV].r = height;

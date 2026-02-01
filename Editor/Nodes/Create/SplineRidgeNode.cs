@@ -42,8 +42,8 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var classModel = ClassModelCache.GetClassModel<InputValues>();
 
-            var alloffCurveModel = classModel.GetFieldModel(nameof(InputValues.FalloffCurve));
-            alloffCurveModel.DefaultValue = AnimationCurve.EaseInOut(0, 1, 1, 0);
+            var falloffCurveModel = classModel.GetFieldModel(nameof(InputValues.FalloffCurve));
+            falloffCurveModel.DefaultValue = AnimationCurve.EaseInOut(0, 1, 1, 0);
 
             var radiusCurveModel = classModel.GetFieldModel(nameof(InputValues.RadiusCurve));
             radiusCurveModel.DefaultValue = AnimationCurve.Linear(0, 1, 1, 1);

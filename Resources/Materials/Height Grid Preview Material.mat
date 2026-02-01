@@ -29,6 +29,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AmbientLight: 0.08
+    - _AmbientWrap: 0.259
     - _HeightScale: 100
     m_Colors: []
   m_BuildTextureStacks: []
