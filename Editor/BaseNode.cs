@@ -245,7 +245,12 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (Options.IsNodeDisabled)
             {
-                // No validation when disabled
+                // No validation when disabled, but force regeneration when re-enabled
+                if (CacheData.Output != null)
+                {
+                    CacheData.Output.VersionHash = 0;
+                }
+
                 return true;
             }
 
