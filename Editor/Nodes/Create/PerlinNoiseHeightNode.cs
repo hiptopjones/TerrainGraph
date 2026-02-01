@@ -15,7 +15,8 @@ namespace Indiecat.TerrainGraph.Editor
         {
             public Vector2 Offset;
 
-            [DefaultValue(0.05f)]
+            [RangeValue(0.00001f, 0.1f), DefaultValue(0.05f)]
+            [PowerSlider]
             public float Frequency;
 
             public int Seed;

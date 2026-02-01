@@ -34,6 +34,8 @@ namespace Indiecat.TerrainGraph.Editor
 
         public List<IValidationRule> Rules = new();
 
-        public bool UseSlider;
+        public bool UseLinearSlider;
+        public bool UsePowerSlider;
+        public float PowerSliderPower;
     }
 }

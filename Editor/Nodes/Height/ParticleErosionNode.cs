@@ -28,19 +28,19 @@ namespace Indiecat.TerrainGraph.Editor
             public int IterationCount;
 
             [RangeValue(0.01f, 1), DefaultValue(0.1f)]
-            [Slider]
+            [PowerSlider]
             public float ErosionRate;
 
             [RangeValue(0.01f, 1), DefaultValue(0.3f)]
-            [Slider]
+            [PowerSlider]
             public float DepositionRate;
 
             [RangeValue(0, 0.5f), DefaultValue(0.02f)]
-            [Slider]
+            [PowerSlider]
             public float EvaporationRate;
 
             [RangeValue(0, 0.5f), DefaultValue(0.05f)]
-            [Slider]
+            [PowerSlider]
             public float Inertia;
 
             public int Seed;

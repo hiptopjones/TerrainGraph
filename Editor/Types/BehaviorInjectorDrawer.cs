@@ -352,7 +352,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void UpdateFloatField(FloatField floatField, FieldModel fieldModel)
         {
-            if (!fieldModel.UseSlider)
+            if (!fieldModel.UseLinearSlider && !fieldModel.UsePowerSlider)
             {
                 return;
             }
@@ -365,26 +365,35 @@ namespace Indiecat.TerrainGraph.Editor
             var rangeMin = (float)fieldModel.Min;
             var rangeMax = (float)fieldModel.Max;
 
+            var sliderMin = fieldModel.UseLinearSlider ? rangeMin : 0;
+            var sliderMax = fieldModel.UseLinearSlider ? rangeMax : 1;
+
             var slider = new Slider()
             {
-                lowValue = rangeMin,
-                highValue = rangeMax,
+                lowValue = sliderMin,
+                highValue = sliderMax,
             };
             slider.style.flexGrow = 1;
 
-            slider.value = floatField.value;
+            slider.value = fieldModel.UseLinearSlider ?
+                    floatField.value :
+                    PowerToLinear(floatField.value, rangeMin, rangeMax, fieldModel.PowerSliderPower);
 
             Undo.undoRedoPerformed += () =>
             {
                 // Schedule update because value may not have actually changed yet
-                EditorApplication.delayCall += () => slider.value = floatField.value;
+                EditorApplication.delayCall += () => slider.value = fieldModel.UseLinearSlider ?
+                    floatField.value :
+                    PowerToLinear(floatField.value, rangeMin, rangeMax, fieldModel.PowerSliderPower);
             };
 
             floatField.RegisterValueChangedCallback(e =>
             {
-                var value = Mathf.Clamp(e.newValue, rangeMin, rangeMax);
-                floatField.value = value;
-                slider.value = value;
+                // NOTE: Not clamping to allow manual entry
+                floatField.value = e.newValue;
+                slider.value = fieldModel.UseLinearSlider ?
+                    e.newValue :
+                    PowerToLinear(e.newValue, rangeMin, rangeMax, fieldModel.PowerSliderPower);
             });
 
             var currentUndoGroup = 0;
@@ -401,7 +410,9 @@ namespace Indiecat.TerrainGraph.Editor
 
             slider.RegisterValueChangedCallback(e =>
             {
-                floatField.value = e.newValue;
+                floatField.value = fieldModel.UseLinearSlider ?
+                    e.newValue :
+                    LinearToPower(e.newValue, rangeMin, rangeMax, fieldModel.PowerSliderPower);
             });
 
             container.Add(slider);
@@ -410,7 +421,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void UpdateIntegerField(IntegerField integerField, FieldModel fieldModel)
         {
-            if (!fieldModel.UseSlider)
+            if (!fieldModel.UseLinearSlider)
             {
                 return;
             }
@@ -422,6 +433,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             var sliderMin = (int)fieldModel.Min;
             var sliderMax = (int)fieldModel.Max;
+
             var slider = new SliderInt()
             {
                 lowValue = sliderMin,
@@ -439,9 +451,9 @@ namespace Indiecat.TerrainGraph.Editor
 
             integerField.RegisterValueChangedCallback(e =>
             {
-                var value = Mathf.Clamp(e.newValue, sliderMin, sliderMax);
-                integerField.value = value;
-                slider.value = value;
+                // NOTE: Not clamping to allow manual entry
+                integerField.value = e.newValue;
+                slider.value = e.newValue;
             });
 
             var currentUndoGroup = 0;
@@ -463,6 +475,18 @@ namespace Indiecat.TerrainGraph.Editor
 
             container.Add(slider);
             _injectedElements.Add(slider);
+        }
+
+        private float LinearToPower(float t, float min, float max, float power)
+        {
+            // t is 0–1
+            return min + Mathf.Pow(t, power) * (max - min);
+        }
+
+        private float PowerToLinear(float value, float min, float max, float power)
+        {
+            float normalized = Mathf.InverseLerp(min, max, value);
+            return Mathf.Pow(normalized, 1f / power);
         }
     }
 }

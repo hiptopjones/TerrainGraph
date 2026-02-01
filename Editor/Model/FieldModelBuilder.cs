@@ -67,15 +67,28 @@ namespace Indiecat.TerrainGraph.Editor
                 fieldModel.Min = minAttribute.Min;
             }
 
-            // TODO: If both min and range are specified, should warn the developer
+            // TODO: Should warn the developer if both min and range are specified
             var rangeAttribute = attributes.OfType<RangeValueAttribute>().FirstOrDefault();
             if (rangeAttribute != null)
             {
                 fieldModel.Min = rangeAttribute.Min;
                 fieldModel.Max = rangeAttribute.Max;
 
+                // TODO: Should warn the developer if specified without a range
                 // Only check for a slider if a range is provided
-                fieldModel.UseSlider = attributes.OfType<SliderAttribute>().Any();
+                fieldModel.UseLinearSlider = attributes.OfType<SliderAttribute>().Any();
+
+                if (fieldModel.Min >= 0 && fieldModel.Max <= 1)
+                {
+                    var powerSliderAttribute = attributes.OfType<PowerSliderAttribute>().FirstOrDefault();
+                    if (powerSliderAttribute != null)
+                    {
+                        // TODO: Should warn the developer if specified with the wrong range
+                        // Only check for power slider if range is within 0-1
+                        fieldModel.UsePowerSlider = true;
+                        fieldModel.PowerSliderPower = powerSliderAttribute.Power;
+                    }
+                }
             }
 
             var rules = new List<IValidationRule>();
