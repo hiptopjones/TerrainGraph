@@ -9,7 +9,6 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
-            [DefaultValue(true)]
             [DisplayName("Use Constant")]
             public bool UseConstantOperand;
 
