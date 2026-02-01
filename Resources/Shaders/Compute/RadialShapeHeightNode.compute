@@ -1,6 +1,11 @@
 #pragma kernel CSMain
 
-#pragma multi_compile OP_CONE OP_CYLINDER OP_GAUSSIAN OP_SMOOTHSTEP
+#pragma multi_compile OP_CONE OP_CYLINDER OP_GAUSSIAN OP_SMOOTHSTEP OP_CUSTOM
+
+#include "..\Common\CommonLibrary.hlsl"
+
+Texture2D<float> _ProfileTexture;
+SamplerState sampler_LinearClamp;
 
 float _Radius;
 float2 _Center;
@@ -37,6 +42,13 @@ float EvaluateShape(float2 position)
     float distance = length(position);
     float t = 1 - saturate(distance / _Radius);
     return smoothstep(0, 1, t);
+}
+#elif OP_CUSTOM
+float EvaluateShape(float2 position)
+{
+    float distance = length(position);
+    float t = 1 - saturate(distance / _Radius);
+    return SampleCurve(_ProfileTexture, sampler_LinearClamp, t);
 }
 #else
 float EvaluateShape(float2 position)

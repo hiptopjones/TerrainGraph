@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -13,6 +14,7 @@ namespace Indiecat.TerrainGraph.Editor
             Cylinder = 200,
             Gaussian = 300,
             SmoothStep = 400,
+            Custom = 1000,
         }
 
         public class OptionValues : OptionValuesBase
@@ -23,19 +25,40 @@ namespace Indiecat.TerrainGraph.Editor
 
         public class InputValues : InputValuesBase
         {
-            [MinValue(0.0001f), DefaultValue(0.5f)]
+            [RangeValue(0.0001f, 1), DefaultValue(0.5f)]
+            [Slider]
+            [DisplayName("Radius")]
             public float RadiusPercent;
+
+            [IncludeIf(nameof(IsShapeTypeCustom))]
+            public AnimationCurve Curve;
 
             [MinValue(16), DefaultValue(256)]
             public int Size;
         }
 
+        private bool IsShapeTypeCustom() => Options.ShapeType == ShapeType.Custom;
+
+        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
+        {
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+
+            var curveModel = classModel.GetFieldModel(nameof(InputValues.Curve));
+            curveModel.DefaultValue = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+            // Build the ports automatically
+            base.OnDefineCustomInputPorts(context);
+        }
+
         protected override bool TryExecuteNodeInternal()
         {
+            Texture2D profileTexture = null;
+
             try
             {
                 var shapeType = Options.ShapeType;
                 var radiusPercent = Inputs.RadiusPercent;
+                var profileCurve = Inputs.Curve;
                 var size = Inputs.Size;
 
                 var radius = radiusPercent * size / 2;
@@ -57,6 +80,12 @@ namespace Indiecat.TerrainGraph.Editor
                 shader.SetFloat("_Radius", radius);
                 shader.SetVector("_Center", center);
 
+                if (IsShapeTypeCustom())
+                {
+                    profileTexture = TextureHelpers.GetRampTexture(size, profileCurve.Evaluate);
+                    shader.SetTexture(kernel, "_ProfileTexture", profileTexture);
+                }
+
                 shader.shaderKeywords = keywordBuilder.GetKeywords();
 
                 var groups = Mathf.CeilToInt(size / 8.0f);
@@ -74,6 +103,14 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 Debug.LogException(ex);
                 return false;
+            }
+            finally
+            {
+                if (profileTexture != null)
+                {
+                    Object.DestroyImmediate(profileTexture);
+                    profileTexture = null;
+                }
             }
         }
     }
