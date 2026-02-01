@@ -2,6 +2,8 @@
 using JBooth.MicroVerseCore;
 #endif
 using System;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Indiecat.TerrainGraph.Editor
