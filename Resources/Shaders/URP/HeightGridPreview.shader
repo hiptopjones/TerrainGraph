@@ -4,8 +4,8 @@ Shader "Hidden/HeightGridPreview"
     {
         _HeightGridTexture ("Height Grid Texture", 2D) = "white" {}
         _HeightScale ("Height Scale", Float) = 100
-        _AmbientWrap ("Ambient Wrap", Range (0, 0.5)) = 0.2 // 0 = normal lambert, 1 = very soft
-
+        [Slider] _AmbientWrap ("Ambient Wrap", Range (0, 0.5)) = 0.2 // 0 = normal lambert, 1 = very soft
+        [Toggle] _CullZero ("Cull Zero", Float ) = 0
     }
 
     SubShader
@@ -38,6 +38,7 @@ Shader "Hidden/HeightGridPreview"
             CBUFFER_START(UnityPerMaterial)
                 float _HeightScale;
                 float _AmbientWrap;
+                float _CullZero;
             CBUFFER_END
 
             TEXTURE2D(_HeightGridTexture);
@@ -61,6 +62,11 @@ Shader "Hidden/HeightGridPreview"
 
             half4 frag (Varyings IN) : SV_Target
             {
+                if (IN.positionWS.y == 0 && _CullZero)
+                {
+                    discard;
+                }
+
                 float3 dpdx = ddx(IN.positionWS);
                 float3 dpdy = ddy(IN.positionWS);
                 float3 normalWS = normalize(cross(dpdy, dpdx));
