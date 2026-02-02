@@ -1,11 +1,12 @@
 using System;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class CellularNoiseHeightNode
-        : BaseNode<CellularNoiseHeightNode.OptionValues, CellularNoiseHeightNode.InputValues, HeightGrid>
+    public class GridNoiseHeightNode
+        : BaseNode<GridNoiseHeightNode.OptionValues, GridNoiseHeightNode.InputValues, HeightGrid>
     {
         public class OptionValues : OptionValuesBase
         {
@@ -33,11 +34,11 @@ namespace Indiecat.TerrainGraph.Editor
                 var seed = Inputs.Seed;
                 var size = Inputs.Size;
 
-                var start = NoiseHelpers.GetOffsetPositionInternal(offset, seed);
+                var start = GetOffsetPositionInternal(offset, seed);
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader(nameof(CellularNoiseHeightNode), out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(GridNoiseHeightNode), out var shader))
                 {
                     return false;
                 }
@@ -64,6 +65,19 @@ namespace Indiecat.TerrainGraph.Editor
                 Debug.LogException(ex);
                 return false;
             }
+        }
+
+        public static Vector2 GetOffsetPositionInternal(Vector2 position, int seed)
+        {
+            Random.InitState(seed);
+
+            var offsetX = Random.value * 200000 - 100000;
+            var offsetY = Random.value * 200000 - 100000;
+
+            // Offset the sampling position by a repeatable random location based on a seed
+            position += new Vector2(offsetX, offsetY);
+
+            return position;
         }
     }
 }

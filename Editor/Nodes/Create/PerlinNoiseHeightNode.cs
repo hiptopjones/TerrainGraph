@@ -34,8 +34,6 @@ namespace Indiecat.TerrainGraph.Editor
                 var seed = Inputs.Seed;
                 var size = Inputs.Size;
 
-                var start = NoiseHelpers.GetOffsetPositionInternal(offset, seed);
-
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
                 if (!ComputeHelpers.TryLoadComputeShader(nameof(PerlinNoiseHeightNode), out var shader))
@@ -46,8 +44,10 @@ namespace Indiecat.TerrainGraph.Editor
                 var kernel = shader.FindKernel("CSMain");
 
                 shader.SetTexture(kernel, "_OutTexture", outputTexture);
-                shader.SetVector("_Start", start);
+                shader.SetVector("_Start", offset);
                 shader.SetFloat("_Frequency", frequency);
+                shader.SetInt("_Seed", seed);
+                shader.SetInt("_Size", size);
 
                 var groups = Mathf.CeilToInt(size / 8.0f);
                 shader.Dispatch(kernel, groups, groups, 1);

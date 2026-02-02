@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class VoronoiNoiseHeightNode
-        : BaseNode<VoronoiNoiseHeightNode.OptionValues, VoronoiNoiseHeightNode.InputValues, HeightGrid>
+    public class ValueNoiseHeightNode
+        : BaseNode<ValueNoiseHeightNode.OptionValues, ValueNoiseHeightNode.InputValues, HeightGrid>
     {
         public class OptionValues : OptionValuesBase
         {
@@ -36,7 +36,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader(nameof(VoronoiNoiseHeightNode), out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(ValueNoiseHeightNode), out var shader))
                 {
                     return false;
                 }

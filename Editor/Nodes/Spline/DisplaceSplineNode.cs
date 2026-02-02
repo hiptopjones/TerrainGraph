@@ -73,9 +73,13 @@ namespace Indiecat.TerrainGraph.Editor
                 var iterationCount = Inputs.IterationCount;
                 var vertexCount = Inputs.VertexCount;
 
-                var start = NoiseHelpers.GetOffsetPositionInternal(Vector2.zero, seed);
+                var start = new Vector2(offset, 0);
 
                 var currentSpline = inputSplineWrapper.Spline;
+
+                FastNoiseLite fnl = new FastNoiseLite(seed);
+                fnl.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+                fnl.SetFrequency(frequency);
 
                 for (int i = 0; i < iterationCount; i++)
                 {
@@ -99,7 +103,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                         var displacement = Vector3.zero;
 
-                        var noise = GetSeamlessNoise(start, frequency, t + offset);
+                        var noise = GetSeamlessNoise(fnl, start, t);
 
                         switch (displacementSign)
                         {
@@ -156,13 +160,12 @@ namespace Indiecat.TerrainGraph.Editor
         }
 
         // Sample noise in a circle through the noise field, which makes it seamless
-        public static float GetSeamlessNoise(Vector2 start, float frequency, float t)
+        public static float GetSeamlessNoise(FastNoiseLite fnl, Vector2 start, float t)
         {
-            var x = frequency * Mathf.Cos(t * 2 * Mathf.PI);
-            var y = frequency * Mathf.Sin(t * 2 * Mathf.PI);
+            var x = Mathf.Cos(t * 2 * Mathf.PI);
+            var y = Mathf.Sin(t * 2 * Mathf.PI);
 
-            var noise = NoiseHelpers.PerlinNoise2D(start.x + x, start.y + y);
-            return noise;
+            return fnl.GetNoise(x + start.x, y + start.y);
         }
     }
 }

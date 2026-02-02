@@ -22,8 +22,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float2 position = _Start + uv;
 
     fnl_state state = fnlCreateState(_Seed);
-    state.noise_type = FNL_NOISE_CELLULAR;
-    state.cellular_return_type = FNL_CELLULAR_RETURN_TYPE_CELLVALUE;
+    state.noise_type = FNL_NOISE_VALUE;
     state.frequency = _Frequency;
     
     float noise = fnlGetNoise2D(state, position.x, position.y);

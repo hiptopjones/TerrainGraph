@@ -1,19 +1,31 @@
 #pragma kernel CSMain
 
-#include "..\Common\Noise.cginc"
+#include "..\Common\FastNoiseLite.hlsl"
 
 float2 _Start;
 float _Frequency;
+int _Seed;
+int _Size;
 
 RWTexture2D<float> _OutTexture;
 
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
+    if (id.x >= (uint) _Size || id.y >= (uint) _Size)
+    {
+        return;
+    }
+
     uint2 uv = id.xy;
 
-    float2 position = (_Start + uv) * _Frequency;
+    float2 position = _Start + uv;
 
-    float noise = FBM2D(position);
+    fnl_state state = fnlCreateState(_Seed);
+    state.noise_type = FNL_NOISE_PERLIN;
+    state.frequency = _Frequency;
+    
+    float noise = fnlGetNoise2D(state, position.x, position.y);
+    
     _OutTexture[uv].r = saturate((noise + 1) / 2);
 }
