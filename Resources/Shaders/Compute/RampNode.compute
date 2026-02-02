@@ -1,5 +1,7 @@
 #pragma kernel CSMain
 
+#include "..\Common\CommonLibrary.hlsl"
+
 Texture2D<float> _InTexture;
 Texture2D<float> _RampTexture;
 SamplerState sampler_RampTexture;
@@ -11,12 +13,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 {
     uint2 uv = id.xy;
     
-    float t = _InTexture[uv].r;
-    
-    float2 samplerPosition = float2(t, 0);
-    float lod = 0;
-    
-    float height = _RampTexture.SampleLevel(sampler_RampTexture, samplerPosition, lod).r;
+    float t = saturate(_InTexture[uv].r);
+        
+    float height = SampleCurve(_RampTexture, sampler_RampTexture, t);
 
     _OutTexture[uv].r = height;
 }
