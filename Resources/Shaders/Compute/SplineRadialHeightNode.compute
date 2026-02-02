@@ -17,7 +17,7 @@ int _SegmentCount;
 
 int _Size;
 
-Texture2D<float> _ProfileTexture;
+Texture2D<float> _ProfileCurveTexture;
 SamplerState sampler_LinearClamp;
 
 RWTexture2D<float> _OutTexture;
@@ -82,9 +82,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         }
     }
 
-    // Vary the cross-section falloff by distance from the center
-    float d01 = saturate(distanceFromCenter / minTotalDistance);
-    float output = SampleCurve(_ProfileTexture, sampler_LinearClamp, d01);
+    // Vary the height by distance from the center
+    float d01 = 1 - saturate(distanceFromCenter / minTotalDistance);
+    float output = SampleCurve(_ProfileCurveTexture, sampler_LinearClamp, d01);
 
     _OutTexture[uv].r = output;
 }

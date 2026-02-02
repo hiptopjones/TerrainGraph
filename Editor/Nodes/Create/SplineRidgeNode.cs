@@ -32,7 +32,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             public AnimationCurve RadiusCurve;
 
-            public AnimationCurve FalloffCurve;
+            public AnimationCurve ProfileCurve;
 
             [MinValue(16), DefaultValue(256)]
             public int Size;
@@ -42,11 +42,11 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var classModel = ClassModelCache.GetClassModel<InputValues>();
 
-            var falloffCurveModel = classModel.GetFieldModel(nameof(InputValues.FalloffCurve));
-            falloffCurveModel.DefaultValue = AnimationCurve.EaseInOut(0, 1, 1, 0);
+            var profileModel = classModel.GetFieldModel(nameof(InputValues.ProfileCurve));
+            profileModel.DefaultValue = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
-            var radiusCurveModel = classModel.GetFieldModel(nameof(InputValues.RadiusCurve));
-            radiusCurveModel.DefaultValue = AnimationCurve.Linear(0, 1, 1, 1);
+            var radiusModel = classModel.GetFieldModel(nameof(InputValues.RadiusCurve));
+            radiusModel.DefaultValue = AnimationCurve.Linear(0, 1, 1, 1);
 
             // Build the ports automatically
             base.OnDefineCustomInputPorts(context);
@@ -55,8 +55,8 @@ namespace Indiecat.TerrainGraph.Editor
         protected override bool TryExecuteNodeInternal()
         {
             ComputeBuffer segmentsBuffer = null;
-            Texture2D radiusTexture = null;
-            Texture2D falloffTexture = null;
+            Texture2D radiusCurveTexture = null;
+            Texture2D profileCurveTexture = null;
 
             try
             {
@@ -65,7 +65,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var isCentered = Inputs.IsCentered;
                 var baseRadius = Inputs.BaseRadius;
                 var radiusCurve = Inputs.RadiusCurve;
-                var falloffCurve = Inputs.FalloffCurve;
+                var profileCurve = Inputs.ProfileCurve;
                 var size = Inputs.Size;
 
                 var inputSpline = inputSplineWrapper.Spline;
@@ -87,8 +87,8 @@ namespace Indiecat.TerrainGraph.Editor
                 segmentsBuffer = new ComputeBuffer(segments.Count, stride);
                 segmentsBuffer.SetData(segments);
 
-                radiusTexture = TextureHelpers.GetRampTexture(size, radiusCurve.Evaluate);
-                falloffTexture = TextureHelpers.GetRampTexture(size, falloffCurve.Evaluate);
+                radiusCurveTexture = TextureHelpers.GetRampTexture(size, radiusCurve.Evaluate);
+                profileCurveTexture = TextureHelpers.GetRampTexture(size, profileCurve.Evaluate);
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
@@ -103,8 +103,8 @@ namespace Indiecat.TerrainGraph.Editor
                 shader.SetBuffer(kernel, "_Segments", segmentsBuffer);
                 shader.SetInt("_SegmentCount", segmentCount);
                 shader.SetFloat("_BaseRadius", baseRadius);
-                shader.SetTexture(kernel, "_RadiusCurveTexture", radiusTexture);
-                shader.SetTexture(kernel, "_FalloffCurveTexture", falloffTexture);
+                shader.SetTexture(kernel, "_RadiusCurveTexture", radiusCurveTexture);
+                shader.SetTexture(kernel, "_ProfileCurveTexture", profileCurveTexture);
                 shader.SetInt("_Size", size);
 
                 var groups = Mathf.CeilToInt(size / 8.0f);
@@ -125,16 +125,16 @@ namespace Indiecat.TerrainGraph.Editor
             }
             finally
             {
-                if (radiusTexture != null)
+                if (radiusCurveTexture != null)
                 {
-                    Object.DestroyImmediate(radiusTexture);
-                    radiusTexture = null;
+                    Object.DestroyImmediate(radiusCurveTexture);
+                    radiusCurveTexture = null;
                 }
 
-                if (falloffTexture != null)
+                if (profileCurveTexture != null)
                 {
-                    Object.DestroyImmediate(falloffTexture);
-                    falloffTexture = null;
+                    Object.DestroyImmediate(profileCurveTexture);
+                    profileCurveTexture = null;
                 }
 
                 if (segmentsBuffer != null)

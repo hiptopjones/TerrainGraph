@@ -18,7 +18,7 @@ float _BaseRadius;
 int _Size;
 
 Texture2D<float> _RadiusCurveTexture;
-Texture2D<float> _FalloffCurveTexture;
+Texture2D<float> _ProfileCurveTexture;
 SamplerState sampler_LinearClamp;
 
 RWTexture2D<float> _OutTexture;
@@ -58,11 +58,11 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float radiusScale = SampleCurve(_RadiusCurveTexture, sampler_LinearClamp, bestT);
     float radius = _BaseRadius * radiusScale;
 
-    // Vary the cross-section falloff by distance from the spline (as determined by radius)
-    float d01 = saturate(minDistance / max(radius, 1e-6));
-    float falloff = SampleCurve(_FalloffCurveTexture, sampler_LinearClamp, d01);
+    // Vary the height by distance from the spline
+    float d01 = 1 - saturate(minDistance / max(radius, 1e-6));
+    float profile = SampleCurve(_ProfileCurveTexture, sampler_LinearClamp, d01);
     
-    float height = bestHeight * falloff;
+    float height = bestHeight * profile;
     
     _OutTexture[uv].r = height;
 }

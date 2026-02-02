@@ -4,7 +4,7 @@
 
 #include "..\Common\CommonLibrary.hlsl"
 
-Texture2D<float> _ProfileTexture;
+Texture2D<float> _ProfileCurveTexture;
 SamplerState sampler_LinearClamp;
 
 float _Radius;
@@ -48,7 +48,7 @@ float EvaluateShape(float2 position)
 {
     float distance = length(position);
     float t = 1 - saturate(distance / _Radius);
-    return SampleCurve(_ProfileTexture, sampler_LinearClamp, t);
+    return SampleCurve(_ProfileCurveTexture, sampler_LinearClamp, t);
 }
 #else
 float EvaluateShape(float2 position)

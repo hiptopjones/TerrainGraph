@@ -31,7 +31,8 @@ namespace Indiecat.TerrainGraph.Editor
             public float RadiusPercent;
 
             [IncludeIf(nameof(IsShapeTypeCustom))]
-            public AnimationCurve Curve;
+            [DisplayName("Profile")]
+            public AnimationCurve ProfileCurve;
 
             [MinValue(16), DefaultValue(256)]
             public int Size;
@@ -43,8 +44,8 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var classModel = ClassModelCache.GetClassModel<InputValues>();
 
-            var curveModel = classModel.GetFieldModel(nameof(InputValues.Curve));
-            curveModel.DefaultValue = AnimationCurve.EaseInOut(0, 0, 1, 1);
+            var profileModel = classModel.GetFieldModel(nameof(InputValues.ProfileCurve));
+            profileModel.DefaultValue = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
             // Build the ports automatically
             base.OnDefineCustomInputPorts(context);
@@ -52,13 +53,13 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected override bool TryExecuteNodeInternal()
         {
-            Texture2D profileTexture = null;
+            Texture2D profileCurveTexture = null;
 
             try
             {
                 var shapeType = Options.ShapeType;
                 var radiusPercent = Inputs.RadiusPercent;
-                var profileCurve = Inputs.Curve;
+                var profileCurve = Inputs.ProfileCurve;
                 var size = Inputs.Size;
 
                 var radius = radiusPercent * size / 2;
@@ -82,8 +83,8 @@ namespace Indiecat.TerrainGraph.Editor
 
                 if (IsShapeTypeCustom())
                 {
-                    profileTexture = TextureHelpers.GetRampTexture(size, profileCurve.Evaluate);
-                    shader.SetTexture(kernel, "_ProfileTexture", profileTexture);
+                    profileCurveTexture = TextureHelpers.GetRampTexture(size, profileCurve.Evaluate);
+                    shader.SetTexture(kernel, "_ProfileCurveTexture", profileCurveTexture);
                 }
 
                 shader.shaderKeywords = keywordBuilder.GetKeywords();
@@ -106,10 +107,10 @@ namespace Indiecat.TerrainGraph.Editor
             }
             finally
             {
-                if (profileTexture != null)
+                if (profileCurveTexture != null)
                 {
-                    Object.DestroyImmediate(profileTexture);
-                    profileTexture = null;
+                    Object.DestroyImmediate(profileCurveTexture);
+                    profileCurveTexture = null;
                 }
             }
         }

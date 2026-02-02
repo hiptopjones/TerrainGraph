@@ -47,7 +47,7 @@ namespace Indiecat.TerrainGraph.Editor
         protected override bool TryExecuteNodeInternal()
         {
             ComputeBuffer segmentsBuffer = null;
-            Texture2D profileTexture = null;
+            Texture2D profileCurveTexture = null;
 
             try
             {
@@ -68,7 +68,7 @@ namespace Indiecat.TerrainGraph.Editor
                 segmentsBuffer = new ComputeBuffer(segments.Count, stride);
                 segmentsBuffer.SetData(segments);
 
-                profileTexture = TextureHelpers.GetRampTexture(size, profileCurve.Evaluate);
+                profileCurveTexture = TextureHelpers.GetRampTexture(size, profileCurve.Evaluate);
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
@@ -80,7 +80,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var kernel = shader.FindKernel("CSMain");
 
                 shader.SetTexture(kernel, "_OutTexture", outputTexture);
-                shader.SetTexture(kernel, "_ProfileTexture", profileTexture);
+                shader.SetTexture(kernel, "_ProfileCurveTexture", profileCurveTexture);
                 shader.SetBuffer(kernel, "_Segments", segmentsBuffer);
                 shader.SetInt("_SegmentCount", segments.Count);
                 shader.SetInt("_Size", size);
@@ -103,10 +103,10 @@ namespace Indiecat.TerrainGraph.Editor
             }
             finally
             {
-                if (profileTexture != null)
+                if (profileCurveTexture != null)
                 {
-                    Object.DestroyImmediate(profileTexture);
-                    profileTexture = null;
+                    Object.DestroyImmediate(profileCurveTexture);
+                    profileCurveTexture = null;
                 }
 
                 if (segmentsBuffer != null)
