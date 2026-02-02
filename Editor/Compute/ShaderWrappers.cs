@@ -363,5 +363,42 @@ namespace Indiecat.TerrainGraph.Editor
 
             return true;
         }
+
+        public static bool TryTransformOperation(
+            RenderTexture inputTexture,
+            Vector2 translation,
+            float rotationDegrees, 
+            Vector2 scale, 
+            int size, 
+            ref RenderTexture outputTexture)
+        {
+            if (outputTexture == null)
+            {
+                outputTexture = TextureHelpers.CreateRenderTexture(size, RenderTextureFormat.RFloat);
+            }
+
+            var trs = Matrix4x4.TRS(
+                new Vector3(-translation.x, translation.y, 0),
+                Quaternion.Euler(0, 0, rotationDegrees),
+                new Vector3(1 / scale.x, 1 / scale.y, 1));
+
+            if (!ComputeHelpers.TryLoadComputeShader(nameof(TransformNode), out var shader))
+            {
+                return false;
+            }
+
+            var kernel = shader.FindKernel("CSMain");
+
+            shader.SetTexture(kernel, "_InTexture", inputTexture);
+            shader.SetTexture(kernel, "_OutTexture", outputTexture);
+            shader.SetFloat("_Size", size);
+            shader.SetMatrix("_Transform", trs);
+
+            var groups = Mathf.CeilToInt(size / 8.0f);
+            shader.Dispatch(kernel, groups, groups, 1);
+
+            return true;
+        }
+
     }
 }

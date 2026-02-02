@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class TransformNode
-        : BaseNode<TransformNode.OptionValues, TransformNode.InputValues, HeightGrid>
+    public class TranslateNode
+        : BaseNode<TranslateNode.OptionValues, TranslateNode.InputValues, HeightGrid>
     {
         public class OptionValues : OptionValuesBase
         {
@@ -17,21 +17,6 @@ namespace Indiecat.TerrainGraph.Editor
             public HeightGrid Grid;
 
             public Vector2 TranslationPercent;
-
-            public float RotationDegrees;
-
-            public Vector2 Scale;
-        }
-
-        protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
-        {
-            var classModel = ClassModelCache.GetClassModel<InputValues>();
-
-            var scaleModel = classModel.GetFieldModel(nameof(InputValues.Scale));
-            scaleModel.DefaultValue = Vector2.one;
-
-            // Build the ports automatically
-            base.OnDefineCustomInputPorts(context);
         }
 
         protected override bool TryExecuteNodeInternal()
@@ -40,8 +25,6 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputGrid = Inputs.Grid;
                 var translationPercent = Inputs.TranslationPercent;
-                var rotationDegrees = Inputs.RotationDegrees;
-                var scale = Inputs.Scale;
 
                 var size = inputGrid.Size;
 
@@ -51,7 +34,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var translation = translationPercent * size;
 
                 if (!ShaderWrappers.TryTransformOperation(
-                    inputTexture, translation, rotationDegrees, scale, size, ref outputTexture))
+                    inputTexture, translation, 0, Vector2.one, size, ref outputTexture))
                 {
                     return false;
                 }
