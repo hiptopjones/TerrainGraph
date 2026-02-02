@@ -15,14 +15,12 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
+            [DefaultValue(CurveType.Line)]
             public CurveType CurveType;
         }
 
         public class InputValues : InputValuesBase
         {
-            [DefaultValue(CurveType.Line)]
-            public CurveType CurveType;
-
             [MinValue(16), DefaultValue(256)]
             public int Size;
 
@@ -35,7 +33,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var curveType = Inputs.CurveType;
+                var curveType = Options.CurveType;
                 var size = Inputs.Size;
                 var vertexCount = Inputs.VertexCount;
 

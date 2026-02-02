@@ -8,8 +8,8 @@ using Object = UnityEngine.Object;
 namespace Indiecat.TerrainGraph.Editor
 {
     [Serializable]
-    public class SplineRidgeNode
-        : BaseNode<SplineRidgeNode.OptionValues, SplineRidgeNode.InputValues, HeightGrid>
+    public class SplineRidgeHeightNode
+        : BaseNode<SplineRidgeHeightNode.OptionValues, SplineRidgeHeightNode.InputValues, HeightGrid>
     {
         public class OptionValues : OptionValuesBase
         {
@@ -92,7 +92,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ComputeHelpers.TryLoadComputeShader(nameof(SplineRidgeNode), out var shader))
+                if (!ComputeHelpers.TryLoadComputeShader(nameof(SplineRidgeHeightNode), out var shader))
                 {
                     return false;
                 }
