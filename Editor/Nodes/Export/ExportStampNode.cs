@@ -57,7 +57,8 @@ namespace Indiecat.TerrainGraph.Editor
             if (microverse == null)
             {
                 // NOTE: The user must create MicroVerse themselves to avoid complexity here
-                throw new Exception("Missing MicroVerse scene object");
+                Debug.LogError("Missing MicroVerse scene object");
+                return false;
             }
 
             microverse.enabled = false;
@@ -76,7 +77,8 @@ namespace Indiecat.TerrainGraph.Editor
             if (terrain == null)
             {
                 // NOTE: The user must create the terrain themselves to avoid complexity here
-                throw new Exception("Missing Terrain scene object under MicroVerse");
+                Debug.LogError("Missing Terrain scene object under MicroVerse");
+                return false;
             }
 
             heightStamp.transform.localScale = terrain.terrainData.size;
@@ -120,7 +122,7 @@ namespace Indiecat.TerrainGraph.Editor
 #else
         public bool TryExportNode()
         {
-            Debug.LogWarning($"{nameof(ExportStampNode)} requires MicroVerse to be installed");
+            Debug.LogError($"{nameof(ExportStampNode)} requires MicroVerse to be installed");
             return false;
         }
 #endif
