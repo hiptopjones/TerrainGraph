@@ -703,7 +703,7 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private int GetInputsHashCode(TInputValues inputs)
+        protected virtual int GetInputsHashCode(TInputValues inputs)
         {
             var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
 
@@ -744,7 +744,7 @@ namespace Indiecat.TerrainGraph.Editor
             return hashCode;
         }
 
-        private int GetOptionsHashCode(TOptionValues options)
+        protected virtual int GetOptionsHashCode(TOptionValues options)
         {
             var optionsModel = ClassModelCache.GetClassModel<TOptionValues>();
 
