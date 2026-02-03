@@ -1,10 +1,8 @@
 ﻿using Indiecat.UnityCommon.Runtime;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using UnityEngine.Splines;
 using Object = UnityEngine.Object;
 
 namespace Indiecat.TerrainGraph.Editor
@@ -28,6 +26,10 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DisplayName("Profile")]
             public AnimationCurve ProfileCurve;
+
+            [DefaultValue(true)]
+            [DisplayName("Center")]
+            public bool IsCentered;
 
             [MinValue(16), DefaultValue(256)]
             public int Size;
@@ -54,6 +56,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputSplineWrapper = Inputs.SplineWrapper;
                 var segmentCount = Inputs.SegmentCount;
                 var profileCurve = Inputs.ProfileCurve;
+                var isCentered = Inputs.IsCentered;
                 var size = Inputs.Size;
 
                 var inputSpline = inputSplineWrapper.Spline;
@@ -61,8 +64,16 @@ namespace Indiecat.TerrainGraph.Editor
                 List<Segment> segments;
                 var gridCenter = (Vector2.one * size / 2).ToVector3XZ();
 
-                var centeredSpline = SplineHelpers.GetCenteredSpline(inputSpline, gridCenter);
-                segments = SplineHelpers.GenerateSegments(centeredSpline, segmentCount);
+                var spline = inputSpline;
+                var pivot = SplineHelpers.GetCenter(spline);
+
+                if (isCentered)
+                {
+                    spline = SplineHelpers.GetCenteredSpline(inputSpline, gridCenter);
+                    pivot = gridCenter.SwizzleXZ();
+                }
+
+                segments = SplineHelpers.GenerateSegments(spline, segmentCount);
 
                 int stride = Marshal.SizeOf(typeof(Segment));
                 segmentsBuffer = new ComputeBuffer(segments.Count, stride);
@@ -83,6 +94,7 @@ namespace Indiecat.TerrainGraph.Editor
                 shader.SetTexture(kernel, "_ProfileCurveTexture", profileCurveTexture);
                 shader.SetBuffer(kernel, "_Segments", segmentsBuffer);
                 shader.SetInt("_SegmentCount", segments.Count);
+                shader.SetVector("_Pivot", pivot);
                 shader.SetInt("_Size", size);
 
                 var groups = Mathf.CeilToInt(size / 8.0f);

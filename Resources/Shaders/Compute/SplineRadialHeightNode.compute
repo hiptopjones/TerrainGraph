@@ -14,7 +14,7 @@ struct Segment
 
 StructuredBuffer<Segment> _Segments;
 int _SegmentCount;
-
+float2 _Pivot;
 int _Size;
 
 Texture2D<float> _ProfileCurveTexture;
@@ -60,9 +60,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
         return;
     }
     
-    float2 center = float2(_Size / 2.0, _Size / 2.0);
-    
-    float distanceFromCenter = length(p - center);
+    float distanceFromCenter = length(p - _Pivot);
     
     float minTotalDistance = 1e20;
     
