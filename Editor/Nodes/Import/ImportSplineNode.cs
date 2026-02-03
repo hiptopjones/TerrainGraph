@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+using UnityEditor.Splines;
 using UnityEngine;
 using UnityEngine.Splines;
 using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 namespace Indiecat.TerrainGraph.Editor
 {
@@ -21,8 +23,25 @@ namespace Indiecat.TerrainGraph.Editor
             public string TargetObjectName;
         }
 
+        private SplineContainer _currentSplineContainer;
+
+        // Changes when the spline changes, and injected into the hashcode calculation
+        private float _uniqueSplineValue;
+
+        public override void OnEnable()
+        {
+            EditorSplineUtility.AfterSplineWasModified += OnAfterSplineWasModified;
+        }
+
+        public override void OnDisable()
+        {
+            EditorSplineUtility.AfterSplineWasModified -= OnAfterSplineWasModified;
+        }
+
         private ValidationResult IsValidTarget(InputValues inputs)
         {
+            _currentSplineContainer = null;
+
             var classModel = ClassModelCache.GetClassModel<InputValues>();
             var targetModel = classModel.GetFieldModel(nameof(InputValues.TargetObjectName));
 
@@ -32,29 +51,46 @@ namespace Indiecat.TerrainGraph.Editor
             }
             else
             {
-                var splineContainers = Object.FindObjectsByType<SplineContainer>(
-                    FindObjectsInactive.Include, FindObjectsSortMode.None);
+                var namedSplineContainers = Object.FindObjectsByType<SplineContainer>(
+                    FindObjectsInactive.Include, FindObjectsSortMode.None)
+                        .Where(x => x.name == inputs.TargetObjectName).ToList();
 
-                var namedSplineContainerCount = splineContainers.Count(x => x.name == inputs.TargetObjectName);
-                if (namedSplineContainerCount == 0)
+                if (namedSplineContainers.Count == 0)
                 {
                     return ValidationResult.Error($"{targetModel.DisplayName} input invalid");
                 }
-                else if (namedSplineContainerCount > 1)
+                else if (namedSplineContainers.Count > 1)
                 {
                     return ValidationResult.Error($"{targetModel.DisplayName} input ambiguous");
                 }
-                else
+
+                var splineContainer = namedSplineContainers.Single();
+                if (splineContainer.Spline == null)
                 {
-                    var splineContainer = splineContainers.First();
-                    if (splineContainer.Spline == null)
-                    {
-                        ValidationResult.Error($"{targetModel.DisplayName} missing spline");
-                    }
+                    ValidationResult.Error($"{targetModel.DisplayName} missing spline");
                 }
+
+                _currentSplineContainer = splineContainer;
+
+                return ValidationResult.Ok();
+            }
+        }
+
+        private void OnAfterSplineWasModified(Spline spline)
+        {
+            if (_currentSplineContainer?.Spline != spline)
+            {
+                return;
             }
 
-            return ValidationResult.Ok();
+            // Will force the hashcode to be different, invalidating the node and forcing an update
+            _uniqueSplineValue = Random.value;
+        }
+
+        protected override int GetInputsHashCode(InputValues inputs)
+        {
+            var hashCode = base.GetInputsHashCode(inputs);
+            return HashCode.Combine(hashCode, _uniqueSplineValue);
         }
 
         protected override bool TryExecuteNodeInternal()
@@ -63,8 +99,7 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputTargetName = Inputs.TargetObjectName;
 
-                var splineContainer = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                    .Single(x => x.name == inputTargetName);
+                var splineContainer = _currentSplineContainer;
 
                 var outputSpline = splineContainer.Spline;
 
