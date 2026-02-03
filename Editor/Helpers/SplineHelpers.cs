@@ -131,7 +131,6 @@ namespace Indiecat.TerrainGraph.Editor
             return outputSpline;
         }
 
-
         public static Vector2 GetMinimumCenter(Spline spline, int margin = 0)
         {
             var size = GetMinimumBoundingSquareSize(spline, margin);
@@ -228,20 +227,38 @@ namespace Indiecat.TerrainGraph.Editor
             return size;
         }
 
-        public static Spline TranslateSpline(Spline spline, Vector2 translation)
+        public static Spline TranslateSpline(Spline spline, Vector3 translation)
         {
-            var vertices = new List<Vector2>();
+            var vertices = new List<Vector3>();
 
             foreach (var knot in spline)
             {
                 var position = (Vector3)knot.Position;
-                var vertex = position.SwizzleXZ() + translation;
+                var vertex = position + translation;
 
                 vertices.Add(vertex);
             }
 
             var translatedSpline = CreateSpline(vertices, spline.Closed);
             return translatedSpline;
+        }
+
+        public static Spline ScaleSpline(Spline spline, Vector3 center, Vector3 scale)
+        {
+            var vertices = new List<Vector3>();
+
+            foreach (var knot in spline)
+            {
+                var position = (Vector3)knot.Position;
+                var centeredPosition = position - center;
+                var scaledCenteredPosition = centeredPosition.PiecewiseMultiply(scale);
+
+                var vertex = scaledCenteredPosition + center;
+                vertices.Add(vertex);
+            }
+
+            var scaledSpline = CreateSpline(vertices, spline.Closed);
+            return scaledSpline;
         }
 
         public static List<Spline> CreateSplines(List<List<Vector2>> contours, int vertexCount)

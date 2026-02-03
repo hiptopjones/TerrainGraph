@@ -23,6 +23,10 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Center")]
             public bool IsCentered;
 
+            // TODO: This should only be present when centering
+            [DisplayName("Scale to Fit")]
+            public bool IsScaledToFit;
+
             public bool ApplySplineHeight;
 
             [MinValue(16), DefaultValue(256)]
@@ -36,13 +40,21 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputSplineWrapper = Inputs.SplineWrapper;
                 var sampleCount = Inputs.SampleCount;
                 var isCentered = Inputs.IsCentered;
+                var isScaledToFit = Inputs.IsScaledToFit;
                 var applySplineHeight = Inputs.ApplySplineHeight;
                 var size = Inputs.Size;
 
                 var inputSpline = inputSplineWrapper.Spline;
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
-                if (!ShaderWrappers.TryGenerateSdf(inputSpline, size, sampleCount, isCentered, applySplineHeight, ref outputTexture))
+                if (!ShaderWrappers.TryGenerateSdf(
+                    inputSpline,
+                    size,
+                    sampleCount,
+                    isCentered,
+                    isScaledToFit,
+                    applySplineHeight,
+                    ref outputTexture))
                 {
                     return false;
                 }

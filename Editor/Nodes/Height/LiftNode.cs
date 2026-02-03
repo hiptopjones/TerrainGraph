@@ -54,7 +54,14 @@ namespace Indiecat.TerrainGraph.Editor
                 var splineCenter = SplineHelpers.GetCenter(inputSpline);
                 var sampleCount = (int)(inputSpline.GetLength() / 2);
 
-                if (!ShaderWrappers.TryGenerateSdf(inputSpline, size, sampleCount, isCentered: false, applySplineHeight: false, ref sdfTexture))
+                if (!ShaderWrappers.TryGenerateSdf(
+                    inputSpline,
+                    size,
+                    sampleCount,
+                    isCentered: false,
+                    isScaledToFit: false,
+                    applySplineHeight: false,
+                    ref sdfTexture))
                 {
                     return false;
                 }
