@@ -255,39 +255,6 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        public static bool TryGrow(RenderTexture inputTexture, int radius, int size, ref RenderTexture outputTexture)
-        {
-            try
-            {
-                if (outputTexture == null)
-                {
-                    outputTexture = TextureHelpers.CreateRenderTexture(size, RenderTextureFormat.RFloat);
-                }
-
-                if (!ComputeHelpers.TryLoadComputeShader(nameof(GrowNode), out var shader))
-                {
-                    return false;
-                }
-
-                var kernel = shader.FindKernel("CSMain");
-
-                shader.SetTexture(kernel, "_InTexture", inputTexture);
-                shader.SetTexture(kernel, "_OutTexture", outputTexture);
-                shader.SetInt("_Radius", radius);
-                shader.SetInt("_Size", size);
-
-                var groups = Mathf.CeilToInt(size / 8.0f);
-                shader.Dispatch(kernel, groups, groups, 1);
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
-        }
-
         public static bool TryArithmeticOperation(
             RenderTexture inputTexture,
             float value,
