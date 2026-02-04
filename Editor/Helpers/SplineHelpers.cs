@@ -251,5 +251,40 @@ namespace Indiecat.TerrainGraph.Editor
 
             return segments;
         }
+
+        public static void EnsureSplineClockwise(Spline spline)
+        {
+            if (!spline.Closed || spline.Count < 3)
+            {
+                return;
+            }
+
+            var points = new List<Vector3>();   
+            for (int i = 0; i < spline.Count; i++)
+            {
+                points.Add(spline[i].Position);
+            }
+
+            if (!IsClockwiseXZ(points))
+            {
+                SplineUtility.ReverseFlow(spline);
+            }
+        }
+
+        public static bool IsClockwiseXZ(IList<Vector3> points)
+        {
+            var sum = 0f;
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                var a = points[i];
+                var b = points[(i + 1) % points.Count];
+
+                sum += (b.x - a.x) * (b.z + a.z);
+            }
+
+            // Negative = clockwise, Positive = counter-clockwise
+            return sum < 0f;
+        }
     }
 }

@@ -106,9 +106,14 @@ namespace Indiecat.TerrainGraph.Editor
 
             try
             {
+                if (spline.Closed)
+                {
+                    // Ensure deterministic inside/outside sign
+                    SplineHelpers.EnsureSplineClockwise(spline);
+                }
+
                 var transformedSpline = SplineHelpers.GetTransformedSpline(spline, size, centerSplineInGrid, scaleSplineToFitGrid);
                 var points = SplineHelpers.GetSampledSplinePoints(transformedSpline, sampleCount);
-
                 pointsBuffer = new ComputeBuffer(points.Count, sizeof(float) * 3);
                 pointsBuffer.SetData(points);
 
