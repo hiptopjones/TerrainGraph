@@ -9,6 +9,8 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
+            [DisplayName("Ignore Zero")]
+            public bool IsZeroIgnored;
         }
 
         public class InputValues : InputValuesBase
@@ -21,6 +23,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
+                var isZeroIgnored = Options.IsZeroIgnored;
                 var inputGrid = Inputs.Grid;
 
                 var size = inputGrid.Size;
@@ -34,6 +37,9 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var outputTexture = GetOrCreateNodeRenderTexture(size);
 
+                var keywordBuilder = new KeywordBuilder();
+                keywordBuilder.AddKeyword(isZeroIgnored ? "ZERO_EXCLUDE" : "ZERO_INCLUDE");
+
                 if (!ComputeHelpers.TryLoadComputeShader(nameof(NormalizeNode), out var shader))
                 {
                     return false;
@@ -45,6 +51,8 @@ namespace Indiecat.TerrainGraph.Editor
                 shader.SetTexture(kernel, "_OutTexture", outputTexture);
                 shader.SetFloat("_RangeMin", rangeMin);
                 shader.SetFloat("_RangeMax", rangeMax);
+
+                shader.shaderKeywords = keywordBuilder.GetKeywords();
 
                 var groups = Mathf.CeilToInt(size / 8.0f);
                 shader.Dispatch(kernel, groups, groups, 1);
