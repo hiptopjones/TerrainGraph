@@ -9,6 +9,8 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
+            [DisplayName("Center")]
+            public bool CenterSpline;
         }
 
         public class InputValues : InputValuesBase
@@ -20,27 +22,26 @@ namespace Indiecat.TerrainGraph.Editor
             [MinValue(10), DefaultValue(100)]
             public int SampleCount;
 
-            [DisplayName("Center")]
-            public bool IsCentered;
-
-            // TODO: This should only be present when centering
-            [DisplayName("Scale to Fit")]
-            public bool IsScaledToFit;
-
             public bool ApplySplineHeight;
+
+            [DisplayName("Scale to Fit")]
+            [IncludeIf(nameof(IsSplineBeingCentered))]
+            public bool ScaleSplineToFit;
 
             [MinValue(16), DefaultValue(256)]
             public int Size;
         }
 
+        private bool IsSplineBeingCentered() => Options.CenterSpline;
+
         protected override bool TryExecuteNodeInternal()
         {
             try
             {
+                var centerSpline = Options.CenterSpline;
                 var inputSplineWrapper = Inputs.SplineWrapper;
                 var sampleCount = Inputs.SampleCount;
-                var isCentered = Inputs.IsCentered;
-                var isScaledToFit = Inputs.IsScaledToFit;
+                var scaleSplineToFit = Inputs.ScaleSplineToFit;
                 var applySplineHeight = Inputs.ApplySplineHeight;
                 var size = Inputs.Size;
 
@@ -51,8 +52,8 @@ namespace Indiecat.TerrainGraph.Editor
                     inputSpline,
                     size,
                     sampleCount,
-                    isCentered,
-                    isScaledToFit,
+                    centerSpline,
+                    scaleSplineToFit,
                     applySplineHeight,
                     ref outputTexture))
                 {

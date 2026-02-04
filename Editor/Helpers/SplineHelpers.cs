@@ -1,7 +1,9 @@
 ﻿using Indiecat.UnityCommon.Runtime;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -19,89 +21,50 @@ namespace Indiecat.TerrainGraph.Editor
         public float t1;
     }
 
-    internal static class SplineHelpers
+    public static class SplineHelpers
     {
-        // Applies any transform on the spline container, so the points are expressed in world space
-        public static Spline GetWorldSpaceSpline(SplineContainer splineContainer)
+        public static List<Vector3> GetSampledSplinePoints(Spline spline, int stepCount)
         {
-            if (splineContainer.Splines.Count == 0)
-            {
-                return null;
-            }
+            var stepSize = spline.GetLength() / (stepCount - 1); 
+            var points = GetSampledSplinePoints(spline, stepSize);
 
-            Spline sourceSpline = splineContainer.Spline;
-            Spline worldSpline = new Spline(sourceSpline.Count, sourceSpline.Closed);
-
-            Transform splineContainerTransform = splineContainer.transform;
-
-            foreach (BezierKnot knot in sourceSpline)
-            {
-                // Transform the knot's position into world space
-                Vector3 position = splineContainerTransform.TransformPoint(knot.Position);
-
-                // Transform tangent directions
-                Vector3 tangentIn = splineContainerTransform.TransformPoint(knot.Position + knot.TangentIn) - splineContainerTransform.TransformPoint(knot.Position);
-                Vector3 tangentOut = splineContainerTransform.TransformPoint(knot.Position + knot.TangentOut) - splineContainerTransform.TransformPoint(knot.Position);
-
-                BezierKnot newKnot = new BezierKnot(position, tangentIn, tangentOut, knot.Rotation);
-                worldSpline.Add(newKnot);
-            }
-
-            return worldSpline;
+            return points;
         }
 
-        public static List<Vector2> GetSplineVertices2d(Spline spline, int stepCount)
+        public static List<Vector3> GetSampledSplinePoints(Spline spline, float distanceStep)
         {
-            return GetSplineVertices2d(spline, spline.GetLength() / stepCount);
-        }
-
-        public static List<Vector3> GetSplineVertices3d(Spline spline, int stepCount)
-        {
-            return GetSplineVertices3d(spline, spline.GetLength() / stepCount);
-        }
-
-        public static List<Vector2> GetSplineVertices2d(Spline spline, float distanceStep)
-        {
-            var vertices = GetSplineVertices3d(spline, distanceStep);
-            return vertices.Select(p => new Vector2(p.x, p.z)).ToList();
-        }
-
-        public static List<Vector3> GetSplineVertices3d(Spline spline, float distanceStep)
-        {
-            var vertices = new List<Vector3>();
+            var points = new List<Vector3>();
 
             var t = 0f;
 
             while (t < 1)
             {
-                vertices.Add(spline.EvaluatePosition(t));
+                var point = spline.EvaluatePosition(t);
+                points.Add(point);
 
                 // Find the next time based on a step distance
                 SplineUtility.GetPointAtLinearDistance(spline, t, distanceStep, out t);
             }
 
-            if (!spline.Closed)
-            {
-                // Add the last position, as we didn't evaluate it above
-                vertices.Add(spline.EvaluatePosition(1));
-            }
-
-            return vertices;
+            // Add the end position, as we didn't evaluate it above
+            points.Add(spline.EvaluatePosition(1));
+ 
+            return points;
         }
 
-        public static Spline CreateSpline(List<Vector2> vertices, bool closed = false)
+        public static Spline CreateSpline(List<Vector2> vertices, bool isClosed = false)
         {
-            return CreateSpline(vertices.Select(p => new float3(p.x, 0, p.y)).ToList(), closed: closed);
+            return CreateSpline(vertices.Select(p => p.ToVector3XZ()).ToList(), isClosed: isClosed);
         }
 
-        public static Spline CreateSpline(List<Vector3> vertices, bool closed = false)
+        public static Spline CreateSpline(List<Vector3> vertices, bool isClosed = false)
         {
-            return CreateSpline(vertices.Select(p => (float3)p).ToList(), closed: closed);
+            return CreateSpline(vertices.Select(p => (float3)p).ToList(), isClosed: isClosed);
         }
 
-        public static Spline CreateSpline(List<float3> vertices, bool closed = false)
+        public static Spline CreateSpline(List<float3> vertices, bool isClosed = false)
         {
-            var spline = new Spline(vertices, closed: closed);
+            var spline = new Spline(vertices, closed: isClosed);
 
             // NOTE: A closed spline doesn't seem to always smooth correctly between the last and first
             spline.SetTangentMode(TangentMode.AutoSmooth);
@@ -129,24 +92,6 @@ namespace Indiecat.TerrainGraph.Editor
 
             var outputSpline = CreateSpline(vertices, spline.Closed);
             return outputSpline;
-        }
-
-        public static Vector2 GetMinimumCenter(Spline spline, int margin = 0)
-        {
-            var size = GetMinimumBoundingSquareSize(spline, margin);
-            var center = new Vector2(size / 2f, size / 2f);
-
-            return center;
-        }
-
-        public static Spline GetCenteredSpline(Spline spline, int center)
-        {
-            return GetCenteredSpline(spline, new Vector3(center, 0, center));
-        }
-
-        public static Spline GetCenteredSpline(Spline spline, Vector2 center)
-        {
-            return GetCenteredSpline(spline, new Vector3(center.x, 0, center.y));
         }
 
         public static Spline GetCenteredSpline(Spline spline, Vector3 targetCenter)
@@ -204,30 +149,7 @@ namespace Indiecat.TerrainGraph.Editor
             return bounds;
         }
 
-        public static int GetMinimumBoundingSquareSize(Spline spline, int margin = 0)
-        {
-            var bounds = GetMinimumBoundingSquare(spline, margin);
-            return (int)bounds.size.x;
-        }
-
-        public static int GetMinimumBoundingSquareSize(List<Spline> splines, int margin = 0)
-        {
-            var bounds = GetMinimumBoundingSquare(splines, margin);
-            return (int)bounds.size.x;
-        }
-
-        public static int GetOriginBoundingSquareSize(Spline spline, int margin = 0)
-        {
-            var bounds = spline.GetBounds();
-            bounds.Encapsulate(Vector3.zero);
-
-            var size = Mathf.CeilToInt(Mathf.Max(bounds.size.x, bounds.size.z));
-            size += margin * 2;
-
-            return size;
-        }
-
-        public static Spline TranslateSpline(Spline spline, Vector3 translation)
+        public static Spline GetTranslatedSpline(Spline spline, Vector3 translation)
         {
             var vertices = new List<Vector3>();
 
@@ -243,7 +165,7 @@ namespace Indiecat.TerrainGraph.Editor
             return translatedSpline;
         }
 
-        public static Spline ScaleSpline(Spline spline, Vector3 center, Vector3 scale)
+        public static Spline GetScaledSpline(Spline spline, Vector3 center, Vector3 scale)
         {
             var vertices = new List<Vector3>();
 
@@ -261,6 +183,35 @@ namespace Indiecat.TerrainGraph.Editor
             return scaledSpline;
         }
 
+        public static Spline GetTransformedSpline(Spline spline, int gridSize, bool centerSplineInGrid, bool scaleSplineToFitGrid)
+        {
+            if (centerSplineInGrid)
+            {
+                var gridCenter = (Vector2.one * gridSize / 2).ToVector3XZ();
+                var splineCenter = GetCenter(spline).ToVector3XZ();
+
+                if (scaleSplineToFitGrid)
+                {
+                    var splineBounds = spline.GetBounds();
+                    var splineSize2d = splineBounds.size.SwizzleXZ();
+
+                    // Provide some breathing room around the spline
+                    var margin = Mathf.Clamp(gridSize / 20f, 5, 20);
+
+                    var maxSize = splineSize2d.MaxComponent() + margin * 2;
+                    var scale = (Vector3.one * (gridSize / maxSize)).WithY(1);
+
+                    var scaledSpline = GetScaledSpline(spline, splineCenter, scale);
+
+                    return GetCenteredSpline(scaledSpline, gridCenter);
+                }
+
+                return GetCenteredSpline(spline, gridCenter);
+            }
+
+            return spline;
+        }
+
         public static List<Spline> CreateSplines(List<List<Vector2>> contours, int vertexCount)
         {
             var splines = new List<Spline>();
@@ -271,7 +222,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var simplifiedContour = GeometryHelpers.SimplifyPolyline(contour, 2);
                 //Debug.Log($"contour: {contour.Count} simplified: {simplifiedContour.Count}");
 
-                var contourSpline = CreateSpline(simplifiedContour, closed: true);
+                var contourSpline = CreateSpline(simplifiedContour, isClosed: true);
 
                 var spline = ResampleSpline(contourSpline, vertexCount);
 
@@ -281,7 +232,7 @@ namespace Indiecat.TerrainGraph.Editor
             return splines;
         }
 
-        public static List<Segment> GenerateSegments(Spline spline, int segmentCount)
+        public static List<Segment> GetSplineSegments(Spline spline, int segmentCount)
         {
             var segments = new List<Segment>(segmentCount);
 
@@ -290,23 +241,23 @@ namespace Indiecat.TerrainGraph.Editor
                 return segments;
             }
 
-            float step = 1f / segmentCount;
+            var pointCount = segmentCount + 1;
+            var points = GetSampledSplinePoints(spline, pointCount);
+
+            var td = 1f / segmentCount;
+            var t = 0f;
 
             for (int i = 0; i < segmentCount; i++)
             {
-                float t0 = i * step;
-                float t1 = (i + 1) * step;
-
-                Vector3 startPosition = spline.EvaluatePosition(t0);
-                Vector3 endPosition = spline.EvaluatePosition(t1);
-
                 segments.Add(new Segment
                 {
-                    a = startPosition,
-                    b = endPosition,
-                    t0 = t0,
-                    t1 = t1,
+                    a = points[i],
+                    b = points[i + 1],
+                    t0 = t,
+                    t1 = t + td,
                 });
+
+                t += td;
             }
 
             return segments;

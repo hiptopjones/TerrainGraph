@@ -91,7 +91,14 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        public static bool TryGenerateSdf(Spline spline, int size, int sampleCount, bool isCentered, bool isScaledToFit, bool applySplineHeight, ref RenderTexture outputTexture)
+        public static bool TryGenerateSdf(
+            Spline spline,
+            int size,
+            int sampleCount,
+            bool centerSplineInGrid,
+            bool scaleSplineToFitGrid,
+            bool applySplineHeight,
+            ref RenderTexture outputTexture)
         {
             const float SPLINE_HEIGHT_BLEND_DISTANCE = 40f;
 
@@ -99,41 +106,8 @@ namespace Indiecat.TerrainGraph.Editor
 
             try
             {
-                List<Vector3> points = null;
-
-                if (isCentered)
-                {
-                    var gridCenter = (Vector2.one * size / 2).ToVector3XZ();
-
-                    var splineCenter = SplineHelpers.GetCenter(spline).ToVector3XZ();
-
-                    Spline centeredSpline = null;
-
-                    if (isScaledToFit)
-                    {
-                        var splineBounds = spline.GetBounds();
-                        var splineSize2D = splineBounds.size.SwizzleXZ();
-
-                        var margin = Mathf.Clamp(size / 20f, 5, 20); // Provide some breathing room around the object
-
-                        var maxSize = splineSize2D.MaxComponent() + margin * 2;
-                        var scale = (Vector3.one * (size / maxSize)).WithY(1);
-
-                        var scaledSpline = SplineHelpers.ScaleSpline(spline, splineCenter, scale);
-
-                        centeredSpline = SplineHelpers.GetCenteredSpline(scaledSpline, gridCenter);
-                    }
-                    else
-                    {
-                        centeredSpline = SplineHelpers.GetCenteredSpline(spline, gridCenter);
-                    }
-
-                    points = SplineHelpers.GetSplineVertices3d(centeredSpline, sampleCount);
-                }
-                else
-                {
-                    points = SplineHelpers.GetSplineVertices3d(spline, sampleCount);
-                }
+                var transformedSpline = SplineHelpers.GetTransformedSpline(spline, size, centerSplineInGrid, scaleSplineToFitGrid);
+                var points = SplineHelpers.GetSampledSplinePoints(transformedSpline, sampleCount);
 
                 pointsBuffer = new ComputeBuffer(points.Count, sizeof(float) * 3);
                 pointsBuffer.SetData(points);

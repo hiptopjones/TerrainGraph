@@ -67,7 +67,7 @@ namespace Indiecat.TerrainGraph.Editor
                             vertices.RemoveAt(vertices.Count - 1);
                         }
 
-                        outputSpline = SplineHelpers.CreateSpline(vertices, closed: true);
+                        outputSpline = SplineHelpers.CreateSpline(vertices, isClosed: true);
                     }
                 }
                 else
@@ -84,7 +84,7 @@ namespace Indiecat.TerrainGraph.Editor
                             vertices.Add(vertices.First());
                         }
 
-                        outputSpline = SplineHelpers.CreateSpline(vertices, closed: false);
+                        outputSpline = SplineHelpers.CreateSpline(vertices, isClosed: false);
                     }
                 }
 

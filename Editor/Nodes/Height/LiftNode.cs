@@ -58,8 +58,8 @@ namespace Indiecat.TerrainGraph.Editor
                     inputSpline,
                     size,
                     sampleCount,
-                    isCentered: false,
-                    isScaledToFit: false,
+                    centerSplineInGrid: false,
+                    scaleSplineToFitGrid: false,
                     applySplineHeight: false,
                     ref sdfTexture))
                 {

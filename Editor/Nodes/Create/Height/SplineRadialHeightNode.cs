@@ -13,6 +13,9 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
+            [DefaultValue(true)]
+            [DisplayName("Center")]
+            public bool CenterSpline;
         }
 
         public class InputValues : InputValuesBase
@@ -27,13 +30,15 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Profile")]
             public AnimationCurve ProfileCurve;
 
-            [DefaultValue(true)]
-            [DisplayName("Center")]
-            public bool IsCentered;
+            [DisplayName("Scale to Fit")]
+            [IncludeIf(nameof(IsSplineBeingCentered))]
+            public bool ScaleSplineToFit;
 
             [MinValue(16), DefaultValue(256)]
             public int Size;
         }
+
+        private bool IsSplineBeingCentered() => Options.CenterSpline;
 
         protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
@@ -53,27 +58,19 @@ namespace Indiecat.TerrainGraph.Editor
 
             try
             {
+                var centerSpline = Options.CenterSpline;
                 var inputSplineWrapper = Inputs.SplineWrapper;
                 var segmentCount = Inputs.SegmentCount;
                 var profileCurve = Inputs.ProfileCurve;
-                var isCentered = Inputs.IsCentered;
+                var scaleSplineToFit = Inputs.ScaleSplineToFit;
                 var size = Inputs.Size;
 
                 var inputSpline = inputSplineWrapper.Spline;
 
-                List<Segment> segments;
-                var gridCenter = (Vector2.one * size / 2).ToVector3XZ();
+                var pivot = centerSpline ? (Vector2.one * size / 2) : SplineHelpers.GetCenter(inputSpline);
 
-                var spline = inputSpline;
-                var pivot = SplineHelpers.GetCenter(spline);
-
-                if (isCentered)
-                {
-                    spline = SplineHelpers.GetCenteredSpline(inputSpline, gridCenter);
-                    pivot = gridCenter.SwizzleXZ();
-                }
-
-                segments = SplineHelpers.GenerateSegments(spline, segmentCount);
+                var transformedSpline = SplineHelpers.GetTransformedSpline(inputSpline, size, centerSpline, scaleSplineToFit);
+                var segments = SplineHelpers.GetSplineSegments(transformedSpline, segmentCount);
 
                 int stride = Marshal.SizeOf(typeof(Segment));
                 segmentsBuffer = new ComputeBuffer(segments.Count, stride);

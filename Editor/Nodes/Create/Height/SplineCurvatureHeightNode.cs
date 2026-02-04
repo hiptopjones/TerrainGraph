@@ -13,15 +13,14 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public class OptionValues : OptionValuesBase
         {
+            [DisplayName("Center")]
+            public bool CenterSpline;
         }
 
         public class InputValues : InputValuesBase
         {
             [DisplayName("Spline")]
             public SplineWrapper SplineWrapper;
-
-            [MinValue(16), DefaultValue(256)]
-            public int Size;
 
             [DisplayName("Samples")]
             [MinValue(10), DefaultValue(100)]
@@ -30,7 +29,16 @@ namespace Indiecat.TerrainGraph.Editor
             [DisplayName("Threshold")]
             [DefaultValue(0.1f)]
             public float StraightThreshold;
+
+            [DisplayName("Scale to Fit")]
+            [IncludeIf(nameof(IsSplineBeingCentered))]
+            public bool ScaleSplineToFit;
+
+            [MinValue(16), DefaultValue(256)]
+            public int Size;
         }
+
+        private bool IsSplineBeingCentered() => Options.CenterSpline;
 
         protected override bool TryExecuteNodeInternal()
         {
@@ -38,15 +46,19 @@ namespace Indiecat.TerrainGraph.Editor
 
             try
             {
+                var centerSpline = Options.CenterSpline;
                 var inputSplineWrapper = Inputs.SplineWrapper;
-                var size = Inputs.Size;
                 var sampleCount = Inputs.SampleCount;
                 var straightThreshold = Inputs.StraightThreshold;
+                var scaleSplineToFit = Inputs.ScaleSplineToFit;
+                var size = Inputs.Size;
 
                 var inputSpline = inputSplineWrapper.Spline;
                 var sampleDistance = inputSpline.GetLength() / sampleCount;
 
-                if (!TryGetCurvatureSegments(inputSpline, sampleCount, straightThreshold, out var segments))
+                var transformedSpline = SplineHelpers.GetTransformedSpline(inputSpline, size, centerSpline, scaleSplineToFit);
+
+                if (!TryGetCurvatureSegments(transformedSpline, sampleCount, straightThreshold, out var segments))
                 {
                     return false;
                 }
@@ -148,7 +160,13 @@ namespace Indiecat.TerrainGraph.Editor
         {
             segments = new List<CurvatureSegment>();
 
-            if (!TryGetCurvatures(inputSpline, sampleCount, straightThreshold, out var curvatures, out var crosses, out var positions))
+            if (!TryGetCurvatures(
+                inputSpline,
+                sampleCount,
+                straightThreshold,
+                out var curvatures,
+                out var crosses,
+                out var positions))
             {
                 Debug.Log("Failed to get curvatures");
                 return false;
@@ -200,7 +218,13 @@ namespace Indiecat.TerrainGraph.Editor
             return distances;
         }
 
-        private static bool TryGetCurvatures(Spline spline, int sampleCount, float straightThreshold, out List<CurvatureType> curvatures, out List<float> crosses, out List<Vector2> positions)
+        private static bool TryGetCurvatures(
+            Spline spline,
+            int sampleCount,
+            float straightThreshold,
+            out List<CurvatureType> curvatures,
+            out List<float> crosses,
+            out List<Vector2> positions)
         {
             curvatures = new List<CurvatureType>();
             crosses = new List<float>();
