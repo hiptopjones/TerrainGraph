@@ -35,10 +35,6 @@ namespace Indiecat.TerrainGraph.Editor
         public abstract class InputValuesBase
         {
             [Ignore]
-            [IncludeIf(nameof(HasOutputPort))]
-            public PreviewImage Preview;
-
-            [Ignore]
             public int VersionHash;
         }
 
@@ -194,11 +190,6 @@ namespace Indiecat.TerrainGraph.Editor
 
         protected virtual void OnDefineBaseInputPorts(IPortDefinitionContext context)
         {
-            if (HasOutputPort() && Options.IsPreviewEnabled)
-            {
-                BuildInputPort(context, x => x.Preview);
-            }
-
             // Need unity to call us back after everything has been defined
             // so we can update the injector type
             EditorApplication.delayCall += () => UpdateInjector();
@@ -510,18 +501,20 @@ namespace Indiecat.TerrainGraph.Editor
             if (!HasOutputPort())
             {
                 // No preview exists for this type of node, treat as up-to-date
+                ClearPreview();
                 return true;
             }
 
             if (!Options.IsPreviewEnabled)
             {
                 // Preview is disabled, treat as up-to-date
+                ClearPreview();
                 return true;
             }
 
             if (Inputs == null)
             {
-                ClearPreview();
+                SetWarningPreview();
 
                 // Validation failed
                 return false;
@@ -529,7 +522,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (CacheData.Output == null)
             {
-                ClearPreview();
+                SetWarningPreview();
 
                 // Execution failed
                 return false;
@@ -561,16 +554,21 @@ namespace Indiecat.TerrainGraph.Editor
             return false;
         }
 
-        private void ClearPreview()
+        private void SetWarningPreview()
         {
             // Force generation when next enabled
             CacheData.PreviewHash = 0;
 
             // Make it very clear there is a problem
-            var warningTexture = EditorGUIUtility.IconContent("console.warnicon.sml").image;
+            var warningTexture = Resources.Load<Texture2D>("Textures/Warning");
 
             // Best effort, not checking the return
             TrySetPreviewTexture(warningTexture, 0);
+        }
+
+        private void ClearPreview()
+        {
+            TrySetPreviewTexture(null, 0);
         }
 
         private bool TryCreatePreviewTexture(TResult value, out Texture texture, out int gridSize)
@@ -606,30 +604,19 @@ namespace Indiecat.TerrainGraph.Editor
         {
             try
             {
-                var inputsModel = ClassModelCache.GetClassModel<TInputValues>();
-                var fieldModel = inputsModel.GetFieldModel(nameof(InputValuesBase.Preview));
+                var optionsModel = ClassModelCache.GetClassModel<TOptionValues>();
 
-                var previewPort = GetInputPortByName(fieldModel.PortName);
-                if (previewPort == null)
+                var injectorModel = optionsModel.GetFieldModel(nameof(OptionValuesBase.Injector));
+                var injectorOption = GetNodeOptionByName(injectorModel.PortName);
+
+                if (injectorOption.TryGetValue<BehaviorInjector>(out var injector))
                 {
-                    Debug.Log("Unable to get the preview port");
-                    return false;
+                    if (injector != null)
+                    {
+                        var description = $"{gridSize} x {gridSize}";
+                        injector.SetPreviewTexture(texture, description);
+                    }
                 }
-
-                if (!previewPort.TryGetValue(out PreviewImage previewImage))
-                {
-                    // Unable to get preview port value, so cannot display anything
-                    Debug.LogError("Unable to get the preview image");
-                    return false;
-                }
-
-                if (previewImage == null)
-                {
-                    Debug.Log("Preview port image is null");
-                    return false;
-                }
-
-                previewImage.UpdateTexture(texture, gridSize);
 
                 return true;
             }

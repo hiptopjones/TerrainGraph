@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Indiecat.UnityCommon.Runtime;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -10,6 +11,7 @@ namespace Indiecat.TerrainGraph.Editor
     [CustomPropertyDrawer(typeof(BehaviorInjector))]
     public class BehaviorInjectorDrawer : PropertyDrawer
     {
+        private int _generationCount;
         private int _retryCount;
 
         private List<VisualElement> _injectedElements = new();
@@ -22,6 +24,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             // Useful to debug property problems
             var debug = new VisualElement();
+            debug.Classes("behavior-injector");
             debug.Add(new PropertyField(property.FindPropertyRelative("InputsTypeName")));
             debug.Add(new PropertyField(property.FindPropertyRelative("OptionsTypeName")));
             debug.style.display = DisplayStyle.None;
@@ -32,15 +35,22 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 _serializedObject = property.serializedObject;
 
-                root.RegisterCallback<AttachToPanelEvent>(_ => AddInjectedBehavior(property, root));
-                root.RegisterCallback<DetachFromPanelEvent>(_ => RemoveInjectedBehavior(root));
+                root.RegisterCallback<AttachToPanelEvent>(_ => AddInjectedBehavior(property, root, _generationCount));
+                root.RegisterCallback<DetachFromPanelEvent>(_ => RemoveInjectedBehavior(property, root, _generationCount));
             }
 
             return root;
         }
 
-        private void AddInjectedBehavior(SerializedProperty property, VisualElement root)
+        private void AddInjectedBehavior(SerializedProperty property, VisualElement root, int generationCount)
         {
+            if (generationCount != _generationCount)
+            {
+                // We are out of sync, so exit early
+                // Can happen if we are in a retry conditoin and a detach event came in
+                return;
+            }
+
             if (TryFindAncestorByName(root, "libraryViewContainer", out _) ||
                 TryFindAncestorByName(root, "Graph Inspector", out _))
             {
@@ -59,7 +69,7 @@ namespace Indiecat.TerrainGraph.Editor
                 var optionsModel = ClassModelCache.GetClassModel(optionsTypeName);
                 var inputsModel = ClassModelCache.GetClassModel(inputsTypeName);
 
-                UpdateFields(root, inputsModel, optionsModel);
+                UpdateFields(root, inputsModel, optionsModel, generationCount);
             }
             else
             {
@@ -70,24 +80,34 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 // Try again shortly, when hopefully the node has been able to set the type name
-                EditorApplication.delayCall += () => AddInjectedBehavior(property, root);
+                EditorApplication.delayCall += () => AddInjectedBehavior(property, root, generationCount);
 
                 _retryCount++;
             }
         }
 
-        private void RemoveInjectedBehavior(VisualElement root)
+        private void RemoveInjectedBehavior(SerializedProperty property, VisualElement root, int generationCount)
         {
+            // Helps prevent getting out of sync
+            _generationCount++;
+
             foreach (var element in _injectedElements)
             {
-                element.parent.Remove(element);
+                element.RemoveFromHierarchy();
             }
 
             _injectedElements.Clear();
         }
 
-        private void UpdateFields(VisualElement root, ClassModel inputsModel, ClassModel optionsModel)
+        private void UpdateFields(VisualElement root, ClassModel inputsModel, ClassModel optionsModel, int generationCount)
         {
+            if (generationCount != _generationCount)
+            {
+                // We are out of sync, so exit early
+                // Can happen if we are in a retry conditoin and a detach event came in
+                return;
+            }
+
             VisualElement optionsRoot = null;
             VisualElement inputsRoot = null;
 
@@ -111,6 +131,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 ProcessOptions(optionsRoot, optionsModel);
                 ProcessInputs(inputsRoot, inputsModel);
+                AddPreviewPanel(optionsRoot.parent);
             }
             else
             {
@@ -121,10 +142,63 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 // Try again shortly, when hopefully everything is in place
-                EditorApplication.delayCall += () => UpdateFields(root, inputsModel, optionsModel);
+                EditorApplication.delayCall += () => UpdateFields(root, inputsModel, optionsModel, generationCount);
 
                 _retryCount++;
             }
+        }
+
+        private void AddPreviewPanel(VisualElement root)
+        {
+            var container = new VisualElement
+            {
+                style =
+                {
+                    flexGrow = 1,
+                    flexDirection = FlexDirection.Column,
+                    alignItems = Align.Center,
+                }
+            };
+
+            var image = new Image
+            {
+                scaleMode = ScaleMode.ScaleToFit,
+                style =
+                {
+                    flexGrow = 1,
+                    borderTopWidth = 1,
+                    borderBottomWidth = 1,
+                    borderLeftWidth = 1,
+                    borderRightWidth = 1,
+                    borderTopColor = new Color(0,0,0,0.25f),
+                    borderBottomColor = new Color(0,0,0,0.25f),
+                    borderLeftColor = new Color(0,0,0,0.25f),
+                    borderRightColor = new Color(0,0,0,0.25f),
+                    marginBottom = 6,
+                }
+            };
+            container.Add(image);
+
+            var label = new Label();
+            container.Add(label);
+
+            _serializedObject.Update();
+
+            var injector = fieldInfo.GetValue(_serializedObject.targetObject) as BehaviorInjector;
+            if (injector != null)
+            {
+                image.image = injector.PreviewTexture;
+                label.text = injector.PreviewDescription;
+
+                injector.UpdatePreview += () =>
+                {
+                    image.image = injector.PreviewTexture;
+                    label.text = injector.PreviewDescription;
+                };
+            }
+
+            root.Add(container);
+            _injectedElements.Add(container);
         }
 
         private void ProcessOptions(VisualElement optionsRoot, ClassModel optionsModel)
@@ -144,7 +218,7 @@ namespace Indiecat.TerrainGraph.Editor
 
                 var editorElement = label.parent;
                 var displayName = label.text;
-    
+
                 var fieldModel = optionsModel.FieldModels.FirstOrDefault(x => x.DisplayName == displayName);
                 if (fieldModel == null)
                 {
@@ -374,6 +448,7 @@ namespace Indiecat.TerrainGraph.Editor
                 highValue = sliderMax,
             };
             slider.style.flexGrow = 1;
+            slider.style.minWidth = 150;
 
             slider.value = fieldModel.UseLinearSlider ?
                     floatField.value :
@@ -440,6 +515,7 @@ namespace Indiecat.TerrainGraph.Editor
                 highValue = sliderMax,
             };
             slider.style.flexGrow = 1;
+            slider.style.minWidth = 150;
 
             slider.value = integerField.value;
 
