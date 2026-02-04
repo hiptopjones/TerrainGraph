@@ -4,8 +4,11 @@ Shader "Hidden/HeightGridPreview"
     {
         _HeightGridTexture ("Height Grid Texture", 2D) = "white" {}
         _HeightScale ("Height Scale", Float) = 100
-        [Slider] _AmbientWrap ("Ambient Wrap", Range (0, 0.5)) = 0.2 // 0 = normal lambert, 1 = very soft
+        _AmbientWrap ("Ambient Wrap", Range (0, 0.5)) = 0.4
         [Toggle] _CullZero ("Cull Zero", Float ) = 0
+        _ContrastPower ("Contrast Power", Range(0.2, 5)) = 2.5
+        _SlopeStrength("Slope Strength", Float ) = 0.5
+        _LightDirection("Light Direction", Vector) = (45, 45, 0)
     }
 
     SubShader
@@ -20,7 +23,6 @@ Shader "Hidden/HeightGridPreview"
             #pragma fragment frag
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             struct Attributes
             {
@@ -39,6 +41,9 @@ Shader "Hidden/HeightGridPreview"
                 float _HeightScale;
                 float _AmbientWrap;
                 float _CullZero;
+                float _ContrastPower;
+                float _SlopeStrength;
+                float3 _LightDirection;
             CBUFFER_END
 
             TEXTURE2D(_HeightGridTexture);
@@ -70,11 +75,19 @@ Shader "Hidden/HeightGridPreview"
                 float3 dpdx = ddx(IN.positionWS);
                 float3 dpdy = ddy(IN.positionWS);
                 float3 normalWS = normalize(cross(dpdy, dpdx));
+                
+                float3 lightDirection = normalize(_LightDirection);
 
-                Light mainLight = GetMainLight();
+                float ndl = saturate((dot(normalWS, lightDirection) + _AmbientWrap) / (1 + _AmbientWrap));
+                ndl = pow(ndl, _ContrastPower);
 
-                float ndotlWrapped = saturate((dot(normalWS, mainLight.direction) + _AmbientWrap) / (1 + _AmbientWrap));
-                float3 color = ndotlWrapped;
+                float slope = 1.0 - abs(normalWS.y);
+
+                float3 color = ndl.xxx + slope * _SlopeStrength;
+                color = saturate(color);
+
+                float ao = pow(normalWS.y * 0.5 + 0.5, 2);
+                color *= ao;
 
                 return half4(color, 1);
             }
