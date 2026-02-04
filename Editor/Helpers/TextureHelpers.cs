@@ -96,19 +96,19 @@ namespace Indiecat.TerrainGraph.Editor
                 var spline = splineWrapper.Spline;
 
                 var bounds = SplineHelpers.GetMinimumBoundingSquare(spline, MARGIN_WIDTH);
-                var width = (int)bounds.size.x;
-                var height = width;
+                var maxSize = Mathf.CeilToInt(bounds.size.MaxComponent());
+                var scale = (float) PREVIEW_SIZE / maxSize;
 
-                outputTexture = CreateTexture(width, height, TextureFormat.RGB24);
+                outputTexture = CreateTexture(PREVIEW_SIZE, PREVIEW_SIZE, TextureFormat.RGB24);
                 ClearTexture(outputTexture);
 
-                DrawSpline(outputTexture, spline, bounds);
+                DrawSpline(outputTexture, spline, bounds.center, scale);
 
                 AddExecutionTime(splineWrapper.ExecutionTime, outputTexture);
 
                 outputTexture.Apply(false, false);
 
-                gridSize = width;
+                gridSize = maxSize;
                 texture = outputTexture;
                 return true;
             }
@@ -137,24 +137,23 @@ namespace Indiecat.TerrainGraph.Editor
             try
             {
                 var splines = splineListWrapper.Splines;
-
                 var bounds = SplineHelpers.GetMinimumBoundingSquare(splines, MARGIN_WIDTH);
-                var width = (int)bounds.size.x;
-                var height = width;
+                var maxSize = Mathf.CeilToInt(bounds.size.MaxComponent());
+                var scale = (float)PREVIEW_SIZE / maxSize;
 
-                outputTexture = CreateTexture(width, height, TextureFormat.RGB24);
+                outputTexture = CreateTexture(PREVIEW_SIZE, PREVIEW_SIZE, TextureFormat.RGB24);
                 ClearTexture(outputTexture);
 
                 foreach (var spline in splines)
                 {
-                    DrawSpline(outputTexture, spline, bounds);
+                    DrawSpline(outputTexture, spline, bounds.center, scale);
                 }
 
                 AddExecutionTime(splineListWrapper.ExecutionTime, outputTexture);
 
                 outputTexture.Apply(false, false);
 
-                gridSize = width;
+                gridSize = maxSize;
                 texture = outputTexture;
                 return true;
             }
@@ -174,13 +173,16 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private static void DrawSpline(Texture2D texture, Spline spline, Bounds bounds)
+        private static void DrawSpline(Texture2D texture, Spline spline, Vector3 splineCenter, float scale)
         {
+            var previewCenter = (Vector3.one * (PREVIEW_SIZE / 2f)).WithY(0);
+
             var length = spline.GetLength();
 
             var firstPosition = Vector3.zero;
             var previousPosition = Vector3.zero;
 
+            // TODO: Is this too much resolution (scale with size?)
             // Draw the spline outline
             for (int i = 0; i < length; i++)
             {
@@ -191,9 +193,9 @@ namespace Indiecat.TerrainGraph.Editor
                 }
 
                 var p = (Vector3)spline.EvaluatePosition(t);
-                p = p - bounds.min;
+                p = (p - splineCenter) * scale + previewCenter;
 
-                var currentPosition = ((Vector3)p).WithY(0);
+                var currentPosition = p;
 
                 if (i > 0)
                 {
