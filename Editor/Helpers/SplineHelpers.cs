@@ -1,9 +1,7 @@
 ﻿using Indiecat.UnityCommon.Runtime;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -25,30 +23,21 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public static List<Vector3> GetSampledSplinePoints(Spline spline, int stepCount)
         {
-            var stepSize = spline.GetLength() / (stepCount - 1); 
-            var points = GetSampledSplinePoints(spline, stepSize);
-
-            return points;
-        }
-
-        public static List<Vector3> GetSampledSplinePoints(Spline spline, float distanceStep)
-        {
             var points = new List<Vector3>();
 
-            var t = 0f;
+            var stepSize = 1f / stepCount;
 
-            while (t < 1)
+            for (int i = 0; i < stepCount - 1; i++)
             {
+                var t = i * stepSize;
+
                 var point = spline.EvaluatePosition(t);
                 points.Add(point);
-
-                // Find the next time based on a step distance
-                SplineUtility.GetPointAtLinearDistance(spline, t, distanceStep, out t);
             }
 
             // Add the end position, as we didn't evaluate it above
             points.Add(spline.EvaluatePosition(1));
- 
+
             return points;
         }
 
