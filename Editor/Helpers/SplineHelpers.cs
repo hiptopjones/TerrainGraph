@@ -25,7 +25,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             var points = new List<Vector3>();
 
-            var stepSize = 1f / stepCount;
+            var stepSize = 1f / (stepCount - 1);
 
             for (int i = 0; i < stepCount - 1; i++)
             {
