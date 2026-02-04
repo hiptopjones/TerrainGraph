@@ -94,13 +94,6 @@ namespace Indiecat.TerrainGraph.Editor
                         queue.Enqueue(dependent);
                     }
                 }
-
-                // Optional safety check (should never happen if no cycles)
-                if (result.Count > nodes.Count)
-
-                {
-                    throw new System.Exception("Cycle detected in node graph!");
-                }
             }
 
             return result;
