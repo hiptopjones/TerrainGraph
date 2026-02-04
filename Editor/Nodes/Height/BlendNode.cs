@@ -34,9 +34,10 @@ namespace Indiecat.TerrainGraph.Editor
 
         public class InputValues : InputValuesBase
         {
-            [ValidIf(nameof(IsMatchingSize))]
             [Passthru]
             public HeightGrid Grid1;
+
+            [ValidIf(nameof(ValidateGridSizesMatch))]
             public HeightGrid Grid2;
         }
 
@@ -54,26 +55,14 @@ namespace Indiecat.TerrainGraph.Editor
             }
         }
 
-        private ValidationResult IsMatchingSize(InputValues inputs)
+        private ValidationResult ValidateGridSizesMatch(InputValues inputs)
         {
             var classModel = ClassModelCache.GetClassModel<InputValues>();
             var grid1FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid1));
             var grid2FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid2));
 
-            if (inputs.Grid1 != null && inputs.Grid1.IsValid &&
-                inputs.Grid2 != null && inputs.Grid2.IsValid)
-            {
-                // Only run this check if both inputs are present
-                // Base node validation would normally catch this, but if it only fails on one
-                // of them we'd might still get here.
-                if (inputs.Grid1.RenderTexture.width != inputs.Grid2.RenderTexture.width ||
-                    inputs.Grid1.RenderTexture.height != inputs.Grid2.RenderTexture.height)
-                {
-                    return ValidationResult.Error($"{grid1FieldModel.DisplayName} and {grid2FieldModel.DisplayName} size mismatch");
-                }
-            }
-
-            return ValidationResult.Ok();
+            return ValidationHelpers.ValidateGridSizesMatch(
+                inputs.Grid1, inputs.Grid2, grid1FieldModel.DisplayName, grid2FieldModel.DisplayName);
         }
 
         protected override bool TryExecuteNodeInternal()

@@ -25,11 +25,22 @@ namespace Indiecat.TerrainGraph.Editor
             public float Value;
 
             [IncludeIf(nameof(IsOperandGrid))]
+            [ValidIf(nameof(ValidateGridSizesMatch))]
             public HeightGrid Grid2;
         }
 
         private bool IsOperandConstant() => Options.UseConstantOperand;
         private bool IsOperandGrid() => !Options.UseConstantOperand;
+
+        private ValidationResult ValidateGridSizesMatch(InputValues inputs)
+        {
+            var classModel = ClassModelCache.GetClassModel<InputValues>();
+            var grid1FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid));
+            var grid2FieldModel = classModel.GetFieldModel(nameof(InputValues.Grid2));
+
+            return ValidationHelpers.ValidateGridSizesMatch(
+                inputs.Grid, inputs.Grid2, grid1FieldModel.DisplayName, grid2FieldModel.DisplayName);
+        }
 
         protected override void OnDefineCustomInputPorts(IPortDefinitionContext context)
         {
