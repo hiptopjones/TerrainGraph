@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Indiecat.UnityCommon.Runtime;
+using System;
 using System.Linq;
 using UnityEditor.Splines;
 using UnityEngine;
@@ -78,7 +79,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         private void OnAfterSplineWasModified(Spline spline)
         {
-            if (_currentSplineContainer?.Spline != spline)
+            if (_currentSplineContainer.IsUnityNull() || _currentSplineContainer.Spline != spline)
             {
                 return;
             }
