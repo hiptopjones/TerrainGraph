@@ -1,5 +1,7 @@
 #pragma kernel CSMain
 
+#pragma multi_compile USE_SAMPLING USE_INDEXING
+
 Texture2D<float> _InTexture;
 SamplerState sampler_InTexture;
 float _Scale;
@@ -24,12 +26,18 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     float2 inputCenter = inputSize / 2;
     float2 outputCenter = outputSize / 2;
-    
+   
+#if USE_SAMPLING
     float2 samplerPosition = ((outputUV - outputCenter) * _Scale + inputCenter) / inputSize;
     float lod = 0; 
     
     // TODO: Consider using bicubic sampling to remove facets, especially if scaling up
     float height = _InTexture.SampleLevel(sampler_InTexture, samplerPosition, lod).r;
-    
+#else
+    uint2 inputUV = (uint2) ((outputUV - outputCenter) * _Scale + inputCenter);
+
+    float height = _InTexture[inputUV].r;
+#endif
+
     _OutTexture[outputUV].r = height;
 }

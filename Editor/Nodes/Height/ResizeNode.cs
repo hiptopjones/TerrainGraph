@@ -21,6 +21,9 @@ namespace Indiecat.TerrainGraph.Editor
 
             [DefaultValue(true)]
             public bool PreserveScale;
+
+            [DefaultValue(true)]
+            public bool InterpolateHeights;
         }
 
         protected override bool TryExecuteNodeInternal()
@@ -30,9 +33,15 @@ namespace Indiecat.TerrainGraph.Editor
                 var inputGrid = Inputs.Grid;
                 var targetSize = Inputs.Size;
                 var preserveScale = Inputs.PreserveScale;
+                var interpolateHeights = Inputs.InterpolateHeights;
 
                 var sourceSize = inputGrid.Size;
                 var scale = preserveScale ? sourceSize / (float)targetSize : 1;
+
+                var keywordSuffix = interpolateHeights ? "SAMPLING" : "INDEXING";
+
+                var keywordBuilder = new KeywordBuilder();
+                keywordBuilder.AddKeyword($"USE_{keywordSuffix}");
 
                 var inputTexture = inputGrid.RenderTexture;
                 var outputTexture = GetOrCreateNodeRenderTexture(targetSize);
@@ -47,6 +56,8 @@ namespace Indiecat.TerrainGraph.Editor
                 shader.SetTexture(kernel, "_InTexture", inputTexture);
                 shader.SetTexture(kernel, "_OutTexture", outputTexture);
                 shader.SetFloat("_Scale", scale);
+
+                shader.shaderKeywords = keywordBuilder.GetKeywords();
 
                 var groups = Mathf.CeilToInt(targetSize / 8.0f);
                 shader.Dispatch(kernel, groups, groups, 1);
