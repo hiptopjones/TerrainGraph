@@ -201,17 +201,17 @@ namespace Indiecat.TerrainGraph.Editor
             return spline;
         }
 
-        public static List<Spline> CreateSplines(List<List<Vector2>> contours, int vertexCount)
+        public static List<Spline> CreateSplines(List<List<Vector2>> contours, bool relaxContour, int vertexCount)
         {
             var splines = new List<Spline>();
 
             var orderedContours = contours.OrderByDescending(x => x.Count);
+
             foreach (var contour in orderedContours)
             {
-                var simplifiedContour = GeometryHelpers.SimplifyPolyline(contour, 2);
-                //Debug.Log($"contour: {contour.Count} simplified: {simplifiedContour.Count}");
+                var workingContour = relaxContour ? GeometryHelpers.SimplifyPolyline(contour, 2) : contour;
 
-                var contourSpline = CreateSpline(simplifiedContour, isClosed: true);
+                var contourSpline = CreateSpline(workingContour, isClosed: true);
 
                 var spline = ResampleSpline(contourSpline, vertexCount);
 
@@ -259,7 +259,7 @@ namespace Indiecat.TerrainGraph.Editor
                 return;
             }
 
-            var points = new List<Vector3>();   
+            var points = new List<Vector3>();
             for (int i = 0; i < spline.Count; i++)
             {
                 points.Add(spline[i].Position);

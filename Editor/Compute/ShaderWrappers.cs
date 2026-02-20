@@ -163,9 +163,9 @@ namespace Indiecat.TerrainGraph.Editor
             public Vector2 p2;
         }
 
-        public static bool TryGenerateContour(HeightGrid grid, float contourHeight, int contourIndex, int vertexCount, int size, out Spline spline)
+        public static bool TryGenerateContour(HeightGrid grid, float contourHeight, bool relaxContour, int contourIndex, int vertexCount, int size, out Spline spline)
         {
-            if (!TryGenerateContours(grid, contourHeight, vertexCount, size, out var splines))
+            if (!TryGenerateContours(grid, contourHeight, relaxContour, vertexCount, size, out var splines))
             {
                 spline = null;
                 return false;
@@ -183,7 +183,7 @@ namespace Indiecat.TerrainGraph.Editor
             return true;
         }
 
-        public static bool TryGenerateContours(HeightGrid grid, float contourHeight, int vertexCount, int size, out List<Spline> splines)
+        public static bool TryGenerateContours(HeightGrid grid, float contourHeight, bool relaxContour, int vertexCount, int size, out List<Spline> splines)
         {
             ComputeBuffer segmentBuffer = null;
             ComputeBuffer counterBuffer = null;
@@ -233,7 +233,7 @@ namespace Indiecat.TerrainGraph.Editor
                     return false;
                 }
 
-                var simplifiedContours = SplineHelpers.CreateSplines(contours, vertexCount);
+                var simplifiedContours = SplineHelpers.CreateSplines(contours, relaxContour, vertexCount);
 
                 splines = simplifiedContours;
                 return true;
@@ -340,9 +340,9 @@ namespace Indiecat.TerrainGraph.Editor
         public static bool TryTransformOperation(
             RenderTexture inputTexture,
             Vector2 translation,
-            float rotationDegrees, 
-            Vector2 scale, 
-            int size, 
+            float rotationDegrees,
+            Vector2 scale,
+            int size,
             ref RenderTexture outputTexture)
         {
             if (outputTexture == null)

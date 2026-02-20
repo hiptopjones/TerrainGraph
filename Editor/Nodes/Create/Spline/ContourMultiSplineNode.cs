@@ -19,6 +19,9 @@ namespace Indiecat.TerrainGraph.Editor
             [DefaultValue(0.3f)]
             public float ContourHeight;
 
+            [DisplayName("Relax")]
+            public bool RelaxContour;
+
             [DisplayName("Vertices")]
             [MinValue(10), DefaultValue(100)]
             public int VertexCount;
@@ -30,11 +33,12 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var inputGrid = Inputs.Grid;
                 var contourHeight = Inputs.ContourHeight;
+                var relaxContour = Inputs.RelaxContour;
                 var vertexCount = Inputs.VertexCount;
 
                 var size = inputGrid.Size;
 
-                if (!ShaderWrappers.TryGenerateContours(inputGrid, contourHeight, vertexCount, size, out var outputSplines))
+                if (!ShaderWrappers.TryGenerateContours(inputGrid, contourHeight, relaxContour, vertexCount, size, out var outputSplines))
                 {
                     return false;
                 }
