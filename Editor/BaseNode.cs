@@ -237,15 +237,18 @@ namespace Indiecat.TerrainGraph.Editor
             if (Options.IsNodeDisabled)
             {
                 // No validation when disabled, but force regeneration when re-enabled
-                if (CacheData.Output != null)
-                {
-                    CacheData.Output.VersionHash = 0;
-                }
-
+                CacheData.Output = null;
                 return true;
             }
 
-            return TryUpdateInputValues(graphLogger);
+            if (!TryUpdateInputValues(graphLogger))
+            {
+                // Force regeneration when valid
+                CacheData.Output = null;
+                return false;
+            }
+
+            return true;
         }
 
         public bool TryGetOutputValue(IPort _, out TResult value)
@@ -273,7 +276,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             if (CacheData.Output == null)
             {
-                // Execute failed
+                // Validate or execute failed
                 value = null;
                 return false;
             }
