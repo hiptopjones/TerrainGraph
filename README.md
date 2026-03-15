@@ -1,126 +1,200 @@
-# Terrain Graph
+# TerrainGraph
 
-A node-based procedural terrain generator.
+A node-based procedural terrain heightmap generation tool for Unity. TerrainGraph provides a visual graph editor where nodes are connected to build complex terrain generation pipelines, with all heightmap processing running on the GPU via compute shaders for real-time preview feedback.
 
 ![alt text](GraphScreenshot.png)
 ![alt text](IslandScreenshot.png)
 
-Below is an overview of all nodes available in Terrain Graph.
+## Features
+
+- Visual node graph editor built on Unity GraphToolkit
+- GPU-accelerated heightmap processing via HLSL compute shaders
+- Real-time preview of each node's output in the editor
+- Spline-based terrain shaping tools
+- Export to Unity TerrainData, textures, and meshes
+- Topological graph execution with dependency-aware caching
+
+## Node Reference
+
+### Generate
+
+Nodes that produce heightmaps or splines from scratch.
+
+#### Height
+
+| Node | Description |
+|------|-------------|
+| **Constant** | Flat heightmap at a fixed value |
+| **Gradient** | Height that varies across the map using a configurable gradient ramp |
+| **Perlin Noise** | Perlin noise heightmap with configurable frequency, offset, and seed |
+| **Voronoi Noise** | Voronoi cell-based heightmap with configurable frequency and seed |
+| **Value Noise** | Smooth cellular noise heightmap |
+| **Grid Noise** | Grid-pattern noise heightmap |
+| **Radial Shape** | Height based on distance from a center point, with configurable shape type |
+| **Slope** | Height that varies along a configurable direction |
+| **Islands** | Procedural island landmass shapes |
+| **Spline Height** | Height influenced by proximity to a spline |
+| **Spline Voronoi** | Voronoi pattern generated along a spline path |
+| **Spline Radial** | Radial height falloff emanating from a spline |
+| **Spline Ridge** | Ridge or mountain shape along a spline path |
+| **Spline Curvature** | Height derived from the curvature of a spline |
+
+#### Spline
+
+| Node | Description |
+|------|-------------|
+| **Circle** | Circular spline with configurable radius, arc angle, and vertex count |
+| **Curve** | Spline drawn from a Bezier curve |
+| **Contour** | Extracts a height contour line from a heightmap at a given level |
+| **Multi Contour** | Extracts multiple contour lines from a heightmap at specified levels |
+| **Select** | Selects a single spline from a spline list by index |
 
 ---
 
-## IMPORT
+### Modify Height
 
-| Node | Description | Key Parameters |
-|------|-------------|----------------|
-| **Import Spline** | Imports spline from Unity scene by name | Target Object (string, default "My Spline") |
+Nodes that take one or more heightmaps as input and produce a modified heightmap.
 
----
+#### Arithmetic
 
-## CREATE
+| Node | Description |
+|------|-------------|
+| **Add** | Adds a constant value or a second heightmap |
+| **Subtract** | Subtracts a constant value or a second heightmap |
+| **Multiply** | Multiplies by a constant value or a second heightmap |
+| **Divide** | Divides by a constant value or a second heightmap |
+| **Average** | Averages with a constant value |
+| **Power** | Raises values to a configurable exponent |
+| **Absolute** | Takes the absolute value of each height |
+| **Invert** | Inverts values (`1 - value`) |
+| **Arithmetic** | General arithmetic node supporting Add, Subtract, Multiply, Divide, Min, Max, Average, Compare, and Power operations in one node |
 
-### SPLINE
+#### Blending
 
-These nodes generate new splines:
+| Node | Description |
+|------|-------------|
+| **Blend** | Combines two heightmaps using a configurable operator: Add, Subtract, Multiply, Divide, Min, Max, Average, or Compare |
+| **Minimum** | Element-wise minimum of two heightmaps |
+| **Maximum** | Element-wise maximum of two heightmaps |
+| **Compare** | Element-wise comparison of two heightmaps |
+| **Stamp** | Stamps a heightmap pattern onto a base heightmap, with optional mask and configurable easing |
+| **Mask** | Multiplies a heightmap by a mask |
 
-| Node | Description | Key Parameters |
-|------|-------------|----------------|
-| **Circle Spline** | Circular spline primitive | - |
-| **Contour Multi Spline** | Multiple contour lines from heightmap | - |
-| **Contour Spline** | Single contour line extraction | - |
-| **Curve Spline** | Spline from curve definition | - |
-| **Select Spline** | Spline selection/filtering | - |
+#### Range
 
-### HEIGHTMAP
+| Node | Description |
+|------|-------------|
+| **Normalize** | Remaps the heightmap range to [0, 1] |
+| **Range** | Remaps the heightmap range to a configurable [min, max] |
+| **Clamp** | Clamps values to a configurable [min, max] |
+| **Lift** | Raises all values to a configurable minimum |
+| **Rebase** | Shifts the base of the height range |
+| **Bias** | Applies a bias curve to skew values toward 0 or 1 |
+| **Gain** | Applies a gain curve to push values toward the extremes or center |
+| **Step** | Applies a threshold step function |
+| **Ramp** | Creates a height ramp across the map |
+| **Terrace** | Creates a terraced, stepped effect with configurable step size and smoothness |
 
-These nodes generate new heightmaps:
+#### Filtering
 
-| Node | Description | Key Parameters |
-|------|-------------|----------------|
-| **Cellular Noise Height** | Cellular/Worley noise pattern | Offset, Point Count, Seed, Size |
-| **Constant Height** | Uniform flat plane | Height (default 0.5), Size (default 256) |
-| **Gradient Height** | Applies 1D gradient to the heightmap | Gradient, Size (default 256) |
-| **Islands Height** | Island-like terrain generation | - |
-| **Perlin Noise Height** | Classic Perlin noise | Offset (Vector2), Frequency (default 0.05), Seed, Size |
-| **Radial Shape Height** | Radial primitives (cone, cylinder, gaussian, smoothstep) | Size, Radius Percent, Shape Type |
-| **Slope Height** | Sloped plane | - |
-| **Spline Curvature Height** | Height based on spline curvature | - |
-| **Spline Height** | Rasterizes spline to heightmap | - |
-| **Spline Voronoi Height** | Voronoi diagram from spline points | - |
-| **Texture Height** | Texture to heightmap conversion | Texture (Texture2D) |
-| **Voronoi Noise Height** | Voronoi/cellular noise | Offset (Vector2), Point Count (default 20), Seed, Size |
+| Node | Description |
+|------|-------------|
+| **Blur** | Gaussian blur with configurable radius and iteration count |
+| **Relax** | Laplacian smoothing that averages each point with its neighbors |
+| **Grow** | Max-filter dilation that expands elevated features |
+| **Isolate** | Detects and isolates local peaks |
 
----
+#### Transform
 
-## MODIFY
+| Node | Description |
+|------|-------------|
+| **Transform** | Translates, rotates, and scales the heightmap |
+| **Translate** | Offsets the heightmap by X/Y percentage |
+| **Rotate** | Rotates the heightmap by a given angle |
+| **Scale** | Scales (zooms) the heightmap |
+| **Resize** | Changes the heightmap resolution with configurable interpolation |
 
-### HEIGHTMAPS
+#### Replace & Remove
 
-These nodes modify existing heightmaps:
+| Node | Description |
+|------|-------------|
+| **Replace** | Replaces heights within a threshold range with a new value |
+| **Remove** | Zeros out heights within a threshold range |
 
-| Node | Description | Key Parameters |
-|------|-------------|----------------|
-| **Absolute** | Converts heights to absolute values | Grid |
-| **Arithmetic** | Math operations with scalar value | Grid, Value, Operation (Add/Subtract/Multiply/Divide/Min/Max/Average/Compare/Power), Flip Inputs |
-| **Bias** | Applies bias curve adjustment (0-1 power curve) | Grid, Bias (default 0.5) |
-| **Blend** | Combines two grids with various blend modes | Grid 1, Grid 2, Operation, Flip Inputs |
-| **Blur** | Gaussian blur smoothing | Grid, Radius (default 5), Iterations (1-50, default 1) |
-| **Clamp** | Constrains heights to min/max range | Grid, Minimum (default 0), Maximum (default 1) |
-| **Erosion** | Hydraulic erosion simulation | Grid, Iterations (1-1000), Rain, Evaporation, Capacity, Erosion, Deposition, Gravity |
-| **Gain** | Applies gain curve adjustment (S-curve) | Grid, Gain (default 0.5) |
-| **Grow** | Morphological dilation (expands features) | Grid, Radius (default 1) |
-| **Invert** | Inverts heights around pivot point | Grid, Pivot (default 0) |
-| **Isolate** | Set specified height = 1, all others = 0 | Grid, Height (default 0.5) |
-| **Lift** | Raises terrain under spline with falloff | Grid, Spline, Strength, Margin, Easing Type |
-| **Mask** | Converts non-zero values to binary mask (0 or 1) | Grid |
-| **Masked Fill** | Fills masked areas by averaging neighbors | Grid, Mask, Iterations (1-1000, default 100) |
-| **Normalize** | Remaps to 0-1 range | Grid |
-| **Preview** | Pass-through for visualization | Grid |
-| **Ramp** | Remaps using curve or gradient | Grid, Ramp Type (Curve/Gradient), Curve or Gradient |
-| **Range** | Remaps from one range to another | Grid, From Range (Vector2), To Range (Vector2) |
-| **Rebase** | Shifts floor or ceiling to target value | Grid, Rebase Type (Floor/Ceiling), Value |
-| **Relax** | Smooths by iterative neighbor averaging | Grid, Iterations (1-1000, default 100) |
-| **Remove** | Sets specified height = 0 | Grid, Height (default 0) |
-| **Replace** | Replaces a specific height value | Grid, From (default 1), To (default 0.5) |
-| **Resize** | Changes resolution with optional scale preservation | Grid, Size (16+, default 256), Preserve Scale |
-| **Stamp** | Stamps one heightmap onto another with mask | Grid, Stamp, Mask, Radius, Easing Type |
-| **Step** | Binary threshold (step function) | Grid, Threshold (0-1, default 0.5) |
-| **Transform** | 2D transform (translate, rotate, scale) | Grid, Translation Percent, Rotation Degrees, Scale |
+#### Erosion
 
-### SPLINES
+| Node | Description |
+|------|-------------|
+| **Erosion** | Hydraulic erosion simulation — water flows downslope, eroding and depositing sediment based on flow capacity |
+| **Particle Erosion** | Particle-based erosion — simulates individual water droplets traveling downslope, carrying and depositing sediment with configurable inertia, erosion rate, and deposition rate |
 
-These nodes modify splines:
+#### Utility
 
-| Node | Description | Key Parameters |
-|------|-------------|----------------|
-| **Displace Spline** | Displaces spline vertices | - |
-| **Open/Closed Spline** | Converts between open/closed splines | - |
-| **Resample Spline** | Changes vertex count | Spline, Vertices (10+, default 100) |
-| **Slice Spline** | Extracts spline portion | - |
-| **Smooth Spline** | Smooths by averaging | Spline, Iterations (1-100, default 1), Min Angle (default 150) |
-| **Splice Spline** | Joins multiple splines | - |
+| Node | Description |
+|------|-------------|
+| **Preview** | Pass-through node for inserting a preview point mid-graph without affecting values |
 
 ---
 
-## EXPORT
+### Modify Spline
 
-Output nodes for final results:
+Nodes that take a spline as input and produce a modified spline.
 
-| Node | Description | Key Parameters |
-|------|-------------|----------------|
-| **Export Mesh** | Heightmap to mesh asset | - |
-| **Export Spline** | Spline to scene/asset | - |
-| **Export Stamp** | Heightmap to stamp asset | - |
-| **Export Terrain** | Heightmap to Unity TerrainData | Grid, Terrain (string, default "My Terrain Data") |
-| **Export Texture** | Heightmap to texture asset | - |
+| Node | Description |
+|------|-------------|
+| **Smooth** | Smooths sharp angles in a spline over configurable iterations |
+| **Resample** | Changes the vertex density of a spline |
+| **Slice** | Extracts a segment of a spline by start and end index |
+| **Splice** | Combines multiple splines from a spline list into one |
+| **Displace** | Displaces spline vertices along a direction |
+| **Open / Close** | Toggles whether the spline is open or closed |
 
 ---
 
-## Architecture Notes
+### Import
 
-1. **Common Options**: All nodes support **Disable** (bypass processing) and **Preview** options
-2. **GPU Acceleration**: Height operations use **compute shaders** for performance
-3. **Caching**: Version-based caching prevents redundant recomputation
-4. **Iterative Processing**: Many nodes support iteration counts (1-1000) for gradual effects
-5. **Easing Types**: Common options include Constant, Linear, Cubic, SmoothStep
-6. **Spline Integration**: Multiple nodes bridge between splines and heightmaps for terrain authoring
+| Node | Description |
+|------|-------------|
+| **Import Texture** | Imports a Texture2D asset as a heightmap |
+| **Import Spline** | Imports a spline from a scene object |
+
+---
+
+### Export
+
+Export nodes have no output port. They write data to external assets or files when the graph executes.
+
+| Node | Description |
+|------|-------------|
+| **Export Terrain** | Writes the heightmap to a Unity TerrainData asset |
+| **Export Texture** | Saves the heightmap as a PNG or EXR texture asset |
+| **Export Mesh** | Generates and saves a mesh asset from the heightmap |
+| **Export Spline** | Exports spline vertex data to a file |
+| **Export Stamp** | Saves the heightmap as a reusable stamp for use in Stamp nodes |
+
+---
+
+## How It Works
+
+Nodes are connected in a directed acyclic graph. When any node's parameters or connections change, the graph re-evaluates in topological order — upstream nodes first — so each node always receives up-to-date inputs. Results are cached per-node and invalidated only when inputs change, keeping re-evaluation fast.
+
+All heightmaps are stored as GPU RenderTextures and processed via HLSL compute shaders. This means even complex multi-node graphs with large resolutions update in real time in the editor.
+
+### Data Types
+
+- **HeightGrid** — a heightmap stored as a floating-point RenderTexture
+- **SplineWrapper** — a single spline curve
+- **SplineListWrapper** — a collection of splines (e.g. contour lines)
+
+### Example Pipeline
+
+```
+Perlin Noise → Blur → Normalize → Stamp (with mask) → Relax → Export Terrain
+```
+
+1. **Perlin Noise** generates a base heightmap
+2. **Blur** smooths the raw noise
+3. **Normalize** remaps the range to [0, 1]
+4. **Stamp** layers a detail pattern onto the terrain using a mask
+5. **Relax** applies a final smoothing pass
+6. **Export Terrain** writes the result to a Unity TerrainData asset
