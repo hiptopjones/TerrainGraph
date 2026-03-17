@@ -22,6 +22,7 @@ namespace CodeFirst.TerrainGraph.Editor
         {
             [Passthru]
             public HeightGrid Grid;
+
             [DefaultValue(0.5f)]
             [IncludeIf(nameof(IsOperandConstant))]
             public float Value;
