@@ -38,8 +38,7 @@ namespace Indiecat.TerrainGraph.Editor
             }
             else
             {
-                var splineContainers = Object.FindObjectsByType<SplineContainer>(
-                    FindObjectsInactive.Include, FindObjectsSortMode.None);
+                var splineContainers = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include);
 
                 var namedSplineContainerCount = splineContainers.Count(x => x.name == inputs.TargetObjectName);
                 if (namedSplineContainerCount == 0)
@@ -82,7 +81,7 @@ namespace Indiecat.TerrainGraph.Editor
                 outputSpline.Closed = inputSpline.Closed;
             }
 
-            var splineContainer = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            var splineContainer = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include)
                 .Single(x => x.name == inputTargetName);
 
             splineContainer.Spline = outputSpline;

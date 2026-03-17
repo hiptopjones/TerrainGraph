@@ -768,7 +768,7 @@ namespace Indiecat.TerrainGraph.Editor
 
         public static MeshPreviewComponent GetOrCreateMeshPreviewComponent()
         {
-            MeshPreviewComponent preview = Object.FindFirstObjectByType<MeshPreviewComponent>();
+            MeshPreviewComponent preview = Object.FindAnyObjectByType<MeshPreviewComponent>();
             if (preview == null)
             {
                 GameObject go = new GameObject("Grid Preview");

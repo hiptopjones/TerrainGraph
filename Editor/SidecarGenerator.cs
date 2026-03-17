@@ -75,7 +75,7 @@ namespace Indiecat.TerrainGraph.Editor
                     {
                         if (fieldModel.IsCustom)
                         {
-                            var port = node.GetInputPorts().FirstOrDefault(x => x.name == fieldModel.PortName);
+                            var port = node.GetInputPorts().FirstOrDefault(x => x.Name == fieldModel.PortName);
                             if (port == null)
                             {
                                 continue;
@@ -85,7 +85,7 @@ namespace Indiecat.TerrainGraph.Editor
                                 fieldModel.FieldType == typeof(SplineWrapper) ||
                                 fieldModel.FieldType == typeof(SplineListWrapper))
                             {
-                                var connectedPort = port.firstConnectedPort;
+                                var connectedPort = port.FirstConnectedPort;
                                 var connectedNode = connectedPort.GetNode();
 
                                 builder.AppendLine(

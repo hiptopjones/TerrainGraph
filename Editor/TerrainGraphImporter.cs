@@ -38,7 +38,7 @@ namespace Indiecat.TerrainGraph.Editor
                 return;
             }
 
-            Debug.Log($"[Import] Loaded {graph.nodeCount} nodes from {Path.GetFileNameWithoutExtension(context.assetPath)}");
+            Debug.Log($"[Import] Loaded {graph.NodeCount} nodes from {Path.GetFileNameWithoutExtension(context.assetPath)}");
 
             TryExecuteGraph(graph);
 

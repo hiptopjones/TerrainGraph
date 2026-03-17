@@ -14,13 +14,13 @@ namespace Indiecat.TerrainGraph.Editor
             {
                 var port = node.GetInputPortByName(portId);
 
-                var fromType = port.dataType;
+                var fromType = port.DataType;
                 var toType = typeof(T);
 
                 // Sanity check, since I keep wasting time finding type mismatches on ports
                 if (fromType != toType)
                 {
-                    Debug.Log($"Type mismatch on {node} input port {portId}: {typeof(T).Name} != {port.dataType}");
+                    Debug.Log($"Type mismatch on {node} input port {portId}: {typeof(T).Name} != {port.DataType}");
                     return false;
                 }
 
@@ -40,17 +40,17 @@ namespace Indiecat.TerrainGraph.Editor
 
             try
             {
-                if (!port.isConnected)
+                if (!port.IsConnected)
                 {
                     // If no connection exists, try to get the port's embedded value (returns type default if unavailable)
                     return port.TryGetValue(out value);
                 }
 
-                var connectedPort = port.firstConnectedPort;
+                var connectedPort = port.FirstConnectedPort;
                 var connectedNode = connectedPort.GetNode();
                 if (connectedNode == null)
                 {
-                    Debug.Log($"Missing node on {node} input port {port.name}: check for orphaned portals");
+                    Debug.Log($"Missing node on {node} input port {port.Name}: check for orphaned portals");
                     return false;
                 }
 
@@ -60,7 +60,7 @@ namespace Indiecat.TerrainGraph.Editor
                         return constantNode.TryGetValue(out value);
 
                     case IVariableNode variableNode:
-                        return variableNode.variable.TryGetDefaultValue(out value);
+                        return variableNode.Variable.TryGetDefaultValue(out value);
 
                     case IEvaluatableNode<T> evaluatableNode:
                         return evaluatableNode.TryGetOutputValue(connectedPort, out value);

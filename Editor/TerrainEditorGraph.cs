@@ -87,7 +87,7 @@ namespace Indiecat.TerrainGraph.Editor
         {
             // Create a variable in the blackboard with the below properties to enable this check
 
-            var variable = GetVariables().SingleOrDefault(x => x.name == "UpdateEnabled" && x.dataType == typeof(bool));
+            var variable = GetVariables().SingleOrDefault(x => x.Name == "UpdateEnabled" && x.DataType == typeof(bool));
             if (variable != null)
             {
                 if (variable.TryGetDefaultValue(out bool isEnabled))

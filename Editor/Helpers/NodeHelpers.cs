@@ -7,14 +7,14 @@ namespace Indiecat.TerrainGraph.Editor
     {
         public static bool TryGetInputPortByName(INode node, string name, out IPort port)
         {
-            port = node.GetInputPorts().Where(x => x.name == name).FirstOrDefault();
+            port = node.GetInputPorts().Where(x => x.Name == name).FirstOrDefault();
 
             return port != null;
         }
 
         public static bool TryGetOutputPortByName(INode node, string name, out IPort port)
         {
-            port = node.GetOutputPorts().Where(x => x.name == name).FirstOrDefault();
+            port = node.GetOutputPorts().Where(x => x.Name == name).FirstOrDefault();
 
             return port != null;
         }

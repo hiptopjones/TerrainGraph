@@ -52,8 +52,7 @@ namespace Indiecat.TerrainGraph.Editor
             }
             else
             {
-                var namedSplineContainers = Object.FindObjectsByType<SplineContainer>(
-                    FindObjectsInactive.Include, FindObjectsSortMode.None)
+                var namedSplineContainers = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include)
                         .Where(x => x.name == inputs.TargetObjectName).ToList();
 
                 if (namedSplineContainers.Count == 0)
