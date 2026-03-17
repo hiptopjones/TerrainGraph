@@ -1,5 +1,4 @@
-﻿using Indiecat.UnityCommon.Runtime;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -24,7 +23,7 @@ namespace Indiecat.TerrainGraph.Editor
 
             // Useful to debug property problems
             var debug = new VisualElement();
-            debug.Classes("behavior-injector");
+            debug.AddToClassList("behavior-injector");
             debug.Add(new PropertyField(property.FindPropertyRelative("InputsTypeName")));
             debug.Add(new PropertyField(property.FindPropertyRelative("OptionsTypeName")));
             debug.style.display = DisplayStyle.None;

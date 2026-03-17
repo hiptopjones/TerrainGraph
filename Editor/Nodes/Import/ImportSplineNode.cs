@@ -1,5 +1,4 @@
-﻿using Indiecat.UnityCommon.Runtime;
-using System;
+﻿using System;
 using System.Linq;
 using UnityEditor.Splines;
 using UnityEngine;
