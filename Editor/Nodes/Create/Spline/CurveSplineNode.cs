@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     using CurveType = CurveFunctions.CurveType;
 

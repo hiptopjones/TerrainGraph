@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [CustomPropertyDrawer(typeof(PreviewImage))]
     public class PreviewImageDrawer : PropertyDrawer

@@ -5,7 +5,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [CustomPropertyDrawer(typeof(BehaviorInjector))]
     public class BehaviorInjectorDrawer : PropertyDrawer

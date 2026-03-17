@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
     public class SplineRidgeHeightNode

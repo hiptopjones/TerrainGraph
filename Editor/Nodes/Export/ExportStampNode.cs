@@ -6,7 +6,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportStampNode

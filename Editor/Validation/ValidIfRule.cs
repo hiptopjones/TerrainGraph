@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     public class ValidIfRule : IValidationRule
     {

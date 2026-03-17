@@ -2,7 +2,7 @@
 using System.Text;
 using UnityEngine;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     public static class MeshHelpers
     {

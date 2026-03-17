@@ -1,4 +1,4 @@
-﻿namespace Indiecat.TerrainGraph.Editor
+﻿namespace CodeFirst.TerrainGraph.Editor
 {
     interface ICacheableNode<T> where T : IVersionedObject
     {

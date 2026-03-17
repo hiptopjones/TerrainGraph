@@ -1,0 +1,29 @@
+{
+    "name": "CodeFirst.TerrainGraph.Editor",
+    "rootNamespace": "CodeFirst.TerrainGraph.Editor",
+    "references": [
+        "Unity.Splines",
+        "Unity.Splines.Editor",
+        "Unity.Mathematics",
+        "JBooth.MicroVerseCore"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        ""
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UNITY_EDITOR"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.jbooth.microverse",
+            "expression": "",
+            "define": "__MICROVERSE__"
+        }
+    ],
+    "noEngineReferences": false
+}

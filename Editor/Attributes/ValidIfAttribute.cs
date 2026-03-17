@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
     public class ValidIfAttribute : Attribute

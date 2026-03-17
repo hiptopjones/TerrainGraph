@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     // Use a less-parameterized base class so using the inner classes is less ugly
     [Serializable]

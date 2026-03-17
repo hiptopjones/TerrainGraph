@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [ExecuteAlways]
     [RequireComponent(typeof(MeshFilter))]

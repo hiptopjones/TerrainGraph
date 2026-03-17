@@ -1,6 +1,6 @@
 ﻿using UnityObject = UnityEngine.Object;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     public static partial class ObjectExtensions
     {

@@ -6,7 +6,7 @@ using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [Graph(ASSET_FILE_EXTENSION)]
     [Serializable]

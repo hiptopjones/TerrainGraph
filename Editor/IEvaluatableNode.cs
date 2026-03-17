@@ -1,6 +1,6 @@
 ﻿using Unity.GraphToolkit.Editor;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     interface IEvaluatableNode<T>
     {

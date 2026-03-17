@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine.Splines;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
     public class SplineListWrapper : IVersionedObject

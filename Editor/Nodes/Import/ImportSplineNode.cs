@@ -6,7 +6,7 @@ using UnityEngine.Splines;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
     public class ImportSplineNode

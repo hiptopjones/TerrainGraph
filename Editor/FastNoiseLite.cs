@@ -54,7 +54,7 @@ using System.Runtime.CompilerServices;
 using FNLfloat = System.Single;
 //using FNLfloat = System.Double;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     public class FastNoiseLite
     {

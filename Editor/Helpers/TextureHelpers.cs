@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Splines;
 using Object = UnityEngine.Object;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     public static class TextureHelpers
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
     public class MultiplyNode

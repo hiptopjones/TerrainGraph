@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEditor;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
     public class ExportTextureNode

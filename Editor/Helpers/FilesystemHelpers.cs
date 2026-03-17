@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     public static class FilesystemHelpers
     {

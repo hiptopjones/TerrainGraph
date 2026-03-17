@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 
-namespace Indiecat.TerrainGraph.Editor
+namespace CodeFirst.TerrainGraph.Editor
 {
     [ScriptedImporter(1, TerrainEditorGraph.ASSET_FILE_EXTENSION)]
     internal class TerrainGraphImporter : ScriptedImporter
