@@ -28,7 +28,7 @@ Nodes that produce heightmaps or splines from scratch.
 | **Gradient** | Height that varies across the map using a configurable gradient ramp |
 | **Perlin Noise** | Perlin noise heightmap with configurable frequency, offset, and seed |
 | **Voronoi Noise** | Voronoi cell-based heightmap with configurable frequency and seed |
-| **Value Noise** | Smooth cellular noise heightmap |
+| **Value Noise** | Simple gradient noise heightmap |
 | **Grid Noise** | Grid-pattern noise heightmap |
 | **Radial Shape** | Height based on distance from a center point, with configurable shape type |
 | **Slope** | Height that varies along a configurable direction |
@@ -44,7 +44,7 @@ Nodes that produce heightmaps or splines from scratch.
 | Node | Description |
 |------|-------------|
 | **Circle** | Circular spline with configurable radius, arc angle, and vertex count |
-| **Curve** | Spline drawn from a Bezier curve |
+| **Curve** | Spline drawn from preset curve shapes |
 | **Contour** | Extracts a height contour line from a heightmap at a given level |
 | **Multi Contour** | Extracts multiple contour lines from a heightmap at specified levels |
 | **Select** | Selects a single spline from a spline list by index |
@@ -55,80 +55,76 @@ Nodes that produce heightmaps or splines from scratch.
 
 Nodes that take one or more heightmaps as input and produce a modified heightmap.
 
-#### Arithmetic
+#### Arithmetic / Blending
 
 | Node | Description |
 |------|-------------|
 | **Add** | Adds a constant value or a second heightmap |
-| **Subtract** | Subtracts a constant value or a second heightmap |
-| **Multiply** | Multiplies by a constant value or a second heightmap |
+| **Average** | Averages with a constant value or a second heightmap |
+| **Compare** | Outputs -1, 0, or 1 depending on value of a constant value or a second heightmap |
 | **Divide** | Divides by a constant value or a second heightmap |
-| **Average** | Averages with a constant value |
-| **Power** | Raises values to a configurable exponent |
+| **Maximum** | Selects the maximum of a constant value or a second heightmap |
+| **Minimum** | Selects the minimum of a constant value or a second heightmap |
+| **Multiply** | Multiplies by a constant value or a second heightmap |
+| **Subtract** | Subtracts a constant value or a second heightmap |
+
+#### Other Math
+
+| Node | Description |
+|------|-------------|
 | **Absolute** | Takes the absolute value of each height |
-| **Invert** | Inverts values (`1 - value`) |
-| **Arithmetic** | General arithmetic node supporting Add, Subtract, Multiply, Divide, Min, Max, Average, Compare, and Power operations in one node |
-
-#### Blending
-
-| Node | Description |
-|------|-------------|
-| **Blend** | Combines two heightmaps using a configurable operator: Add, Subtract, Multiply, Divide, Min, Max, Average, or Compare |
-| **Minimum** | Element-wise minimum of two heightmaps |
-| **Maximum** | Element-wise maximum of two heightmaps |
-| **Compare** | Element-wise comparison of two heightmaps |
-| **Stamp** | Stamps a heightmap pattern onto a base heightmap, with optional mask and configurable easing |
-| **Mask** | Multiplies a heightmap by a mask |
-
-#### Range
-
-| Node | Description |
-|------|-------------|
-| **Normalize** | Remaps the heightmap range to [0, 1] |
-| **Range** | Remaps the heightmap range to a configurable [min, max] |
 | **Clamp** | Clamps values to a configurable [min, max] |
-| **Lift** | Raises all values to a configurable minimum |
-| **Rebase** | Shifts the base of the height range |
-| **Bias** | Applies a bias curve to skew values toward 0 or 1 |
-| **Gain** | Applies a gain curve to push values toward the extremes or center |
-| **Step** | Applies a threshold step function |
-| **Ramp** | Creates a height ramp across the map |
-| **Terrace** | Creates a terraced, stepped effect with configurable step size and smoothness |
+| **Power** | Raises values to a configurable exponent |
 
-#### Filtering
+#### Remapping
+
+| Node | Description |
+|------|-------------|
+| **Bias** | Applies a bias curve to skew height values toward 0 or 1 |
+| **Gain** | Applies a gain curve to push height values toward the extremes or center |
+| **Mask** | Converts the heightmap to a mask by setting any non-zero values to 1 |
+| **Normalize** | Remaps the heightmap range to [0, 1] |
+| **Ramp** | Uses a gradient or animation curve to remap height values |
+| **Range** | Remaps the heightmap range to a configurable [min, max] |
+| **Rebase** | Shifts the base of the height range |
+| **Step** | Applies a threshold step function to the height values |
+
+#### Processing
 
 | Node | Description |
 |------|-------------|
 | **Blur** | Gaussian blur with configurable radius and iteration count |
+| **Invert** | Flips height values around a specified center value |
+| **Terrace** | Creates a terraced, stepped effect with configurable step size and smoothness |
 | **Relax** | Laplacian smoothing that averages each point with its neighbors |
-| **Grow** | Max-filter dilation that expands elevated features |
-| **Isolate** | Detects and isolates local peaks |
+| **Grow** | Expands a region of height values to cover more surface area |
+| **Lift** | Raises height values using an easing curve within a spline-defined region |
+| **Erosion** | Particle-based erosion that simulates individual water droplets traveling downslope, carrying and depositing sediment with configurable inertia, erosion rate, and deposition rate |
 
 #### Transform
 
 | Node | Description |
 |------|-------------|
-| **Transform** | Translates, rotates, and scales the heightmap |
 | **Translate** | Offsets the heightmap by X/Y percentage |
 | **Rotate** | Rotates the heightmap by a given angle |
 | **Scale** | Scales (zooms) the heightmap |
 | **Resize** | Changes the heightmap resolution with configurable interpolation |
 
-#### Replace & Remove
+#### Single Layer
 
 | Node | Description |
 |------|-------------|
-| **Replace** | Replaces heights within a threshold range with a new value |
-| **Remove** | Zeros out heights within a threshold range |
-
-#### Erosion
-
-| Node | Description |
-|------|-------------|
-| **Erosion** | Hydraulic erosion simulation — water flows downslope, eroding and depositing sediment based on flow capacity |
-| **Particle Erosion** | Particle-based erosion — simulates individual water droplets traveling downslope, carrying and depositing sediment with configurable inertia, erosion rate, and deposition rate |
+| **Replace** | Replaces values in a single height layer |
+| **Remove** | Zeros out a single height layer |
+| **Isolate** | Zeros out everything other than a single height layer |
 
 #### Utility
+
+| Node | Description |
+|------|-------------|
+| **Stamp** | Stamps a heightmap pattern onto a base heightmap, with optional mask and configurable easing |
+
+#### Invariant
 
 | Node | Description |
 |------|-------------|
@@ -170,7 +166,7 @@ Export nodes have no output port. They write data to external assets or files wh
 | **Export Texture** | Saves the heightmap as a PNG or EXR texture asset |
 | **Export Mesh** | Generates and saves a mesh asset from the heightmap |
 | **Export Spline** | Exports spline vertex data to a file |
-| **Export Stamp** | Saves the heightmap as a reusable stamp for use in Stamp nodes |
+| **Export Stamp** | Applies the heightmap to a [MicroVerse](https://assetstore.unity.com/packages/tools/terrain/microverse-232972) stamp |
 
 ---
 
