@@ -3,7 +3,7 @@ using System.Linq;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -130,7 +130,7 @@ namespace CodeFirst.TerrainGraph.Editor
             {
                 if (workingTexture != null)
                 {
-                    Object.DestroyImmediate(workingTexture);
+                    UnityObject.DestroyImmediate(workingTexture);
                     workingTexture = null;
                 }
             }

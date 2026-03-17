@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -53,7 +53,7 @@ namespace CodeFirst.TerrainGraph.Editor
                     // Object has been GC'd
                     if (texture != null)
                     {
-                        Object.DestroyImmediate(texture);
+                        UnityObject.DestroyImmediate(texture);
                     }
 
                     _entries.RemoveAt(i);

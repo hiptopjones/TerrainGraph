@@ -1,7 +1,7 @@
 using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using Random = UnityEngine.Random;
+using UnityRandom = UnityEngine.Random;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -71,10 +71,10 @@ namespace CodeFirst.TerrainGraph.Editor
 
         public static Vector2 GetOffsetPositionInternal(Vector2 position, int seed)
         {
-            Random.InitState(seed);
+            UnityRandom.InitState(seed);
 
-            var offsetX = Random.value * 200000 - 100000;
-            var offsetY = Random.value * 200000 - 100000;
+            var offsetX = UnityRandom.value * 200000 - 100000;
+            var offsetY = UnityRandom.value * 200000 - 100000;
 
             // Offset the sampling position by a repeatable random location based on a seed
             position += new Vector2(offsetX, offsetY);

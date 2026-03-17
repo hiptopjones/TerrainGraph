@@ -1,7 +1,7 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -111,7 +111,7 @@ namespace CodeFirst.TerrainGraph.Editor
             {
                 if (sdfTexture != null)
                 {
-                    Object.DestroyImmediate(sdfTexture);
+                    UnityObject.DestroyImmediate(sdfTexture);
                     sdfTexture = null;
                 }
             }

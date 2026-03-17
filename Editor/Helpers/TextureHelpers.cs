@@ -2,7 +2,7 @@
 using System.IO;
 using UnityEngine;
 using UnityEngine.Splines;
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -74,7 +74,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (outputTexture != null)
                 {
-                    Object.DestroyImmediate(outputTexture);
+                    UnityObject.DestroyImmediate(outputTexture);
                     outputTexture = null;
                 }
 
@@ -117,7 +117,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (outputTexture != null)
                 {
-                    Object.DestroyImmediate(outputTexture);
+                    UnityObject.DestroyImmediate(outputTexture);
                     outputTexture = null;
                 }
 
@@ -162,7 +162,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (outputTexture != null)
                 {
-                    Object.DestroyImmediate(outputTexture);
+                    UnityObject.DestroyImmediate(outputTexture);
                     outputTexture = null;
                 }
 
@@ -351,7 +351,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (outputTexture != null)
                 {
-                    Object.DestroyImmediate(outputTexture);
+                    UnityObject.DestroyImmediate(outputTexture);
                     outputTexture = null;
                 }
 
@@ -411,7 +411,7 @@ namespace CodeFirst.TerrainGraph.Editor
             {
                 if (exportTexture != null)
                 {
-                    Object.DestroyImmediate(exportTexture);
+                    UnityObject.DestroyImmediate(exportTexture);
                     exportTexture = null;
                 }
             }

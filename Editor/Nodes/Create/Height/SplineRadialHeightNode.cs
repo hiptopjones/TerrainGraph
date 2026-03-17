@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -114,7 +114,7 @@ namespace CodeFirst.TerrainGraph.Editor
             {
                 if (profileCurveTexture != null)
                 {
-                    Object.DestroyImmediate(profileCurveTexture);
+                    UnityObject.DestroyImmediate(profileCurveTexture);
                     profileCurveTexture = null;
                 }
 

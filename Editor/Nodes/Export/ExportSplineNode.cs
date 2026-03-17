@@ -4,7 +4,7 @@ using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -40,7 +40,7 @@ namespace CodeFirst.TerrainGraph.Editor
             }
             else
             {
-                var splineContainers = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include);
+                var splineContainers = UnityObject.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include);
 
                 var namedSplineContainerCount = splineContainers.Count(x => x.name == inputs.TargetObjectName);
                 if (namedSplineContainerCount == 0)
@@ -83,7 +83,7 @@ namespace CodeFirst.TerrainGraph.Editor
                 outputSpline.Closed = inputSpline.Closed;
             }
 
-            var splineContainer = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include)
+            var splineContainer = UnityObject.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include)
                 .Single(x => x.name == inputTargetName);
 
             splineContainer.Spline = outputSpline;

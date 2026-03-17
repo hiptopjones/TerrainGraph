@@ -5,7 +5,7 @@ using System.Reflection;
 using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -768,7 +768,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
         public static MeshPreviewComponent GetOrCreateMeshPreviewComponent()
         {
-            MeshPreviewComponent preview = Object.FindAnyObjectByType<MeshPreviewComponent>();
+            MeshPreviewComponent preview = UnityObject.FindAnyObjectByType<MeshPreviewComponent>();
             if (preview == null)
             {
                 GameObject go = new GameObject("Grid Preview");

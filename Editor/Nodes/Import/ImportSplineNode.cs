@@ -4,8 +4,8 @@ using Unity.GraphToolkit.Editor;
 using UnityEditor.Splines;
 using UnityEngine;
 using UnityEngine.Splines;
-using Object = UnityEngine.Object;
-using Random = UnityEngine.Random;
+using UnityObject = UnityEngine.Object;
+using UnityRandom = UnityEngine.Random;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -53,7 +53,7 @@ namespace CodeFirst.TerrainGraph.Editor
             }
             else
             {
-                var namedSplineContainers = Object.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include)
+                var namedSplineContainers = UnityObject.FindObjectsByType<SplineContainer>(FindObjectsInactive.Include)
                         .Where(x => x.name == inputs.TargetObjectName).ToList();
 
                 if (namedSplineContainers.Count == 0)
@@ -85,7 +85,7 @@ namespace CodeFirst.TerrainGraph.Editor
             }
 
             // Will force the hashcode to be different, invalidating the node and forcing an update
-            _uniqueSplineValue = Random.value;
+            _uniqueSplineValue = UnityRandom.value;
         }
 
         protected override int GetInputsHashCode(InputValues inputs)

@@ -1,7 +1,7 @@
 ﻿using System;
 using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using UnityObject = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
@@ -76,7 +76,7 @@ namespace CodeFirst.TerrainGraph.Editor
             {
                 if (rampTexture != null)
                 {
-                    Object.DestroyImmediate(rampTexture);
+                    UnityObject.DestroyImmediate(rampTexture);
                     rampTexture = null;
                 }
             }
