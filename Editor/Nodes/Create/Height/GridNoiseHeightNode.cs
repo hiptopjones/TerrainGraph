@@ -1,10 +1,12 @@
 using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Noise", iconPath: null, title: "Grid Noise Height")]
     public class GridNoiseHeightNode
         : BaseNode<GridNoiseHeightNode.OptionValues, GridNoiseHeightNode.InputValues, HeightGrid>
     {

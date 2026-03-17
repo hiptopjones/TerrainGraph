@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using UnityEngine.Splines;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Spline", iconPath: null, title: "Open/Close Spline")]
     public class OpenClosedSplineNode
         : BaseNode<OpenClosedSplineNode.OptionValues, OpenClosedSplineNode.InputValues, SplineWrapper>
     {

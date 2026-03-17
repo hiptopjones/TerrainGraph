@@ -1,10 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
-using UnityEngine.Splines;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Import", iconPath: null, title: "Import Texture")]
     public class ImportTextureNode
         : BaseNode<ImportTextureNode.OptionValues, ImportTextureNode.InputValues, HeightGrid>
     {

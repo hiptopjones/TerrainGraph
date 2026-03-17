@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using UnityEngine.Splines;
 using Object = UnityEngine.Object;
@@ -8,6 +9,7 @@ using Object = UnityEngine.Object;
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Special", iconPath: null, title: "Curvature Height")]
     public class SplineCurvatureHeightNode
         : BaseNode<SplineCurvatureHeightNode.OptionValues, SplineCurvatureHeightNode.InputValues, HeightGrid>
     {

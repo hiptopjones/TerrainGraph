@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Spline", iconPath: null, title: "Smooth Spline")]
     public class SmoothSplineNode
         : BaseNode<SmoothSplineNode.OptionValues, SmoothSplineNode.InputValues, SplineWrapper>
     {

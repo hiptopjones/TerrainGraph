@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Blur")]
     public class BlurNode
         : BaseNode<BlurNode.OptionValues, BlurNode.InputValues, HeightGrid>
     {

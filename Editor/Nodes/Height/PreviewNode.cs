@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Preview")]
     public class PreviewNode
         : BaseNode<PreviewNode.OptionValues, PreviewNode.InputValues, HeightGrid>
     {

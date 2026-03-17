@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Spline", iconPath: null, title: "Spline Height")]
     public class SplineHeightNode
         : BaseNode<SplineHeightNode.OptionValues, SplineHeightNode.InputValues, HeightGrid>
     {

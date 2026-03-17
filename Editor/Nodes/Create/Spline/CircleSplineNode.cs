@@ -1,10 +1,12 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using UnityEngine.Splines;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Spline", iconPath: null, title: "Circle Spline")]
     public class CircleSplineNode
         : BaseNode<CircleSplineNode.OptionValues, CircleSplineNode.InputValues, SplineWrapper>
     {

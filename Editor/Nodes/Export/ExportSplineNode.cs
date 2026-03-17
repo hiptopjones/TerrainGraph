@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -8,6 +9,7 @@ using Object = UnityEngine.Object;
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Export", iconPath: null, title: "Export Spline")]
     public class ExportSplineNode
         : BaseNode<ExportSplineNode.OptionValues, ExportSplineNode.InputValues, NullOutput>, IExportableNode
     {

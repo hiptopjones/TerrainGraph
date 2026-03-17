@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Average")]
     public class AverageNode
         : BaseNode<AverageNode.OptionValues, AverageNode.InputValues, HeightGrid>
     {
@@ -80,7 +82,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (IsOperandConstant())
                 {
-                    var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Average;
+                    var arithmeticOperator = ArithmeticOperator.Average;
 
                     var inputTexture = inputGrid.RenderTexture;
 
@@ -92,7 +94,7 @@ namespace CodeFirst.TerrainGraph.Editor
                 }
                 else
                 {
-                    var blendOperator = BlendNode.BlendOperator.Average;
+                    var blendOperator = BlendOperator.Average;
 
                     var inputTexture1 = inputGrid.RenderTexture;
                     var inputTexture2 = inputGrid2.RenderTexture;

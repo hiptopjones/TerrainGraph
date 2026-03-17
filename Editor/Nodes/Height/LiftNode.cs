@@ -1,10 +1,12 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Lift")]
     public class LiftNode
         : BaseNode<LiftNode.OptionValues, LiftNode.InputValues, HeightGrid>
     {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -7,6 +8,7 @@ using UnityEngine.Splines;
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Spline", iconPath: null, title: "Splice Spline")]
     public class SpliceSplineNode
         : BaseNode<SpliceSplineNode.OptionValues, SpliceSplineNode.InputValues, SplineWrapper>
     {

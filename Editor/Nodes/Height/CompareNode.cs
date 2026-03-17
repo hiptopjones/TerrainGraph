@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Compare")]
     public class CompareNode
         : BaseNode<CompareNode.OptionValues, CompareNode.InputValues, HeightGrid>
     {
@@ -108,7 +110,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (IsOperandConstant())
                 {
-                    var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Compare;
+                    var arithmeticOperator = ArithmeticOperator.Compare;
 
                     var inputTexture = inputGrid.RenderTexture;
 
@@ -120,7 +122,7 @@ namespace CodeFirst.TerrainGraph.Editor
                 }
                 else
                 {
-                    var blendOperator = BlendNode.BlendOperator.Compare;
+                    var blendOperator = BlendOperator.Compare;
 
                     var inputTexture1 = inputGrid.RenderTexture;
                     var inputTexture2 = inputGrid2.RenderTexture;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEditor.Splines;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -9,6 +10,7 @@ using Random = UnityEngine.Random;
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Import", iconPath: null, title: "Import Spline")]
     public class ImportSplineNode
         : BaseNode<ImportSplineNode.OptionValues, ImportSplineNode.InputValues, SplineWrapper>
     {

@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Add")]
     public class AddNode
         : BaseNode<AddNode.OptionValues, AddNode.InputValues, HeightGrid>
     {
@@ -81,7 +83,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (IsOperandConstant())
                 {
-                    var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Add;
+                    var arithmeticOperator = ArithmeticOperator.Add;
 
                     var inputTexture = inputGrid.RenderTexture;
 
@@ -93,7 +95,7 @@ namespace CodeFirst.TerrainGraph.Editor
                 }
                 else
                 {
-                    var blendOperator = BlendNode.BlendOperator.Add;
+                    var blendOperator = BlendOperator.Add;
 
                     var inputTexture1 = inputGrid.RenderTexture;
                     var inputTexture2 = inputGrid2.RenderTexture;

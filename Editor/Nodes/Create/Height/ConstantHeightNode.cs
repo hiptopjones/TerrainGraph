@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Simple", iconPath: null, title: "Constant Height")]
     public class ConstantHeightNode
         : BaseNode<ConstantHeightNode.OptionValues, ConstantHeightNode.InputValues, HeightGrid>
     {

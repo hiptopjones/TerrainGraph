@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Spline", iconPath: null, title: "Resample Spline")]
     public class ResampleSplineNode
         : BaseNode<ResampleSplineNode.OptionValues, ResampleSplineNode.InputValues, SplineWrapper>
     {

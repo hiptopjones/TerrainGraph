@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -7,6 +8,7 @@ using Object = UnityEngine.Object;
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Export", iconPath: null, title: "Export Terrain")]
     public class ExportTerrainNode
         : BaseNode<ExportTerrainNode.OptionValues, ExportTerrainNode.InputValues, NullOutput>, IExportableNode
     {

@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Multiply")]
     public class MultiplyNode
         : BaseNode<MultiplyNode.OptionValues, MultiplyNode.InputValues, HeightGrid>
     {
@@ -78,7 +80,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (IsOperandConstant())
                 {
-                    var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Multiply;
+                    var arithmeticOperator = ArithmeticOperator.Multiply;
 
                     var inputTexture = inputGrid.RenderTexture;
 
@@ -90,7 +92,7 @@ namespace CodeFirst.TerrainGraph.Editor
                 }
                 else
                 {
-                    var blendOperator = BlendNode.BlendOperator.Multiply;
+                    var blendOperator = BlendOperator.Multiply;
 
                     var inputTexture1 = inputGrid.RenderTexture;
                     var inputTexture2 = inputGrid2.RenderTexture;

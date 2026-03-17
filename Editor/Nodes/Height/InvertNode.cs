@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Invert")]
     public class InvertNode
         : BaseNode<InvertNode.OptionValues, InvertNode.InputValues, HeightGrid>
     {

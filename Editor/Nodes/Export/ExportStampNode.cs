@@ -3,12 +3,14 @@ using JBooth.MicroVerseCore;
 #endif
 using System;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEditor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Export", iconPath: null, title: "Export MicroVerse Stamp")]
     public class ExportStampNode
         : BaseNode<ExportStampNode.OptionValues, ExportStampNode.InputValues, NullOutput>, IExportableNode
     {

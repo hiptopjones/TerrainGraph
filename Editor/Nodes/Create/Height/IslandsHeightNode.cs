@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Special", iconPath: null, title: "Islands Height")]
     public class IslandsHeightNode
         : BaseNode<IslandsHeightNode.OptionValues, IslandsHeightNode.InputValues, HeightGrid>
     {

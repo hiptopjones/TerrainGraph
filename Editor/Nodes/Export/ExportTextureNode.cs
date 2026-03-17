@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEditor;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Export", iconPath: null, title: "Export Texture")]
     public class ExportTextureNode
         : BaseNode<ExportTextureNode.OptionValues, ExportTextureNode.InputValues, NullOutput>, IExportableNode
     {

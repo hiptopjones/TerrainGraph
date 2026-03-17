@@ -263,7 +263,7 @@ namespace CodeFirst.TerrainGraph.Editor
         public static bool TryArithmeticOperation(
             RenderTexture inputTexture,
             float value,
-            ArithmeticNode.ArithmeticOperator arithmeticOperator,
+            ArithmeticOperator arithmeticOperator,
             bool isZeroIgnored,
             bool isFlipped,
             int size,
@@ -279,7 +279,7 @@ namespace CodeFirst.TerrainGraph.Editor
             keywordBuilder.AddKeyword(isFlipped ? "ARGS_FLIPPED" : "ARGS_NORMAL");
             keywordBuilder.AddKeyword(isZeroIgnored ? "ZERO_EXCLUDE" : "ZERO_INCLUDE");
 
-            if (!ComputeHelpers.TryLoadComputeShader(nameof(ArithmeticNode), out var shader))
+            if (!ComputeHelpers.TryLoadComputeShader("ArithmeticNode", out var shader))
             {
                 return false;
             }
@@ -301,7 +301,7 @@ namespace CodeFirst.TerrainGraph.Editor
         public static bool TryBlendOperation(
             RenderTexture inputTexture1,
             RenderTexture inputTexture2,
-            BlendNode.BlendOperator blendOperator,
+            BlendOperator blendOperator,
             bool isZeroIgnored,
             bool isFlipped,
             int size,
@@ -317,7 +317,7 @@ namespace CodeFirst.TerrainGraph.Editor
             keywordBuilder.AddKeyword(isFlipped ? "ARGS_FLIPPED" : "ARGS_NORMAL");
             keywordBuilder.AddKeyword(isZeroIgnored ? "ZERO_EXCLUDE" : "ZERO_INCLUDE");
 
-            if (!ComputeHelpers.TryLoadComputeShader(nameof(BlendNode), out var shader))
+            if (!ComputeHelpers.TryLoadComputeShader("BlendNode", out var shader))
             {
                 return false;
             }
@@ -354,7 +354,7 @@ namespace CodeFirst.TerrainGraph.Editor
                 Quaternion.Euler(0, 0, rotationDegrees),
                 new Vector3(1 / scale.x, 1 / scale.y, 1));
 
-            if (!ComputeHelpers.TryLoadComputeShader(nameof(TransformNode), out var shader))
+            if (!ComputeHelpers.TryLoadComputeShader("TransformNode", out var shader))
             {
                 return false;
             }

@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Simple", iconPath: null, title: "Slope Height")]
     public class SlopeHeightNode
         : BaseNode<SlopeHeightNode.OptionValues, SlopeHeightNode.InputValues, HeightGrid>
     {

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using UnityEngine.Splines;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Spline", iconPath: null, title: "Displace Spline")]
     public class DisplaceSplineNode
         : BaseNode<DisplaceSplineNode.OptionValues, DisplaceSplineNode.InputValues, SplineWrapper>
     {

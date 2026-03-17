@@ -1,9 +1,11 @@
 using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Noise", iconPath: null, title: "Value Noise Height")]
     public class ValueNoiseHeightNode
         : BaseNode<ValueNoiseHeightNode.OptionValues, ValueNoiseHeightNode.InputValues, HeightGrid>
     {

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Special", iconPath: null, title: "Spline Voronoi Height")]
     public class SplineVoronoiHeightNode
         : BaseNode<SplineVoronoiHeightNode.OptionValues, SplineVoronoiHeightNode.InputValues, HeightGrid>
     {

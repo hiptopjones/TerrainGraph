@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Spline", iconPath: null, title: "Contour Spline")]
     public class ContourSplineNode
         : BaseNode<ContourSplineNode.OptionValues, ContourSplineNode.InputValues, SplineWrapper>
     {

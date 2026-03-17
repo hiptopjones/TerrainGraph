@@ -1,9 +1,11 @@
 using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Noise", iconPath: null, title: "Perlin Noise Height")]
     public class PerlinNoiseHeightNode
         : BaseNode<PerlinNoiseHeightNode.OptionValues, PerlinNoiseHeightNode.InputValues, HeightGrid>
     {

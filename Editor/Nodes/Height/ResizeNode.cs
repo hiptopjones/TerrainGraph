@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Resize")]
     public class ResizeNode
         : BaseNode<ResizeNode.OptionValues, ResizeNode.InputValues, HeightGrid>
     {

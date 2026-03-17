@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Bias")]
     public class BiasNode
         : BaseNode<BiasNode.OptionValues, BiasNode.InputValues, HeightGrid>
     {

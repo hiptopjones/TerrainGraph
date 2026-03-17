@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.GraphToolkit.Editor;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -10,6 +11,7 @@ namespace CodeFirst.TerrainGraph.Editor
     using CurveType = CurveFunctions.CurveType;
 
     [Serializable]
+    [Node(categoryPath: "Create/Spline", iconPath: null, title: "Curve Spline")]
     public class CurveSplineNode
         : BaseNode<CurveSplineNode.OptionValues, CurveSplineNode.InputValues, SplineWrapper>
     {

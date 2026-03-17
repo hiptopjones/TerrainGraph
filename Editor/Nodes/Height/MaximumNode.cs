@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Maximum")]
     public class MaximumNode
         : BaseNode<MaximumNode.OptionValues, MaximumNode.InputValues, HeightGrid>
     {
@@ -81,7 +83,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (IsOperandConstant())
                 {
-                    var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Maximum;
+                    var arithmeticOperator = ArithmeticOperator.Maximum;
 
                     var inputTexture = inputGrid.RenderTexture;
 
@@ -93,7 +95,7 @@ namespace CodeFirst.TerrainGraph.Editor
                 }
                 else
                 {
-                    var blendOperator = BlendNode.BlendOperator.Maximum;
+                    var blendOperator = BlendOperator.Maximum;
 
                     var inputTexture1 = inputGrid.RenderTexture;
                     var inputTexture2 = inputGrid2.RenderTexture;

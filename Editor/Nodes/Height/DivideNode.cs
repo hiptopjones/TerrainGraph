@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Divide")]
     public class DivideNode
         : BaseNode<DivideNode.OptionValues, DivideNode.InputValues, HeightGrid>
     {
@@ -108,7 +110,7 @@ namespace CodeFirst.TerrainGraph.Editor
 
                 if (IsOperandConstant())
                 {
-                    var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Divide;
+                    var arithmeticOperator = ArithmeticOperator.Divide;
 
                     var inputTexture = inputGrid.RenderTexture;
 
@@ -120,7 +122,7 @@ namespace CodeFirst.TerrainGraph.Editor
                 }
                 else
                 {
-                    var blendOperator = BlendNode.BlendOperator.Divide;
+                    var blendOperator = BlendOperator.Divide;
 
                     var inputTexture1 = inputGrid.RenderTexture;
                     var inputTexture2 = inputGrid2.RenderTexture;

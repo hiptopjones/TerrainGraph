@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Power")]
     public class PowerNode
         : BaseNode<PowerNode.OptionValues, PowerNode.InputValues, HeightGrid>
     {
@@ -26,7 +28,7 @@ namespace CodeFirst.TerrainGraph.Editor
         {
             try
             {
-                var arithmeticOperator = ArithmeticNode.ArithmeticOperator.Power;
+                var arithmeticOperator = ArithmeticOperator.Power;
                 var isZeroIgnored = Options.IsZeroIgnored;
                 var isFlipped = false;
                 var inputGrid = Inputs.Grid;

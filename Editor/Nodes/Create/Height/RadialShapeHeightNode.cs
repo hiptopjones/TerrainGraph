@@ -1,10 +1,12 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Simple", iconPath: null, title: "Radial Shape Height")]
     public class RadialShapeHeightNode
         : BaseNode<RadialShapeHeightNode.OptionValues, RadialShapeHeightNode.InputValues, HeightGrid>
     {

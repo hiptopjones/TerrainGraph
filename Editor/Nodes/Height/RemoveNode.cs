@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Remove")]
     public class RemoveNode
         : BaseNode<RemoveNode.OptionValues, RemoveNode.InputValues, HeightGrid>
     {

@@ -1,10 +1,12 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Create/Height/Simple", iconPath: null, title: "Gradient Height")]
     public class GradientHeightNode
         : BaseNode<GradientHeightNode.OptionValues, GradientHeightNode.InputValues, HeightGrid>
     {

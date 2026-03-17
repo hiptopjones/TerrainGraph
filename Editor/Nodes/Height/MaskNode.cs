@@ -1,9 +1,11 @@
 ﻿using System;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Mask")]
     public class MaskNode
         : BaseNode<MaskNode.OptionValues, MaskNode.InputValues, HeightGrid>
     {

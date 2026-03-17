@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Unity.GraphToolkit.Editor;
 using UnityEngine;
 
 namespace CodeFirst.TerrainGraph.Editor
 {
     [Serializable]
+    [Node(categoryPath: "Modify/Height", iconPath: null, title: "Erode")]
     public class ParticleErosionNode 
         : BaseNode<ParticleErosionNode.OptionValues, ParticleErosionNode.InputValues, HeightGrid>
     {
